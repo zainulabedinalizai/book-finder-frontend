@@ -9,17 +9,26 @@ const Login = () => {
     password: ''
   });
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Client-side validation
+    if (!credentials.username || !credentials.password) {
+      setError('Please enter both username and password');
+      return;
+    }
+
     const result = await login(credentials);
+    
     if (result.success) {
+      console.log("Navigating to dashboard with:", result.data);
       navigate('/dashboard');
     } else {
-      setError(result.error || 'Login failed');
+      setError(result.message);
     }
   };
 
@@ -27,7 +36,10 @@ const Login = () => {
     <Container maxWidth="sm">
       <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography variant="h4" gutterBottom>
-          Login
+          Login (Test Mode)
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          Use Admin/123 to proceed
         </Typography>
         {error && (
           <Typography color="error" sx={{ mb: 2 }}>
@@ -62,11 +74,12 @@ const Login = () => {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={loading}
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </Button>
           <Typography>
-            New user? <Link to="/register">Register here</Link>
+            Don't have an account? <Link to="/register">Register here</Link>
           </Typography>
         </Box>
       </Box>

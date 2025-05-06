@@ -1,32 +1,74 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { TextField, Button, Typography, Box, Container } from '@mui/material';
+import { 
+  TextField, 
+  Button, 
+  Typography, 
+  Box, 
+  Container,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
+} from '@mui/material';
 import { useAuth } from '../Context/AuthContext';
 
 const Register = () => {
   const [userData, setUserData] = useState({
     username: '',
     email: '',
-    password: ''
+    password: '',
+    fullName: '',
+    dob: '',
+    gender: '',
+    mobile: '',
+    address: ''
   });
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const result = await register(userData);
-    if (result.success) {
-      navigate('/login');
-    } else {
-      setError(result.error || 'Registration failed');
+    setLoading(true);
+    
+    try {
+      console.log('Form data:', userData);
+      const result = await register(userData);
+      console.log('API response:', result);
+      
+      if (result.success) {
+        navigate('/login');
+      } else {
+        setError(result.message || 'Registration failed');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUserData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <Box sx={{ 
+        mt: 8, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        minHeight: '100vh'
+      }}>
         <Typography variant="h4" gutterBottom>
           Register
         </Typography>
@@ -35,7 +77,17 @@ const Register = () => {
             {error}
           </Typography>
         )}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
+        <Box 
+          component="form" 
+          onSubmit={handleSubmit} 
+          sx={{ 
+            mt: 1, 
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2
+          }}
+        >
           <TextField
             margin="normal"
             required
@@ -45,18 +97,18 @@ const Register = () => {
             autoComplete="username"
             autoFocus
             value={userData.username}
-            onChange={(e) => setUserData({ ...userData, username: e.target.value })}
+            onChange={handleChange}
           />
           <TextField
             margin="normal"
             required
             fullWidth
-            label="Email"
             name="email"
-            autoComplete="email"
+            label="Email"
             type="email"
+            autoComplete="email"
             value={userData.email}
-            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+            onChange={handleChange}
           />
           <TextField
             margin="normal"
@@ -67,15 +119,71 @@ const Register = () => {
             type="password"
             autoComplete="new-password"
             value={userData.password}
-            onChange={(e) => setUserData({ ...userData, password: e.target.value })}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="fullName"
+            label="Full Name"
+            value={userData.fullName}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="dob"
+            label="Date of Birth"
+            type="date"
+            InputLabelProps={{
+              shrink: true,
+            }}
+            value={userData.dob}
+            onChange={handleChange}
+          />
+          <FormControl fullWidth margin="normal" required>
+            <InputLabel>Gender</InputLabel>
+            <Select
+              name="gender"
+              value={userData.gender}
+              label="Gender *"
+              onChange={handleChange}
+              required
+            >
+              <MenuItem value="M">Male</MenuItem>
+              <MenuItem value="F">Female</MenuItem>
+            </Select>
+          </FormControl>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="mobile"
+            label="Phone Number"
+            value={userData.mobile}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="address"
+            label="Address"
+            multiline
+            rows={3}
+            value={userData.address}
+            onChange={handleChange}
           />
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={loading}
           >
-            Register
+            {loading ? 'Registering...' : 'Register'}
           </Button>
           <Typography>
             Already have an account? <Link to="/login">Login here</Link>

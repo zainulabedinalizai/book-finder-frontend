@@ -26,7 +26,6 @@ export const BookProvider = ({ children }) => {
     }
   }, []);
 
-  // Add this new function to get favorite book by ID
   const getFavoriteBook = useCallback(async (id) => {
     setLoading(true);
     try {
@@ -104,7 +103,7 @@ export const BookProvider = ({ children }) => {
         addFavorite,
         removeFavorite,
         getBookDetail,
-        getFavoriteBook // Add this to the context value
+        getFavoriteBook
       }}
     >
       {children}

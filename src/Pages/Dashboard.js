@@ -1,13 +1,12 @@
-// src/Pages/Dashboard.js
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Container, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Button, Tabs, Tab, Container } from '@mui/material';
 import { useAuth } from '../Context/AuthContext';
 import { useBooks } from '../Context/BookContext';
 import FavoritesQuerySearch from './FavoritesQuerySearch';
 
 const Dashboard = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { getFavorites } = useBooks();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
@@ -25,12 +24,9 @@ const Dashboard = () => {
   };
 
   return (
-    <Container>
+    <Container maxWidth="xl" sx={{ mt: 4, px: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Typography variant="h4">Welcome, {user?.username}</Typography>
-        <Button variant="contained" color="error" onClick={logout}>
-          Logout
-        </Button>
       </Box>
       
       <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
@@ -39,12 +35,16 @@ const Dashboard = () => {
       </Tabs>
 
       {tabValue === 0 && (
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 2, 
+          flexWrap: 'wrap',
+          justifyContent: { xs: 'center', sm: 'flex-start' }
+        }}>
           <Button 
             variant="contained" 
             onClick={() => navigate('/search')}
             sx={{ mt: 2 }}
-
           >
             Search Books
           </Button>
@@ -52,17 +52,16 @@ const Dashboard = () => {
             variant="contained" 
             onClick={() => navigate('/favorites')}
             sx={{ mt: 2 }}
-
           >
-            My Favorites
+            Patient Form
           </Button>
           <Button 
-  variant="contained" 
-  onClick={() => navigate('/add-favorite')}
-  sx={{ mt: 2 }}
->
-  Add New Favorite
-</Button>
+            variant="contained" 
+            onClick={() => navigate('/add-favorite')}
+            sx={{ mt: 2 }}
+          >
+            Add New Favorite
+          </Button>
         </Box>
       )}
 
