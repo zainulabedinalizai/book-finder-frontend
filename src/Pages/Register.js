@@ -34,10 +34,15 @@ const Register = () => {
     setError('');
     setLoading(true);
     
+    // Validate required fields
+    if (!userData.dob || !userData.username || !userData.password) {
+      setError('All fields are required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('Form data:', userData);
       const result = await register(userData);
-      console.log('API response:', result);
       
       if (result.success) {
         navigate('/login');
@@ -142,6 +147,9 @@ const Register = () => {
             }}
             value={userData.dob}
             onChange={handleChange}
+            inputProps={{
+              max: new Date().toISOString().split('T')[0]
+            }}
           />
           <FormControl fullWidth margin="normal" required>
             <InputLabel>Gender</InputLabel>

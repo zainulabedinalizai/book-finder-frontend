@@ -21,23 +21,32 @@ export const authAPI = {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   }),
-  login: (credentials) => API.post('/GetUserLogin', credentials, {
+  
+  adminRegister: (formData) => API.post('/AdminRegistration', formData, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   }),
-  getUserLogin: (credentials) => {
-    // Hardcoded test credentials
-    const testCredentials = {
-      username: 'Admin',
-      password: '123'
-    };
-    
+  
+  login: (credentials) => {
     const formData = new URLSearchParams();
-    formData.append('UserName', testCredentials.username);
-    formData.append('Password', testCredentials.password);
+    formData.append('UserName', credentials.username);
+    formData.append('Password', credentials.password);
     
     return API.post('/GetUserLogin', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  }
+};
+
+export const userAPI = {
+  getUserList: (userId) => {
+    const formData = new URLSearchParams();
+    formData.append('UserID', userId);
+    
+    return API.post('/GetUserList', formData.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }

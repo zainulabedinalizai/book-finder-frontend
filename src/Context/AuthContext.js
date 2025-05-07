@@ -7,9 +7,30 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const register = async (userData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await authService.register(userData);
+      if (result.success) {
+        return result;
+      } else {
+        setError(result.message);
+        return result;
+      }
+    } catch (err) {
+      setError("An error occurred during registration");
+      return { success: false, message: "An error occurred during registration" };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (credentials) => {
     setLoading(true);
+    setError(null);
     try {
       const result = await authService.login(credentials);
       if (result.success) {
@@ -17,8 +38,13 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user', JSON.stringify(result.data));
         setUser(result.data);
         setIsAuthenticated(true);
+      } else {
+        setError(result.message);
       }
       return result;
+    } catch (err) {
+      setError("An error occurred during login");
+      return { success: false, message: "An error occurred during login" };
     } finally {
       setLoading(false);
     }
@@ -30,6 +56,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
+    setError(null);
   };
 
   return (
@@ -37,6 +64,8 @@ export const AuthProvider = ({ children }) => {
       user,
       isAuthenticated,
       loading,
+      error,
+      register,
       login,
       logout
     }}>

@@ -31,7 +31,6 @@ const Dashboard = () => {
       
       <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
         <Tab label="Quick Actions" />
-        <Tab label="Favorites Search" />
       </Tabs>
 
       {tabValue === 0 && (
@@ -43,25 +42,12 @@ const Dashboard = () => {
         }}>
           <Button 
             variant="contained" 
-            onClick={() => navigate('/search')}
-            sx={{ mt: 2 }}
-          >
-            Search Books
-          </Button>
-          <Button 
-            variant="contained" 
             onClick={() => navigate('/favorites')}
             sx={{ mt: 2 }}
           >
             Patient Form
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={() => navigate('/add-favorite')}
-            sx={{ mt: 2 }}
-          >
-            Add New Favorite
-          </Button>
+
         </Box>
       )}
 
