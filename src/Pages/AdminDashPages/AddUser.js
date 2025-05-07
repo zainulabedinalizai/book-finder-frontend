@@ -72,8 +72,6 @@ const AddUser = () => {
       setError(null);
       const response = await userService.getUserList(-1);
       
-      console.log('API Response:', response);
-      
       if (response.data.success) {
         if (response.data.data && Array.isArray(response.data.data)) {
           const formattedUsers = response.data.data.map(user => ({
@@ -83,7 +81,7 @@ const AddUser = () => {
             FullName: `${user.FirstName || ''} ${user.LastName || ''}`.trim() || 'N/A',
             RoleName: user.RoleName || 'Unknown',
             AccountStatus: user.AccountStatus === 1 ? 'Active' : 'Inactive',
-            RoleID: roles.find(r => r.name === user.RoleName)?.id || 1
+            RoleID: user.RoleID || 1
           }));
           
           setUsers(formattedUsers);
@@ -156,6 +154,7 @@ const AddUser = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Setting ${name} to:`, value);
     setNewUser(prev => ({
       ...prev,
       [name]: value
@@ -182,7 +181,19 @@ const AddUser = () => {
     
     try {
       setLoading(true);
-      const response = await authService.adminRegister(newUser);
+      
+      // Create a new object with the roleId properly converted to number
+      const userToSubmit = {
+        ...newUser,
+        roleId: Number(newUser.roleId) // Force conversion to number
+      };
+      
+      console.log('Submitting user with roleId:', userToSubmit.roleId);
+      
+      const response = await authService.adminRegister({
+        ...userToSubmit,
+        roleID: userToSubmit.roleId // Send as both roleId and roleID for compatibility
+      });
       
       if (response.data.success) {
         fetchUsers();
@@ -348,7 +359,6 @@ const AddUser = () => {
         </Grid>
       </Grid>
 
-      {/* Add User Dialog */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add New User</DialogTitle>
         <DialogContent>
