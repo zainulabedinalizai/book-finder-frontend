@@ -126,11 +126,11 @@ const Layout = ({ children }) => {
   };
 
   const adminMenuItems = [
-    { text: 'Personal Profile', icon: <PersonIcon />, path: '/admin/profile' },
-    { text: 'Add User', icon: <PeopleIcon />, path: '/AddUser' }, // Changed here
-    { text: 'User Login', icon: <LoginIcon />, path: '/admin/user-login' },
-    { text: 'User Role', icon: <LockIcon />, path: '/admin/user-role' },
-    { text: 'Change Password', icon: <LockIcon />, path: '/admin/change-password' }
+    { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfile' },
+    { text: 'Add User', icon: <PeopleIcon />, path: '/AddUser' }, 
+    { text: 'User Login', icon: <LoginIcon />, path: '/UserLogin' },
+    { text: 'User Role', icon: <LockIcon />, path: '/UserRoles' },
+    { text: 'Change Password', icon: <LockIcon />, path: '/ChangePassword' }
   ];
 
   const patientMenuItems = [

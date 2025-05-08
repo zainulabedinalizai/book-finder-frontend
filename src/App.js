@@ -10,6 +10,10 @@ import AddFavoriteForm from './Pages/AddFavoriteForm';
 import Register from './Pages/Register';
 import PatientSurvey from './Pages/PatientSurvey';
 import AddUser from './Pages/AdminDashPages/AddUser';
+import PersonalProfile from './Pages/AdminDashPages/PersonalProfile';
+import ChangePassword from './Pages/AdminDashPages/ChangePassword';
+import UserRoles from './Pages/AdminDashPages/UserRoles';
+import UserLogin from './Pages/AdminDashPages/UserLogin';
 
 const App = () => {
   return (
@@ -27,7 +31,13 @@ const App = () => {
               <Route path="/books/:id" element={<BookDetails />} />
               <Route path="/add-favorite" element={<AddFavoriteForm />} />
               {/* Add this new route */}
-              <Route path="/AddUser" element={<AddUser />} />
+              <Route path="/AddUser" element={<AddUser />} />      
+                      <Route path="/PersonalProfile" element={<PersonalProfile />} />
+                      <Route path="/ChangePassword" element={<ChangePassword />} />
+                      <Route path="/UserRoles" element={<UserRoles />} />
+                      <Route path="/UserLogin" element={<UserLogin />} />
+
+
             </Routes>
           </Layout>
         </BookProvider>

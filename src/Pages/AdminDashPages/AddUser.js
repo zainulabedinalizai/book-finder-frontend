@@ -31,6 +31,7 @@ import {
 import { Add, Edit, Delete, Search, Refresh } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { authService, userService } from '../../Context/authService';
+import EditUserDialog from './EditUserDialog'; // Import the new component
 
 const roles = [
   { id: 1, name: 'User', description: 'Regular authenticated user' },
@@ -53,6 +54,8 @@ const AddUser = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -125,7 +128,8 @@ const AddUser = () => {
   const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredUsers.length - page * rowsPerPage);
 
   const handleEditUser = (userId) => {
-    console.log('Edit user with ID:', userId);
+    setSelectedUserId(userId);
+    setOpenEditDialog(true);
   };
 
   const handleDeleteUser = (userId) => {
@@ -207,6 +211,10 @@ const AddUser = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUserUpdated = () => {
+    fetchUsers(); // Refresh the user list after update
   };
 
   return (
@@ -359,6 +367,7 @@ const AddUser = () => {
         </Grid>
       </Grid>
 
+      {/* Add User Dialog */}
       <Dialog open={openAddDialog} onClose={handleCloseAddDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Add New User</DialogTitle>
         <DialogContent>
@@ -504,6 +513,15 @@ const AddUser = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit User Dialog */}
+      <EditUserDialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        userId={selectedUserId}
+        onUserUpdated={handleUserUpdated}
+        roles={roles}
+      />
     </Box>
   );
 };

@@ -51,6 +51,46 @@ export const userAPI = {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
+  },
+  
+  updatePassword: (userId, newPassword) => {
+    const formData = new URLSearchParams();
+    formData.append('UserID', userId);
+    formData.append('Password', newPassword);
+    
+    return API.post('/UpdateUserPassword', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+
+  updateUserStatus: (userId, statusId) => {
+    const formData = new URLSearchParams();
+    formData.append('UserID', userId);
+    formData.append('StatusID', statusId);
+    
+    return API.post('/UpdateUserStatus', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  }
+
+
+
+};
+
+export const roleAPI = {
+  getRoleList: (roleId = -1) => {
+    const formData = new URLSearchParams();
+    formData.append('RoleID', roleId);
+    
+    return API.post('/GetRoleList', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
   }
 };
 
