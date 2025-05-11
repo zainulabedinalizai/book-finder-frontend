@@ -1,3 +1,4 @@
+// Login.js
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TextField, Button, Typography, Box, Container } from '@mui/material';
@@ -11,21 +12,29 @@ const Login = () => {
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Client-side validation
-    if (!credentials.username || !credentials.password) {
-      return;
-    }
+// Login.js
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!credentials.username || !credentials.password) {
+    return;
+  }
 
+  console.log('Submitting credentials:', credentials); // Debugging
+  
+  try {
     const result = await login(credentials);
+    console.log('Login component result:', result); // Debugging
     
-    if (result.success) {
+    if (result?.success) {
       navigate('/dashboard');
+    } else {
+      console.log('Login failed:', result?.message); // Debugging
     }
-  };
-
+  } catch (err) {
+    console.error('Login component error:', err); // Debugging
+  }
+};
   return (
     <Container maxWidth="sm">
       <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

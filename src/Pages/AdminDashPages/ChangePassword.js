@@ -19,9 +19,11 @@ import {
   TableRow,
   Paper,
   TextField,
-  Divider
+  Divider,
+  IconButton,
+  Tooltip
 } from '@mui/material';
-import { Save, Lock } from '@mui/icons-material';
+import { Save, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 
 const ChangePassword = () => {
   const { user } = useAuth();
@@ -31,6 +33,9 @@ const ChangePassword = () => {
   const [editingId, setEditingId] = useState(null);
   const [editPassword, setEditPassword] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({});
+  const [decryptedPasswords, setDecryptedPasswords] = useState({});
+  const [decrypting, setDecrypting] = useState({});
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -40,6 +45,12 @@ const ChangePassword = () => {
         
         if (response.data?.success) {
           setAllUsers(response.data.data || []);
+          // Initialize state for password visibility
+          const initialVisibility = {};
+          response.data.data.forEach(u => {
+            initialVisibility[u.UserId] = false;
+          });
+          setShowPasswords(initialVisibility);
         } else {
           setError(response.data?.message || "Failed to fetch users");
         }
@@ -53,6 +64,36 @@ const ChangePassword = () => {
 
     fetchAllUsers();
   }, []);
+
+  const togglePasswordVisibility = (userId) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const getDecryptedPassword = async (userId, encryptedPassword) => {
+    if (decryptedPasswords[userId]) return; // Already decrypted
+    
+    try {
+      setDecrypting(prev => ({ ...prev, [userId]: true }));
+      const response = await userAPI.getDecryptedPassword(encryptedPassword);
+      
+      if (response.data?.success) {
+        setDecryptedPasswords(prev => ({
+          ...prev,
+          [userId]: response.data.data || 'Decryption failed'
+        }));
+      } else {
+        setError(response.data?.message || "Failed to decrypt password");
+      }
+    } catch (err) {
+      console.error('Error decrypting password:', err);
+      setError(err.message || 'Failed to decrypt password');
+    } finally {
+      setDecrypting(prev => ({ ...prev, [userId]: false }));
+    }
+  };
 
   const startEditing = (userId) => {
     setEditingId(userId);
@@ -87,7 +128,6 @@ const ChangePassword = () => {
       
       const response = await userAPI.updatePassword(userId, editPassword);
       
-      // Check for both possible success indicators from API
       if (response.data?.success || response.data?.data?.[0]?.Mesg === 'Updated') {
         setAllUsers(prevUsers => 
           prevUsers.map(u => 
@@ -97,6 +137,8 @@ const ChangePassword = () => {
         setEditingId(null);
         setEditPassword('');
         setSuccess(true);
+        // Reset decrypted password after update
+        setDecryptedPasswords(prev => ({ ...prev, [userId]: undefined }));
       } else {
         setError(response.data?.message || "Failed to update password");
       }
@@ -190,7 +232,42 @@ const ChangePassword = () => {
                           placeholder="Enter new password"
                         />
                       ) : (
-                        '••••••••'
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          {showPasswords[user.UserId] ? (
+                            <>
+                              {decryptedPasswords[user.UserId] || (
+                                <Button 
+                                  size="small" 
+                                  onClick={() => getDecryptedPassword(user.UserId, user.PasswordHash)}
+                                  disabled={decrypting[user.UserId]}
+                                >
+                                  {decrypting[user.UserId] ? 'Decrypting...' : 'Decrypt Password'}
+                                </Button>
+                              )}
+                              {decryptedPasswords[user.UserId] && (
+                                <Typography component="span" sx={{ ml: 1 }}>
+                                 
+                                </Typography>
+                              )}
+                            </>
+                          ) : (
+                            '••••••••'
+                          )}
+                          <Tooltip title={showPasswords[user.UserId] ? "Hide password" : "Show password"}>
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                togglePasswordVisibility(user.UserId);
+                                if (!showPasswords[user.UserId] && !decryptedPasswords[user.UserId]) {
+                                  getDecryptedPassword(user.UserId, user.PasswordHash);
+                                }
+                              }}
+                              sx={{ ml: 1 }}
+                            >
+                              {showPasswords[user.UserId] ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       )}
                     </TableCell>
                     <TableCell>

@@ -1,3 +1,4 @@
+// authService.js
 import { authAPI, userAPI } from "../Api/api";
 
 export const authService = {
@@ -50,7 +51,7 @@ export const authService = {
       formData.append('Gender', adminData.gender);
       formData.append('Mobile', adminData.mobile);
       formData.append('PostalAddress', adminData.address);
-      formData.append('RoleID', adminData.roleID); // Using roleID (uppercase D)
+      formData.append('RoleID', adminData.roleID);
 
       const response = await authAPI.adminRegister(formData.toString());
       return {
@@ -66,28 +67,71 @@ export const authService = {
     }
   },
 
-  login: async (credentials) => {
-    try {
-      const response = await authAPI.login(credentials);
+// authService.js
+login: async (credentials) => {
+  try {
+    const response = await authAPI.login(credentials.username, credentials.password);
+    console.log('Login response:', response.data); // Debugging
+    
+    if (response.data.success) {  // Changed from Success to success
+      const userData = response.data.data && response.data.data.length > 0 
+        ? response.data.data[0] 
+        : null;
+      
+      // Create a token if not provided by backend
+      const token = userData?.Token || 'default-token-from-backend';
       
       return {
         success: true,
-        data: response.data.user,
-        token: response.data.token,
+        data: userData,
+        token: token,
         message: "Login successful"
       };
-    } catch (error) {
+    } else {
       return {
         success: false,
-        message: error.response?.data?.message || "Invalid credentials"
+        message: response.data.message || "Invalid credentials"  // Changed from Message to message
       };
     }
-  },
+  } catch (error) {
+    console.error('Login error:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message ||  // Changed from Message to message
+             error.message || 
+             "Invalid credentials"
+    };
+  }
+},
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     return Promise.resolve();
-  }
+  },
+
+  isAuthenticated: () => {
+    return !!localStorage.getItem('token');
+  } ,
+
+  updateUserProfile: (userData) => {
+  const formData = new URLSearchParams();
+  formData.append('UserID', userData.userId);
+  formData.append('Email', userData.email);
+  formData.append('FullName', userData.fullName);
+  formData.append('DOB', userData.dob);
+  formData.append('Gender', userData.gender);
+  formData.append('Mobile', userData.mobile);
+  formData.append('ImagePath', userData.profilePath || '');
+  formData.append('PostalAddress', userData.address || '');
+
+  return userAPI.post('/UpdateUserProfile', formData.toString(), {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  });
+}
+
 };
 
 export const userService = {

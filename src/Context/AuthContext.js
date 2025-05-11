@@ -1,45 +1,30 @@
+// AuthContext.js
 import { createContext, useContext, useState } from 'react';
 import { authService } from './authService';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const register = async (userData) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await authService.register(userData);
-      if (result.success) {
-        return result;
-      } else {
-        setError(result.message);
-        return result;
-      }
-    } catch (err) {
-      setError("An error occurred during registration");
-      return { success: false, message: "An error occurred during registration" };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = async (credentials) => {
     setLoading(true);
     setError(null);
     try {
       const result = await authService.login(credentials);
-      if (result.success) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('user', JSON.stringify(result.data));
-        setUser(result.data);
+      if (result.success && result.data) {
+        const userData = result.data;
+        localStorage.setItem('token', result.token || '');
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('userId', userData.UserId);
+        localStorage.setItem('fullName', userData.FullName || userData.Username);
+        setUser(userData);
         setIsAuthenticated(true);
       } else {
-        setError(result.message);
+        setError(result.message || 'Login failed');
       }
       return result;
     } catch (err) {
@@ -51,24 +36,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    authService.logout();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.clear();
     setUser(null);
     setIsAuthenticated(false);
     setError(null);
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      loading,
-      error,
-      register,
-      login,
-      logout
-    }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, error, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

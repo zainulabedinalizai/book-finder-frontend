@@ -1,19 +1,35 @@
-import Breadcrumbs from '@mui/material/Breadcrumbs';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid2';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Button from '@mui/material/Button';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Avatar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider,
+  Grid,
+  Checkbox,
+  FormControlLabel,
+  CircularProgress,
+  Alert,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
+} from '@mui/material';
+import { Edit, Save, Cancel } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
-import { useState, useRef } from 'react';
 import MainCard from '../Components/MainCard';
-
-// project imports
+import { questionAPI } from '../Api/api';
 
 // ==============================|| STYLED COMPONENTS ||============================== //
 
@@ -79,10 +95,95 @@ const PatientSurvey = () => {
     'Side View (Left)': null,
     'Side View (Right)': null
   });
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openConfirmation, setOpenConfirmation] = useState(false);
   const videoRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
   const [currentCaptureLabel, setCurrentCaptureLabel] = useState('');
-  const totalSteps = 5; // Includes the final "What Happens Next" step
+  const totalSteps = 5;
+
+  // Form state
+  const [formData, setFormData] = useState({
+    personalInfo: {
+      fullName: '',
+      dob: '',
+      gender: '',
+      phone: '',
+      email: '',
+      address: ''
+    },
+    answers: {},
+    consents: {}
+  });
+
+  // Group questions by QuestionId
+  const groupedQuestions = questions.reduce((acc, question) => {
+    if (!acc[question.QuestionId]) {
+      acc[question.QuestionId] = {
+        QuestionId: question.QuestionId,
+        QuestionText: question.QuestionText,
+        QuestionType: question.QuestionType,
+        DisplayOrder: question.DisplayOrder,
+        Options: []
+      };
+    }
+    acc[question.QuestionId].Options.push({
+      OptionId: question.OptionId,
+      OptionText: question.OptionText,
+      DisplayOrder: question.DisplayOrder1
+    });
+    return acc;
+  }, {});
+
+  // Sort questions by DisplayOrder
+  const sortedQuestions = Object.values(groupedQuestions).sort((a, b) => a.DisplayOrder - b.DisplayOrder);
+
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        setLoading(true);
+        const response = await questionAPI.getQuestionAndOptionList();
+        if (response.data.success) {
+          setQuestions(response.data.data);
+          
+          // Initialize answers state
+          const initialAnswers = {};
+          const initialConsents = {};
+          response.data.data.forEach(q => {
+            if (q.QuestionType === 'multiple_choice') {
+              initialAnswers[q.QuestionId] = [];
+            } else if (q.QuestionType === 'single_choice') {
+              initialAnswers[q.QuestionId] = '';
+            }
+            
+            if (q.QuestionText.includes('consent') || q.QuestionText.includes('agree')) {
+              initialConsents[q.QuestionId] = false;
+            }
+          });
+          
+          setFormData(prev => ({
+            ...prev,
+            answers: initialAnswers,
+            consents: initialConsents
+          }));
+        } else {
+          throw new Error(response.data.message || 'Failed to load questions');
+        }
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+        setError(err.message || 'Failed to load survey questions');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -159,6 +260,187 @@ const PatientSurvey = () => {
     setShowCamera(false);
   };
 
+  const handlePersonalInfoChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        [field]: value
+      }
+    }));
+  };
+
+  const handleAnswerChange = (questionId, value) => {
+    setFormData(prev => ({
+      ...prev,
+      answers: {
+        ...prev.answers,
+        [questionId]: value
+      }
+    }));
+  };
+
+  const handleCheckboxChange = (questionId, optionId, isChecked) => {
+    setFormData(prev => {
+      const currentAnswers = prev.answers[questionId] || [];
+      let updatedAnswers;
+      
+      if (isChecked) {
+        updatedAnswers = [...currentAnswers, optionId];
+      } else {
+        updatedAnswers = currentAnswers.filter(id => id !== optionId);
+      }
+      
+      return {
+        ...prev,
+        answers: {
+          ...prev.answers,
+          [questionId]: updatedAnswers
+        }
+      };
+    });
+  };
+
+  const handleConsentChange = (questionId, isChecked) => {
+    setFormData(prev => ({
+      ...prev,
+      consents: {
+        ...prev.consents,
+        [questionId]: isChecked
+      }
+    }));
+  };
+
+  const handleSubmitConfirmation = () => {
+    setOpenConfirmation(true);
+  };
+
+  const handleCloseConfirmation = () => {
+    setOpenConfirmation(false);
+  };
+
+  const handleSubmit = async () => {
+    setOpenConfirmation(false);
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    
+    try {
+      // Prepare submission data
+      const submissionData = {
+        personalInfo: formData.personalInfo,
+        answers: formData.answers,
+        consents: formData.consents,
+        images: capturedImages
+      };
+
+      const response = await questionAPI.savePatientApplication(submissionData);
+      
+      if (response.data?.success) {
+        setSubmitSuccess(true);
+      } else {
+        throw new Error(response.data?.message || 'Failed to submit application');
+      }
+    } catch (err) {
+      console.error('Error submitting application:', err);
+      setSubmitError(err.message || 'Failed to submit application');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md">
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (submitSuccess) {
+    return (
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <StyledMainCard>
+          <Box textAlign="center" py={4}>
+            <Avatar sx={{ width: 80, height: 80, bgcolor: 'success.main', mx: 'auto', mb: 2 }}>
+              <Save fontSize="large" />
+            </Avatar>
+            <Typography variant="h4" gutterBottom sx={{ color: 'success.main' }}>
+              Application Submitted Successfully!
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              Thank you for completing your patient onboarding. Our team will review your information and contact you shortly.
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              size="large"
+              onClick={() => window.location.reload()}
+            >
+              Start New Application
+            </Button>
+          </Box>
+        </StyledMainCard>
+      </Container>
+    );
+  }
+
+  const renderQuestionInput = (question) => {
+    switch (question.QuestionType) {
+      case 'multiple_choice':
+        return (
+          <Grid container spacing={1}>
+            {question.Options.map((option) => (
+              <Grid item xs={12} sm={6} key={option.OptionId}>
+                <FormControlLabel 
+                  control={
+                    <StyledCheckbox 
+                      size="small" 
+                      checked={formData.answers[question.QuestionId]?.includes(option.OptionId) || false}
+                      onChange={(e) => handleCheckboxChange(question.QuestionId, option.OptionId, e.target.checked)}
+                    />
+                  } 
+                  label={<Typography variant="body2" sx={{ color: '#555' }}>{option.OptionText}</Typography>} 
+                />
+              </Grid>
+            ))}
+          </Grid>
+        );
+      case 'single_choice':
+        return (
+          <StyledTextField
+            fullWidth
+            size="small"
+            select
+            label={question.QuestionText}
+            variant="outlined"
+            value={formData.answers[question.QuestionId] || ''}
+            onChange={(e) => handleAnswerChange(question.QuestionId, e.target.value)}
+          >
+            {question.Options.map((option) => (
+              <MenuItem key={option.OptionId} value={option.OptionId}>
+                {option.OptionText}
+              </MenuItem>
+            ))}
+          </StyledTextField>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <Grid container spacing={3} sx={{ background: '#fafafa' }}>
       <Grid xs={12}>
@@ -190,23 +472,63 @@ const PatientSurvey = () => {
               </Typography>
               
               <Stack spacing={2} sx={{ mt: 2 }}>
-                <StyledTextField fullWidth size="small" label="Full Name" variant="outlined" />
-                <StyledTextField fullWidth size="small" type="date" label="Date of Birth" variant="outlined" InputLabelProps={{ shrink: true }} />
+                <StyledTextField 
+                  fullWidth 
+                  size="small" 
+                  label="Full Name" 
+                  variant="outlined" 
+                  value={formData.personalInfo.fullName}
+                  onChange={(e) => handlePersonalInfoChange('fullName', e.target.value)}
+                />
+                <StyledTextField 
+                  fullWidth 
+                  size="small" 
+                  type="date" 
+                  label="Date of Birth" 
+                  variant="outlined" 
+                  InputLabelProps={{ shrink: true }} 
+                  value={formData.personalInfo.dob}
+                  onChange={(e) => handlePersonalInfoChange('dob', e.target.value)}
+                />
                 <StyledTextField
                   fullWidth
                   size="small"
                   select
                   label="Gender"
                   variant="outlined"
+                  value={formData.personalInfo.gender}
+                  onChange={(e) => handlePersonalInfoChange('gender', e.target.value)}
                 >
                   <MenuItem value="female">Female</MenuItem>
                   <MenuItem value="male">Male</MenuItem>
                   <MenuItem value="other">Other</MenuItem>
                   <MenuItem value="prefer-not-to-say">Prefer not to say</MenuItem>
                 </StyledTextField>
-                <StyledTextField fullWidth size="small" label="Phone Number" variant="outlined" />
-                <StyledTextField fullWidth size="small" type="email" label="Email Address" variant="outlined" />
-                <StyledTextField fullWidth size="small" label="Residential Address" variant="outlined" />
+                <StyledTextField 
+                  fullWidth 
+                  size="small" 
+                  label="Phone Number" 
+                  variant="outlined" 
+                  value={formData.personalInfo.phone}
+                  onChange={(e) => handlePersonalInfoChange('phone', e.target.value)}
+                />
+                <StyledTextField 
+                  fullWidth 
+                  size="small" 
+                  type="email" 
+                  label="Email Address" 
+                  variant="outlined" 
+                  value={formData.personalInfo.email}
+                  onChange={(e) => handlePersonalInfoChange('email', e.target.value)}
+                />
+                <StyledTextField 
+                  fullWidth 
+                  size="small" 
+                  label="Residential Address" 
+                  variant="outlined" 
+                  value={formData.personalInfo.address}
+                  onChange={(e) => handlePersonalInfoChange('address', e.target.value)}
+                />
               </Stack>
             </StyledMainCard>
           )}
@@ -224,75 +546,16 @@ const PatientSurvey = () => {
               </Typography>
               
               <Stack spacing={2} sx={{ mt: 2 }}>
-                <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
-                  Primary Skin Concern (Choose one or more)
-                </Typography>
-                <Grid container spacing={1}>
-                  {['Acne', 'Blackheads', 'Melasma', 'Hyperpigmentation', 'Rosacea', 'Skin-Ageing', 'Menopausal Skin'].map((concern) => (
-                    <Grid item xs={12} sm={6} key={concern}>
-                      <FormControlLabel 
-                        control={<StyledCheckbox size="small" />} 
-                        label={<Typography variant="body2" sx={{ color: '#555' }}>{concern}</Typography>} 
-                      />
-                    </Grid>
+                {sortedQuestions
+                  .filter(q => q.DisplayOrder <= 7) // Filter for skin-related questions
+                  .map((question) => (
+                    <React.Fragment key={question.QuestionText}>
+                      <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
+                        {question.QuestionText}
+                      </Typography>
+                      {renderQuestionInput(question)}
+                    </React.Fragment>
                   ))}
-                </Grid>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="How long have you had this concern?"
-                  variant="outlined"
-                >
-                  <MenuItem value="less-than-3">Less than 3 months</MenuItem>
-                  <MenuItem value="3-12">3–12 months</MenuItem>
-                  <MenuItem value="over-1">Over a year</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Have you tried any treatments before?"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes (please specify)</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Do you have any known skin allergies?"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes (please list)</MenuItem>
-                  <MenuItem value="no">No / Not sure</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Are you currently taking any medications?"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes (please list)</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Pregnant or breastfeeding?"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </StyledTextField>
               </Stack>
             </StyledMainCard>
           )}
@@ -310,69 +573,16 @@ const PatientSurvey = () => {
               </Typography>
               
               <Stack spacing={2} sx={{ mt: 2 }}>
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Skin type?"
-                  variant="outlined"
-                >
-                  <MenuItem value="oily">Oily</MenuItem>
-                  <MenuItem value="dry">Dry</MenuItem>
-                  <MenuItem value="combination">Combination</MenuItem>
-                  <MenuItem value="sensitive">Sensitive</MenuItem>
-                  <MenuItem value="not-sure">Not sure</MenuItem>
-                </StyledTextField>
-                
-                <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
-                  Current skincare routine:
-                </Typography>
-                <Grid container spacing={1}>
-                  {['Cleanser', 'Moisturizer', 'Sunscreen'].map((item) => (
-                    <Grid item xs={12} sm={6} key={item}>
-                      <FormControlLabel 
-                        control={<StyledCheckbox size="small" />} 
-                        label={<Typography variant="body2" sx={{ color: '#555' }}>{item}</Typography>} 
-                      />
-                    </Grid>
+                {sortedQuestions
+                  .filter(q => q.DisplayOrder > 7 && q.DisplayOrder <= 12) // Filter for lifestyle questions
+                  .map((question) => (
+                    <React.Fragment key={question.QuestionText}>
+                      <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
+                        {question.QuestionText}
+                      </Typography>
+                      {renderQuestionInput(question)}
+                    </React.Fragment>
                   ))}
-                </Grid>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Any actives (retinol, acids, etc.)"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                  <MenuItem value="not-sure">Not sure</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Sun exposure frequency"
-                  variant="outlined"
-                >
-                  <MenuItem value="rarely">Rarely</MenuItem>
-                  <MenuItem value="daily-spf">Daily (with SPF)</MenuItem>
-                  <MenuItem value="daily-no-spf">Daily (no SPF)</MenuItem>
-                  <MenuItem value="outdoors-often">Outdoors often</MenuItem>
-                </StyledTextField>
-                
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Dietary restrictions?"
-                  variant="outlined"
-                >
-                  <MenuItem value="yes">Yes (please specify)</MenuItem>
-                  <MenuItem value="no">No</MenuItem>
-                </StyledTextField>
               </Stack>
             </StyledMainCard>
           )}
@@ -431,75 +641,82 @@ const PatientSurvey = () => {
                   </Stack>
                 ) : (
                   <Stack spacing={2}>
-                    {['Front View', 'Side View (Left)', 'Side View (Right)'].map((label) => (
-                      <Stack key={label} spacing={1}>
-                        {capturedImages[label] && (
-                          <img 
-                            src={capturedImages[label]} 
-                            alt={`Captured ${label}`} 
-                            style={{ 
-                              width: '100%', 
-                              maxHeight: '200px', 
-                              objectFit: 'contain',
-                              borderRadius: '12px',
-                              border: `1px solid ${alpha('#6a1b9a', 0.3)}`
-                            }} 
-                          />
-                        )}
-                        <Stack direction="row" spacing={2}>
-                          <Button 
-                            fullWidth 
-                            size="small" 
-                            variant="outlined" 
-                            component="label"
-                            sx={{
-                              borderColor: alpha('#6a1b9a', 0.3),
-                              color: '#6a1b9a',
-                              '&:hover': {
-                                borderColor: '#6a1b9a',
-                                backgroundColor: alpha('#6a1b9a', 0.04)
-                              }
-                            }}
-                          >
-                            Upload {label}
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              hidden 
-                              onChange={(e) => handleFileUpload(e, label)}
+                    {sortedQuestions
+                      .find(q => q.QuestionText.includes('upload clear photos'))?.Options.map((option) => (
+                        <Stack key={option.OptionId} spacing={1}>
+                          {capturedImages[option.OptionText] && (
+                            <img 
+                              src={capturedImages[option.OptionText]} 
+                              alt={`Captured ${option.OptionText}`} 
+                              style={{ 
+                                width: '100%', 
+                                maxHeight: '200px', 
+                                objectFit: 'contain',
+                                borderRadius: '12px',
+                                border: `1px solid ${alpha('#6a1b9a', 0.3)}`
+                              }} 
                             />
-                          </Button>
-                          <Button 
-                            fullWidth 
-                            size="small" 
-                            variant="outlined" 
-                            onClick={() => handleStartCamera(label)}
-                            sx={{
-                              borderColor: alpha('#6a1b9a', 0.3),
-                              color: '#6a1b9a',
-                              '&:hover': {
-                                borderColor: '#6a1b9a',
-                                backgroundColor: alpha('#6a1b9a', 0.04)
-                              }
-                            }}
-                          >
-                            Capture {label}
-                          </Button>
+                          )}
+                          <Stack direction="row" spacing={2}>
+                            <Button 
+                              fullWidth 
+                              size="small" 
+                              variant="outlined" 
+                              component="label"
+                              sx={{
+                                borderColor: alpha('#6a1b9a', 0.3),
+                                color: '#6a1b9a',
+                                '&:hover': {
+                                  borderColor: '#6a1b9a',
+                                  backgroundColor: alpha('#6a1b9a', 0.04)
+                                }
+                              }}
+                            >
+                              Upload {option.OptionText}
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                hidden 
+                                onChange={(e) => handleFileUpload(e, option.OptionText)}
+                              />
+                            </Button>
+                            <Button 
+                              fullWidth 
+                              size="small" 
+                              variant="outlined" 
+                              onClick={() => handleStartCamera(option.OptionText)}
+                              sx={{
+                                borderColor: alpha('#6a1b9a', 0.3),
+                                color: '#6a1b9a',
+                                '&:hover': {
+                                  borderColor: '#6a1b9a',
+                                  backgroundColor: alpha('#6a1b9a', 0.04)
+                                }
+                              }}
+                            >
+                              Capture {option.OptionText}
+                            </Button>
+                          </Stack>
                         </Stack>
-                      </Stack>
-                    ))}
+                      ))}
                   </Stack>
                 )}
                 
-                <FormControlLabel
-                  control={<StyledCheckbox size="small" />}
-                  label={<Typography variant="body2" sx={{ color: '#555' }}>I consent to a customized skincare treatment plan</Typography>}
-                />
-                
-                <FormControlLabel
-                  control={<StyledCheckbox size="small" />}
-                  label={<Typography variant="body2" sx={{ color: '#555' }}>I agree to the privacy policy and terms of service</Typography>}
-                />
+                {sortedQuestions
+                  .filter(q => q.QuestionText.includes('consent') || q.QuestionText.includes('agree'))
+                  .map((question) => (
+                    <FormControlLabel
+                      key={question.QuestionText}
+                      control={
+                        <StyledCheckbox 
+                          size="small" 
+                          checked={formData.consents[question.QuestionId] || false}
+                          onChange={(e) => handleConsentChange(question.QuestionId, e.target.checked)}
+                        />
+                      }
+                      label={<Typography variant="body2" sx={{ color: '#555' }}>{question.QuestionText}</Typography>}
+                    />
+                  ))}
               </Stack>
             </StyledMainCard>
           )}
@@ -570,11 +787,29 @@ const PatientSurvey = () => {
                 Next Step
               </NavigationButton>
             ) : (
-              <ColorButton fullWidth size="medium">
-                Submit Your Information
+              <ColorButton 
+                fullWidth 
+                size="medium"
+                onClick={handleSubmitConfirmation}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <CircularProgress size={24} sx={{ color: 'white', mr: 1 }} />
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Your Information'
+                )}
               </ColorButton>
             )}
           </Stack>
+
+          {submitError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {submitError}
+            </Alert>
+          )}
 
           <StyledMainCard 
             title={
@@ -621,6 +856,41 @@ const PatientSurvey = () => {
           </StyledMainCard>
         </Stack>
       </Grid>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openConfirmation}
+        onClose={handleCloseConfirmation}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title" sx={{ color: '#6a1b9a' }}>
+          Confirm Submission
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Are you sure you want to submit your application? Please review all information before submitting as you won't be able to make changes after submission.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseConfirmation} sx={{ color: '#6a1b9a' }}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            autoFocus
+            sx={{ 
+              backgroundColor: '#6a1b9a',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: '#7b1fa2'
+              }
+            }}
+          >
+            Confirm Submission
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Grid>
   );
 };

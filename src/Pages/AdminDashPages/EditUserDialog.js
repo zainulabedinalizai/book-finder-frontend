@@ -23,12 +23,13 @@ const EditUserDialog = ({
   onClose, 
   userId, 
   onUserUpdated,
-  roles 
+  roles = [] // Ensure roles has a default value
 }) => {
   const [userData, setUserData] = useState({
     username: '',
     email: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
     dob: '',
     gender: '',
     mobile: '',
@@ -47,7 +48,8 @@ const EditUserDialog = ({
       setUserData({
         username: '',
         email: '',
-        fullName: '',
+        firstName: '',
+        lastName: '',
         dob: '',
         gender: '',
         mobile: '',
@@ -71,21 +73,23 @@ const EditUserDialog = ({
         
         const response = await userService.getUserList(userId);
         
-        if (response.data.success && response.data.data?.length > 0) {
+        // Check if response.data.data exists and is an array with at least one item
+        if (response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
           const user = response.data.data[0];
           setUserData({
             username: user.Username || '',
             email: user.Email || '',
-            fullName: `${user.FirstName || ''} ${user.LastName || ''}`.trim() || '',
-            dob: user.DOB || '',
-            gender: user.Gender || '',
-            mobile: user.Mobile || '',
-            address: user.Address || '',
-            roleId: user.RoleID || '',
+            firstName: user.FirstName || '',
+            lastName: user.LastName || '',
+            dob: user.DateOfBirth ? formatDateForInput(user.DateOfBirth) : '',
+            gender: user.Gender === 'M' ? 'Male' : user.Gender === 'F' ? 'Female' : 'Other',
+            mobile: user.Phone || '',
+            address: user.ResidentialAddress || '',
+            roleId: findRoleId(user.RoleName, roles),
             accountStatus: user.AccountStatus === 1 ? 'Active' : 'Inactive'
           });
         } else {
-          throw new Error('User data not found');
+          throw new Error('User data not found or invalid format');
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -96,7 +100,21 @@ const EditUserDialog = ({
     };
 
     fetchUserData();
-  }, [open, userId]);
+  }, [open, userId, roles]);
+
+  // Helper function to find role ID by name
+  const findRoleId = (roleName, roles) => {
+    if (!Array.isArray(roles)) return '';
+    const role = roles.find(r => r.name === roleName);
+    return role ? role.id : '';
+  };
+
+  // Helper function to format date for input field
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -119,7 +137,7 @@ const EditUserDialog = ({
     
     if (!userData.username.trim()) errors.username = 'Username is required';
     if (!userData.email.trim()) errors.email = 'Email is required';
-    if (!userData.fullName.trim()) errors.fullName = 'Full name is required';
+    if (!userData.firstName.trim()) errors.firstName = 'First name is required';
     if (!userData.dob) errors.dob = 'Date of birth is required';
     if (!userData.gender) errors.gender = 'Gender is required';
     if (!userData.mobile.trim()) errors.mobile = 'Mobile number is required';
@@ -145,9 +163,10 @@ const EditUserDialog = ({
         userId,
         username: userData.username.trim(),
         email: userData.email.trim(),
-        fullName: userData.fullName.trim(),
+        firstName: userData.firstName.trim(),
+        lastName: userData.lastName.trim(),
         dob: userData.dob,
-        gender: userData.gender,
+        gender: userData.gender === 'Male' ? 'M' : userData.gender === 'Female' ? 'F' : 'O',
         mobile: userData.mobile.trim(),
         address: userData.address.trim(),
         roleId: Number(userData.roleId),
@@ -171,7 +190,7 @@ const EditUserDialog = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>Edit User</DialogTitle>
       <DialogContent>
         {loading ? (
@@ -184,12 +203,6 @@ const EditUserDialog = ({
           </Alert>
         ) : (
           <Box sx={{ mt: 2 }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            
             <Grid container spacing={2}>
               <Grid item xs={12} sm={6}>
                 <TextField
@@ -215,15 +228,24 @@ const EditUserDialog = ({
                   helperText={formErrors.email}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Full Name"
-                  name="fullName"
-                  value={userData.fullName}
+                  label="First Name"
+                  name="firstName"
+                  value={userData.firstName}
                   onChange={handleInputChange}
-                  error={!!formErrors.fullName}
-                  helperText={formErrors.fullName}
+                  error={!!formErrors.firstName}
+                  helperText={formErrors.firstName}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Last Name"
+                  name="lastName"
+                  value={userData.lastName}
+                  onChange={handleInputChange}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -279,7 +301,7 @@ const EditUserDialog = ({
                     value={userData.roleId}
                     onChange={handleInputChange}
                   >
-                    {roles.map(role => (
+                    {Array.isArray(roles) && roles.map(role => (
                       <MenuItem key={role.id} value={role.id}>
                         {role.name}
                       </MenuItem>
@@ -330,9 +352,13 @@ const EditUserDialog = ({
           variant="contained" 
           color="primary"
           disabled={loading || submitting}
-          startIcon={submitting ? <CircularProgress size={20} /> : null}
         >
-          {submitting ? 'Saving...' : 'Save Changes'}
+          {submitting ? (
+            <>
+              <CircularProgress size={24} sx={{ mr: 1 }} />
+              Saving...
+            </>
+          ) : 'Save Changes'}
         </Button>
       </DialogActions>
     </Dialog>
