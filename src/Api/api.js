@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  // baseURL: 'https://localhost:7128/api'
-  baseURL:'https://210.56.11.158:441/api'
+  baseURL: 'https://localhost:7128/api'
+  // baseURL:'https://210.56.11.158:441/api'
 });
 
 // Request interceptor to add auth token if available
@@ -55,29 +55,10 @@ export const userAPI = {
   },
 
   getDecryptedPassword: (encryptedPassword) => {
-  const formData = new URLSearchParams();
-  formData.append('Password', encryptedPassword);
-
-  return API.post('/GetUserPassword', formData.toString(), {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  });
-},
-
-
-  updateUserProfile: (userData) => {
     const formData = new URLSearchParams();
-    formData.append('UserID', userData.userId);
-    formData.append('Email', userData.email);
-    formData.append('FullName', userData.fullName);
-    formData.append('DOB', userData.dob);
-    formData.append('Gender', userData.gender);
-    formData.append('Mobile', userData.mobile);
-    formData.append('ImagePath', userData.profilePath || '');
-    formData.append('PostalAddress', userData.address || '');
+    formData.append('Password', encryptedPassword);
 
-    return API.post('/UpdateUserProfile', formData.toString(), {
+    return API.post('/GetUserPassword', formData.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
@@ -106,6 +87,26 @@ export const userAPI = {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
+  },
+
+  updateUserProfile: (profileData) => {
+    const formData = new FormData();
+    formData.append('UserID', profileData.UserID);
+    formData.append('Email', profileData.Email);
+    formData.append('FullName', profileData.FullName);
+    formData.append('DOB', profileData.DOB);
+    formData.append('Gender', profileData.Gender);
+    formData.append('Mobile', profileData.Mobile);
+    formData.append('PostalAddress', profileData.PostalAddress);
+    if (profileData.ImagePath) {
+      formData.append('ImagePath', profileData.ImagePath);
+    }
+    
+    return API.post('/UpdateUserProfile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 };
 
@@ -121,13 +122,12 @@ export const questionAPI = {
   },
 
   savePatientApplication: (submissionData) => {
-  return API.post('/SavePatientApplication', submissionData, {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
-}
-
+    return API.post('/SavePatientApplication', submissionData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
 };
 
 export const roleAPI = {

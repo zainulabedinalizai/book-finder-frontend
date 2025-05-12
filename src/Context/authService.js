@@ -1,4 +1,3 @@
-// authService.js
 import { authAPI, userAPI } from "../Api/api";
 
 export const authService = {
@@ -67,42 +66,41 @@ export const authService = {
     }
   },
 
-// authService.js
-login: async (credentials) => {
-  try {
-    const response = await authAPI.login(credentials.username, credentials.password);
-    console.log('Login response:', response.data); // Debugging
-    
-    if (response.data.success) {  // Changed from Success to success
-      const userData = response.data.data && response.data.data.length > 0 
-        ? response.data.data[0] 
-        : null;
+  login: async (credentials) => {
+    try {
+      const response = await authAPI.login(credentials.username, credentials.password);
+      console.log('Login response:', response.data); // Debugging
       
-      // Create a token if not provided by backend
-      const token = userData?.Token || 'default-token-from-backend';
-      
-      return {
-        success: true,
-        data: userData,
-        token: token,
-        message: "Login successful"
-      };
-    } else {
+      if (response.data.success) {  // Changed from Success to success
+        const userData = response.data.data && response.data.data.length > 0 
+          ? response.data.data[0] 
+          : null;
+        
+        // Create a token if not provided by backend
+        const token = userData?.Token || 'default-token-from-backend';
+        
+        return {
+          success: true,
+          data: userData,
+          token: token,
+          message: "Login successful"
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data.message || "Invalid credentials"  // Changed from Message to message
+        };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
-        message: response.data.message || "Invalid credentials"  // Changed from Message to message
+        message: error.response?.data?.message ||  // Changed from Message to message
+               error.message || 
+               "Invalid credentials"
       };
     }
-  } catch (error) {
-    console.error('Login error:', error);
-    return {
-      success: false,
-      message: error.response?.data?.message ||  // Changed from Message to message
-             error.message || 
-             "Invalid credentials"
-    };
-  }
-},
+  },
 
   logout: () => {
     localStorage.removeItem('token');
@@ -112,26 +110,7 @@ login: async (credentials) => {
 
   isAuthenticated: () => {
     return !!localStorage.getItem('token');
-  } ,
-
-  updateUserProfile: (userData) => {
-  const formData = new URLSearchParams();
-  formData.append('UserID', userData.userId);
-  formData.append('Email', userData.email);
-  formData.append('FullName', userData.fullName);
-  formData.append('DOB', userData.dob);
-  formData.append('Gender', userData.gender);
-  formData.append('Mobile', userData.mobile);
-  formData.append('ImagePath', userData.profilePath || '');
-  formData.append('PostalAddress', userData.address || '');
-
-  return userAPI.post('/UpdateUserProfile', formData.toString(), {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
-  });
-}
-
+  } 
 };
 
 export const userService = {
@@ -163,6 +142,22 @@ export const userService = {
       return {
         success: false,
         message: error.response?.data?.message || "Failed to delete user"
+      };
+    }
+  },
+
+  updateUserProfile: async (profileData) => {
+    try {
+      const response = await userAPI.updateUserProfile(profileData);
+      return {
+        success: true,
+        data: response.data,
+        message: "Profile updated successfully"
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to update profile"
       };
     }
   }

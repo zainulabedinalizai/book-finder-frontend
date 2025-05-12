@@ -26,37 +26,35 @@ const EditUserDialog = ({
   roles = [] // Ensure roles has a default value
 }) => {
   const [userData, setUserData] = useState({
-    username: '',
-    email: '',
-    firstName: '',
-    lastName: '',
-    dob: '',
-    gender: '',
-    mobile: '',
-    address: '',
-    roleId: '',
-    accountStatus: ''
+    UserID: '',
+    Email: '',
+    FullName: '',
+    DOB: '',
+    Gender: '',
+    Mobile: '',
+    PostalAddress: '',
+    ImagePath: null
   });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [formErrors, setFormErrors] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setUserData({
-        username: '',
-        email: '',
-        firstName: '',
-        lastName: '',
-        dob: '',
-        gender: '',
-        mobile: '',
-        address: '',
-        roleId: '',
-        accountStatus: ''
+        UserID: '',
+        Email: '',
+        FullName: '',
+        DOB: '',
+        Gender: '',
+        Mobile: '',
+        PostalAddress: '',
+        ImagePath: null
       });
+      setPreviewImage(null);
       setError(null);
       setFormErrors({});
     }
@@ -77,17 +75,19 @@ const EditUserDialog = ({
         if (response.data.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
           const user = response.data.data[0];
           setUserData({
-            username: user.Username || '',
-            email: user.Email || '',
-            firstName: user.FirstName || '',
-            lastName: user.LastName || '',
-            dob: user.DateOfBirth ? formatDateForInput(user.DateOfBirth) : '',
-            gender: user.Gender === 'M' ? 'Male' : user.Gender === 'F' ? 'Female' : 'Other',
-            mobile: user.Phone || '',
-            address: user.ResidentialAddress || '',
-            roleId: findRoleId(user.RoleName, roles),
-            accountStatus: user.AccountStatus === 1 ? 'Active' : 'Inactive'
+            UserID: user.UserID || userId,
+            Email: user.Email || '',
+            FullName: user.FullName || `${user.FirstName || ''} ${user.LastName || ''}`.trim(),
+            DOB: user.DateOfBirth ? formatDateForInput(user.DateOfBirth) : '',
+            Gender: user.Gender === 'M' ? 'Male' : user.Gender === 'F' ? 'Female' : 'Other',
+            Mobile: user.Phone || user.Mobile || '',
+            PostalAddress: user.ResidentialAddress || user.PostalAddress || '',
+            ImagePath: user.ProfilePath || null
           });
+
+          if (user.ProfilePath) {
+            setPreviewImage(user.ProfilePath);
+          }
         } else {
           throw new Error('User data not found or invalid format');
         }
@@ -101,13 +101,6 @@ const EditUserDialog = ({
 
     fetchUserData();
   }, [open, userId, roles]);
-
-  // Helper function to find role ID by name
-  const findRoleId = (roleName, roles) => {
-    if (!Array.isArray(roles)) return '';
-    const role = roles.find(r => r.name === roleName);
-    return role ? role.id : '';
-  };
 
   // Helper function to format date for input field
   const formatDateForInput = (dateString) => {
@@ -132,20 +125,33 @@ const EditUserDialog = ({
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewImage(previewUrl);
+      
+      // Update user data with the file
+      setUserData(prev => ({
+        ...prev,
+        ImagePath: file
+      }));
+    }
+  };
+
   const validateForm = () => {
     const errors = {};
     
-    if (!userData.username.trim()) errors.username = 'Username is required';
-    if (!userData.email.trim()) errors.email = 'Email is required';
-    if (!userData.firstName.trim()) errors.firstName = 'First name is required';
-    if (!userData.dob) errors.dob = 'Date of birth is required';
-    if (!userData.gender) errors.gender = 'Gender is required';
-    if (!userData.mobile.trim()) errors.mobile = 'Mobile number is required';
-    if (!userData.roleId) errors.roleId = 'Role is required';
+    if (!userData.Email.trim()) errors.Email = 'Email is required';
+    if (!userData.FullName.trim()) errors.FullName = 'Full name is required';
+    if (!userData.DOB) errors.DOB = 'Date of birth is required';
+    if (!userData.Gender) errors.Gender = 'Gender is required';
+    if (!userData.Mobile.trim()) errors.Mobile = 'Mobile number is required';
     
     // Email validation
-    if (userData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
-      errors.email = 'Please enter a valid email address';
+    if (userData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.Email)) {
+      errors.Email = 'Please enter a valid email address';
     }
     
     setFormErrors(errors);
@@ -159,31 +165,29 @@ const EditUserDialog = ({
       setSubmitting(true);
       setError(null);
       
-      const userToUpdate = {
-        userId,
-        username: userData.username.trim(),
-        email: userData.email.trim(),
-        firstName: userData.firstName.trim(),
-        lastName: userData.lastName.trim(),
-        dob: userData.dob,
-        gender: userData.gender === 'Male' ? 'M' : userData.gender === 'Female' ? 'F' : 'O',
-        mobile: userData.mobile.trim(),
-        address: userData.address.trim(),
-        roleId: Number(userData.roleId),
-        accountStatus: userData.accountStatus === 'Active' ? 1 : 0
+      // Prepare the profile data
+      const profileData = {
+        UserID: userId,
+        Email: userData.Email.trim(),
+        FullName: userData.FullName.trim(),
+        DOB: userData.DOB,
+        Gender: userData.Gender === 'Male' ? 'M' : userData.Gender === 'Female' ? 'F' : 'O',
+        Mobile: userData.Mobile.trim(),
+        PostalAddress: userData.PostalAddress.trim(),
+        ImagePath: userData.ImagePath
       };
       
-      const response = await userService.updateUser(userToUpdate);
+      const response = await userService.updateUserProfile(profileData);
       
       if (response.data.success) {
         onUserUpdated();
         onClose();
       } else {
-        throw new Error(response.data.message || "Failed to update user");
+        throw new Error(response.data.message || "Failed to update profile");
       }
     } catch (err) {
-      console.error('Error updating user:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to update user. Please try again.');
+      console.error('Error updating profile:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to update profile. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -191,7 +195,7 @@ const EditUserDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Edit User</DialogTitle>
+      <DialogTitle>Edit User Profile</DialogTitle>
       <DialogContent>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
@@ -204,79 +208,102 @@ const EditUserDialog = ({
         ) : (
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Username"
-                  name="username"
-                  value={userData.username}
-                  onChange={handleInputChange}
-                  error={!!formErrors.username}
-                  helperText={formErrors.username}
-                  disabled
-                />
+              {/* Profile Image Upload */}
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {previewImage ? (
+                    <Box
+                      component="img"
+                      src={previewImage}
+                      alt="Profile preview"
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        mb: 2
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: '50%',
+                        backgroundColor: 'grey.300',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mb: 2
+                      }}
+                    >
+                      <Typography variant="body2">No Image</Typography>
+                    </Box>
+                  )}
+                  <Button variant="contained" component="label">
+                    Upload Photo
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </Button>
+                </Box>
               </Grid>
+
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Email"
-                  name="email"
+                  name="Email"
                   type="email"
-                  value={userData.email}
+                  value={userData.Email}
                   onChange={handleInputChange}
-                  error={!!formErrors.email}
-                  helperText={formErrors.email}
+                  error={!!formErrors.Email}
+                  helperText={formErrors.Email}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="First Name"
-                  name="firstName"
-                  value={userData.firstName}
+                  label="Full Name"
+                  name="FullName"
+                  value={userData.FullName}
                   onChange={handleInputChange}
-                  error={!!formErrors.firstName}
-                  helperText={formErrors.firstName}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Last Name"
-                  name="lastName"
-                  value={userData.lastName}
-                  onChange={handleInputChange}
+                  error={!!formErrors.FullName}
+                  helperText={formErrors.FullName}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   label="Date of Birth"
-                  name="dob"
+                  name="DOB"
                   type="date"
                   InputLabelProps={{ shrink: true }}
-                  value={userData.dob}
+                  value={userData.DOB}
                   onChange={handleInputChange}
-                  error={!!formErrors.dob}
-                  helperText={formErrors.dob}
+                  error={!!formErrors.DOB}
+                  helperText={formErrors.DOB}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <FormControl fullWidth error={!!formErrors.gender}>
+                <FormControl fullWidth error={!!formErrors.Gender}>
                   <InputLabel>Gender</InputLabel>
                   <Select
                     label="Gender"
-                    name="gender"
-                    value={userData.gender}
+                    name="Gender"
+                    value={userData.Gender}
                     onChange={handleInputChange}
                   >
                     <MenuItem value="Male">Male</MenuItem>
                     <MenuItem value="Female">Female</MenuItem>
                     <MenuItem value="Other">Other</MenuItem>
                   </Select>
-                  {formErrors.gender && (
+                  {formErrors.Gender && (
                     <Typography variant="caption" color="error">
-                      {formErrors.gender}
+                      {formErrors.Gender}
                     </Typography>
                   )}
                 </FormControl>
@@ -285,57 +312,21 @@ const EditUserDialog = ({
                 <TextField
                   fullWidth
                   label="Mobile Number"
-                  name="mobile"
-                  value={userData.mobile}
+                  name="Mobile"
+                  value={userData.Mobile}
                   onChange={handleInputChange}
-                  error={!!formErrors.mobile}
-                  helperText={formErrors.mobile}
+                  error={!!formErrors.Mobile}
+                  helperText={formErrors.Mobile}
                 />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth error={!!formErrors.roleId}>
-                  <InputLabel>Role</InputLabel>
-                  <Select
-                    label="Role"
-                    name="roleId"
-                    value={userData.roleId}
-                    onChange={handleInputChange}
-                  >
-                    {Array.isArray(roles) && roles.map(role => (
-                      <MenuItem key={role.id} value={role.id}>
-                        {role.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {formErrors.roleId && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.roleId}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Account Status</InputLabel>
-                  <Select
-                    label="Account Status"
-                    name="accountStatus"
-                    value={userData.accountStatus}
-                    onChange={handleInputChange}
-                  >
-                    <MenuItem value="Active">Active</MenuItem>
-                    <MenuItem value="Inactive">Inactive</MenuItem>
-                  </Select>
-                </FormControl>
               </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Address"
-                  name="address"
+                  label="Postal Address"
+                  name="PostalAddress"
                   multiline
                   rows={3}
-                  value={userData.address}
+                  value={userData.PostalAddress}
                   onChange={handleInputChange}
                 />
               </Grid>
