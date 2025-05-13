@@ -23,13 +23,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  RadioGroup,
+  Radio,
+  FormLabel
 } from '@mui/material';
 import { Edit, Save, Cancel } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import MainCard from '../Components/MainCard';
-import { questionAPI } from '../Api/api';
+import { questionAPI, patientAPI } from '../Api/api';
+import { useAuth } from '../Context/AuthContext';
 
 // ==============================|| STYLED COMPONENTS ||============================== //
 
@@ -89,6 +93,7 @@ const NavigationButton = styled(Button)(({ theme }) => ({
 // ==============================|| PATIENT ONBOARDING JOURNEY ||============================== //
 
 const PatientSurvey = () => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [capturedImages, setCapturedImages] = useState({
     'Front View': null,
@@ -105,6 +110,7 @@ const PatientSurvey = () => {
   const videoRef = useRef(null);
   const [showCamera, setShowCamera] = useState(false);
   const [currentCaptureLabel, setCurrentCaptureLabel] = useState('');
+  const [specifyTexts, setSpecifyTexts] = useState({});
   const totalSteps = 5;
 
   // Form state
@@ -311,6 +317,13 @@ const PatientSurvey = () => {
     }));
   };
 
+  const handleSpecifyTextChange = (questionId, text) => {
+    setSpecifyTexts(prev => ({
+      ...prev,
+      [questionId]: text
+    }));
+  };
+
   const handleSubmitConfirmation = () => {
     setOpenConfirmation(true);
   };
@@ -326,20 +339,62 @@ const PatientSurvey = () => {
     setSubmitSuccess(false);
     
     try {
-      // Prepare submission data
+      // Verify user is authenticated
+      const userId = user?.UserId || parseInt(localStorage.getItem('userId'));
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Prepare submission data in the required format
+      const responses = [];
+      
+      // Process all answered questions
+      Object.entries(formData.answers).forEach(([questionId, answer]) => {
+        const question = questions.find(q => q.QuestionId === parseInt(questionId));
+        
+        if (question) {
+          // For multiple choice questions (checkboxes)
+          if (Array.isArray(answer)) {
+            if (answer.length > 0) {
+              responses.push({
+                QuestionId: parseInt(questionId),
+                OptionId: answer.join(','), // Join multiple options with commas
+                TextResponse: specifyTexts[questionId] || null,
+                FrontSide: capturedImages['Front View'] || null,
+                LeftSide: capturedImages['Side View (Left)'] || null,
+                RightSide: capturedImages['Side View (Right)'] || null,
+                ApplicationID: 0 // Will be set by the server
+              });
+            }
+          } 
+          // For single choice questions (radio buttons)
+          else if (answer) {
+            responses.push({
+              QuestionId: parseInt(questionId),
+              OptionId: answer.toString(),
+              TextResponse: specifyTexts[questionId] || null,
+              FrontSide: capturedImages['Front View'] || null,
+              LeftSide: capturedImages['Side View (Left)'] || null,
+              RightSide: capturedImages['Side View (Right)'] || null,
+              ApplicationID: 0 // Will be set by the server
+            });
+          }
+        }
+      });
+
+      // Prepare the final submission payload
       const submissionData = {
-        personalInfo: formData.personalInfo,
-        answers: formData.answers,
-        consents: formData.consents,
-        images: capturedImages
+        UserId: userId,
+        Responses: responses
       };
 
-      const response = await questionAPI.savePatientApplication(submissionData);
+      // Call the patient service to save the application
+      const response = await patientAPI.savePatientApplication(submissionData);
       
-      if (response.data?.success) {
+      if (response.data.success) {
         setSubmitSuccess(true);
       } else {
-        throw new Error(response.data?.message || 'Failed to submit application');
+        throw new Error(response.data.message || 'Failed to submit application');
       }
     } catch (err) {
       console.error('Error submitting application:', err);
@@ -420,21 +475,42 @@ const PatientSurvey = () => {
         );
       case 'single_choice':
         return (
-          <StyledTextField
-            fullWidth
-            size="small"
-            select
-            label={question.QuestionText}
-            variant="outlined"
-            value={formData.answers[question.QuestionId] || ''}
-            onChange={(e) => handleAnswerChange(question.QuestionId, e.target.value)}
-          >
-            {question.Options.map((option) => (
-              <MenuItem key={option.OptionId} value={option.OptionId}>
-                {option.OptionText}
-              </MenuItem>
-            ))}
-          </StyledTextField>
+          <FormControl component="fieldset">
+            <RadioGroup
+              aria-label={question.QuestionText}
+              name={`radio-group-${question.QuestionId}`}
+              value={formData.answers[question.QuestionId] || ''}
+              onChange={(e) => {
+                handleAnswerChange(question.QuestionId, e.target.value);
+                // Clear specify text if switching from "Yes" to another option
+                if (e.target.value !== 'yes' && specifyTexts[question.QuestionId]) {
+                  handleSpecifyTextChange(question.QuestionId, '');
+                }
+              }}
+            >
+              {question.Options.map((option) => (
+                <Box key={option.OptionId} sx={{ mb: 1 }}>
+                  <FormControlLabel
+                    value={option.OptionId}
+                    control={<Radio size="small" />}
+                    label={<Typography variant="body2" sx={{ color: '#555' }}>{option.OptionText}</Typography>}
+                  />
+                  {option.OptionText.toLowerCase().includes('yes') && 
+                   formData.answers[question.QuestionId] === option.OptionId && (
+                    <StyledTextField
+                      fullWidth
+                      size="small"
+                      label="Please specify"
+                      variant="outlined"
+                      value={specifyTexts[question.QuestionId] || ''}
+                      onChange={(e) => handleSpecifyTextChange(question.QuestionId, e.target.value)}
+                      sx={{ mt: 1, ml: 4 }}
+                    />
+                  )}
+                </Box>
+              ))}
+            </RadioGroup>
+          </FormControl>
         );
       default:
         return null;
@@ -490,20 +566,21 @@ const PatientSurvey = () => {
                   value={formData.personalInfo.dob}
                   onChange={(e) => handlePersonalInfoChange('dob', e.target.value)}
                 />
-                <StyledTextField
-                  fullWidth
-                  size="small"
-                  select
-                  label="Gender"
-                  variant="outlined"
-                  value={formData.personalInfo.gender}
-                  onChange={(e) => handlePersonalInfoChange('gender', e.target.value)}
-                >
-                  <MenuItem value="female">Female</MenuItem>
-                  <MenuItem value="male">Male</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
-                  <MenuItem value="prefer-not-to-say">Prefer not to say</MenuItem>
-                </StyledTextField>
+                <FormControl component="fieldset">
+                  <FormLabel component="legend" sx={{ color: '#6a1b9a', mb: 1 }}>Gender</FormLabel>
+                  <RadioGroup
+                    row
+                    aria-label="gender"
+                    name="gender"
+                    value={formData.personalInfo.gender}
+                    onChange={(e) => handlePersonalInfoChange('gender', e.target.value)}
+                  >
+                    <FormControlLabel value="female" control={<Radio size="small" />} label="Female" />
+                    <FormControlLabel value="male" control={<Radio size="small" />} label="Male" />
+                    <FormControlLabel value="other" control={<Radio size="small" />} label="Other" />
+                    <FormControlLabel value="prefer-not-to-say" control={<Radio size="small" />} label="Prefer not to say" />
+                  </RadioGroup>
+                </FormControl>
                 <StyledTextField 
                   fullWidth 
                   size="small" 

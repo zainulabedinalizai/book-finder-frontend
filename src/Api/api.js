@@ -121,6 +121,9 @@ export const questionAPI = {
     });
   },
 
+};
+
+export const patientAPI = {
   savePatientApplication: (submissionData) => {
     return API.post('/SavePatientApplication', submissionData, {
       headers: {

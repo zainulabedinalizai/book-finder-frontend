@@ -26,7 +26,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/search" element={<BookSearch />} />
-              <Route path="/favorites" element={<PatientSurvey />} />
+              <Route path="/PatientSurvey" element={<PatientSurvey />} />
               <Route path="/" element={<Navigate to="/dashboard" />} />
               <Route path="/books/:id" element={<BookDetails />} />
               <Route path="/add-favorite" element={<AddFavoriteForm />} />

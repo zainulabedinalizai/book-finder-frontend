@@ -1,4 +1,4 @@
-import { authAPI, userAPI } from "../Api/api";
+import { authAPI, userAPI, patientAPI, questionAPI } from "../Api/api";
 
 export const authService = {
   register: async (userData) => {
@@ -158,6 +158,46 @@ export const userService = {
       return {
         success: false,
         message: error.response?.data?.message || "Failed to update profile"
+      };
+    }
+  }
+};
+
+export const patientService = {
+  savePatientApplication: async (submissionData) => {
+    try {
+      const response = await patientAPI.savePatientApplication(submissionData);
+      return {
+        success: response.data?.Success || false,
+        data: response.data,
+        message: response.data?.Message || "Application saved successfully",
+        count: response.data?.Count || 0
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.Message || 
+               error.response?.data?.message || 
+               error.message || 
+               "Failed to save application"
+      };
+    }
+  }
+};
+
+export const questionService = {
+  getQuestionAndOptionList: async () => {
+    try {
+      const response = await questionAPI.getQuestionAndOptionList();
+      return {
+        success: true,
+        data: response.data,
+        message: "Questions fetched successfully"
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Failed to fetch questions"
       };
     }
   }
