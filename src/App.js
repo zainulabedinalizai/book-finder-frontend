@@ -14,6 +14,12 @@ import PersonalProfile from './Pages/AdminDashPages/PersonalProfile';
 import ChangePassword from './Pages/AdminDashPages/ChangePassword';
 import UserRoles from './Pages/AdminDashPages/UserRoles';
 import UserLogin from './Pages/AdminDashPages/UserLogin';
+import MyRequests from './Pages/PatientPages/MyRequests';
+import PersonalProfileDoc from './Pages/DoctorPages/PersonalProfileDoc';
+import PersonalProfilePatient from './Pages/PatientPages/PersonalProfilePatient';
+import PersonalProfilePharma from './Pages/PharmacitsPages/PersonalProfilePharma';
+import PersonalProfileSaTeam from './Pages/SalesTeamPages/PersonalProfileSaTeam';
+
 
 const App = () => {
   return (
@@ -30,14 +36,39 @@ const App = () => {
               <Route path="/" element={<Navigate to="/dashboard" />} />
               <Route path="/books/:id" element={<BookDetails />} />
               <Route path="/add-favorite" element={<AddFavoriteForm />} />
-              {/* Add this new route */}
+              
+              {/* Admin Routes */}
               <Route path="/AddUser" element={<AddUser />} />      
-                      <Route path="/PersonalProfile" element={<PersonalProfile />} />
-                      <Route path="/ChangePassword" element={<ChangePassword />} />
-                      <Route path="/UserRoles" element={<UserRoles />} />
-                      <Route path="/UserLogin" element={<UserLogin />} />
-
-
+              <Route path="/PersonalProfile" element={<PersonalProfile />} />
+              <Route path="/ChangePassword" element={<ChangePassword />} />
+              <Route path="/UserRoles" element={<UserRoles />} />
+              <Route path="/UserLogin" element={<UserLogin />} />
+              
+              {/* Patient Routes */}
+              <Route path="/PersonalProfilePatient" element={<PersonalProfilePatient />} />
+              <Route path="/MyRequests" element={<MyRequests />} />
+              {/* <Route path="/patient/status" element={<PatientStatus />} />
+              <Route path="/patient/invoice-notifications" element={<PatientInvoiceNotifications />} />
+              <Route path="/patient/download-invoice" element={<PatientDownloadInvoice />} />
+              <Route path="/patient/email-notifications" element={<PatientEmailNotifications />} /> */}
+              
+              {/* Doctor Routes */}
+              <Route path="/PersonalProfileDoc" element={<PersonalProfileDoc />} />
+              {/* <Route path="/doctor/applications" element={<DoctorApplications />} />
+              <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
+              <Route path="/doctor/send-pharmacy" element={<DoctorSendPharmacy />} /> */}
+              
+              {/* Pharmacist Routes */}
+              <Route path="/PersonalProfilePharma" element={<PersonalProfilePharma />} />
+              {/* <Route path="/pharmacist/applications" element={<PharmacistApplications />} />
+              <Route path="/pharmacist/add-invoice" element={<PharmacistAddInvoice />} />
+              <Route path="/pharmacist/send-sales" element={<PharmacistSendSales />} /> */}
+              
+              {/* Sales Team Routes */}
+              <Route path="/PersonalProfileSaTeam" element={<PersonalProfileSaTeam />} />
+              {/* <Route path="/sales/applications" element={<SalesApplications />} />
+              <Route path="/sales/attach-invoice" element={<SalesAttachInvoice />} />
+              <Route path="/sales/send-invoice" element={<SalesSendInvoice />} /> */}
             </Routes>
           </Layout>
         </BookProvider>

@@ -110,6 +110,43 @@ export const userAPI = {
   }
 };
 
+export const userService = {
+  updateUserProfile: async (profileData) => {
+    try {
+      const formData = new FormData();
+      formData.append('UserID', profileData.UserID);
+      formData.append('Email', profileData.Email);
+      formData.append('FullName', profileData.FullName);
+      formData.append('DOB', profileData.DOB);
+      formData.append('Gender', profileData.Gender);
+      formData.append('Mobile', profileData.Mobile);
+      formData.append('PostalAddress', profileData.PostalAddress);
+      
+      if (profileData.ImagePath instanceof File) {
+        formData.append('ImagePath', profileData.ImagePath);
+      } else if (profileData.ImagePath) {
+        formData.append('ImagePath', profileData.ImagePath);
+      }
+
+      const response = await userAPI.updateUserProfile(formData);
+      
+      return {
+        success: response.data?.success || false,
+        data: response.data,
+        message: response.data?.message || "Profile updated successfully"
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 
+               error.message || 
+               "Failed to update profile"
+      };
+    }
+  },
+
+};
+
 export const questionAPI = {
   getQuestionAndOptionList: () => {
     const formData = new URLSearchParams();

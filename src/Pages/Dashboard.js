@@ -42,7 +42,7 @@ const Dashboard = () => {
         }}>
           <Button 
             variant="contained" 
-            onClick={() => navigate('/favorites')}
+            onClick={() => navigate('/PatientSurvey')}
             sx={{ mt: 2 }}
           >
             Patient Form

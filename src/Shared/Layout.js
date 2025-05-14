@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { 
   AppBar, 
@@ -24,8 +24,6 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
 import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
-import FavoriteIcon from '@mui/icons-material/Favorite';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import LoginIcon from '@mui/icons-material/Login';
@@ -125,6 +123,7 @@ const Layout = ({ children }) => {
     }));
   };
 
+  // Define all menu items
   const adminMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfile' },
     { text: 'Add User', icon: <PeopleIcon />, path: '/AddUser' }, 
@@ -134,8 +133,8 @@ const Layout = ({ children }) => {
   ];
 
   const patientMenuItems = [
-    { text: 'Personal Profile', icon: <PersonIcon />, path: '/patient/profile' },
-    { text: 'My Request', icon: <DescriptionIcon />, path: '/patient/requests' },
+    { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePatient' },
+    { text: 'My Request', icon: <DescriptionIcon />, path: '/MyRequests' },
     { text: 'Application Status', icon: <DescriptionIcon />, path: '/patient/status' },
     { text: 'Invoice Notification', icon: <NotificationsIcon />, path: '/patient/invoice-notifications' },
     { text: 'Download Invoice', icon: <DownloadIcon />, path: '/patient/download-invoice' },
@@ -143,25 +142,125 @@ const Layout = ({ children }) => {
   ];
 
   const doctorMenuItems = [
-    { text: 'Personal Profile', icon: <PersonIcon />, path: '/doctor/profile' },
+    { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileDoc' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/doctor/applications' },
     { text: 'Prescription List', icon: <MedicalServicesIcon />, path: '/doctor/prescriptions' },
     { text: 'Send to Pharmacy', icon: <LocalPharmacyIcon />, path: '/doctor/send-pharmacy' }
   ];
 
   const pharmacistMenuItems = [
-    { text: 'Personal Profile', icon: <PersonIcon />, path: '/pharmacist/profile' },
+    { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePharma' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/pharmacist/applications' },
     { text: 'Add Invoice', icon: <DescriptionIcon />, path: '/pharmacist/add-invoice' },
     { text: 'Send to Sales', icon: <PointOfSaleIcon />, path: '/pharmacist/send-sales' }
   ];
 
   const salesMenuItems = [
-    { text: 'Personal Profile', icon: <PersonIcon />, path: '/sales/profile' },
+    { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileSaTeam' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/sales/applications' },
     { text: 'Attach Final Invoice', icon: <DescriptionIcon />, path: '/sales/attach-invoice' },
     { text: 'Send Invoice to Patient', icon: <EmailIcon />, path: '/sales/send-invoice' }
   ];
+
+  // Function to determine which menus to show based on role
+  const getMenuSectionsForRole = () => {
+    if (!user || !user.RoleId) return [];
+    
+    const roleId = user.RoleId;
+    
+    const sections = [];
+    
+    // Always show Dashboard
+    sections.push({
+      key: 'dashboard',
+      title: 'Dashboard',
+      icon: <DashboardIcon />,
+      items: [{ text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' }]
+    });
+
+    // Role-specific sections
+    switch(roleId) {
+      case 1: // User
+        sections.push({
+          key: 'patient',
+          title: "Patient's Dashboard",
+          icon: <PersonIcon />,
+          items: patientMenuItems
+        });
+        break;
+        
+      case 2: // Admin
+        sections.push({
+          key: 'admin',
+          title: 'Admin Dashboard',
+          icon: <DashboardIcon />,
+          items: adminMenuItems
+        });
+        sections.push({
+          key: 'patient',
+          title: "Patient's Dashboard",
+          icon: <PersonIcon />,
+          items: patientMenuItems
+        });
+        sections.push({
+          key: 'doctor',
+          title: "Doctor's Dashboard",
+          icon: <MedicalServicesIcon />,
+          items: doctorMenuItems
+        });
+        sections.push({
+          key: 'pharmacist',
+          title: "Pharmacist's Dashboard",
+          icon: <LocalPharmacyIcon />,
+          items: pharmacistMenuItems
+        });
+        sections.push({
+          key: 'sales',
+          title: "Sales Team Dashboard",
+          icon: <PointOfSaleIcon />,
+          items: salesMenuItems
+        });
+        break;
+        
+      case 19: // Physician
+        sections.push({
+          key: 'doctor',
+          title: "Doctor's Dashboard",
+          icon: <MedicalServicesIcon />,
+          items: doctorMenuItems
+        });
+        break;
+        
+      case 23: // Billing Specialist
+        sections.push({
+          key: 'sales',
+          title: "Sales Team Dashboard",
+          icon: <PointOfSaleIcon />,
+          items: salesMenuItems
+        });
+        break;
+        
+      case 24: // Pharmacist
+        sections.push({
+          key: 'pharmacist',
+          title: "Pharmacist's Dashboard",
+          icon: <LocalPharmacyIcon />,
+          items: pharmacistMenuItems
+        });
+        break;
+        
+      default:
+        // Default to patient menu if role not matched
+        sections.push({
+          key: 'patient',
+          title: "Patient's Dashboard",
+          icon: <PersonIcon />,
+          items: patientMenuItems
+        });
+    }
+    
+    return sections;
+  };
 
   const renderMenuItems = (items, level = 0) => {
     return items.map((item, index) => (
@@ -186,21 +285,21 @@ const Layout = ({ children }) => {
     ));
   };
 
-  const renderMenuSection = (title, items, icon, menuKey) => {
-    const isOpen = openMenus[menuKey];
+  const renderMenuSection = (section) => {
+    const isOpen = openMenus[section.key];
     
     return (
       <>
-        <ListItemButton onClick={() => toggleMenu(menuKey)}>
+        <ListItemButton onClick={() => toggleMenu(section.key)}>
           <ListItemIcon sx={{ minWidth: '40px' }}>
-            {icon}
+            {section.icon}
           </ListItemIcon>
-          <ListItemText primary={title} />
+          <ListItemText primary={section.title} />
           {isOpen ? <ExpandLess /> : <ExpandMore />}
         </ListItemButton>
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            {renderMenuItems(items, 1)}
+            {renderMenuItems(section.items, 1)}
           </List>
         </Collapse>
       </>
@@ -230,14 +329,17 @@ const Layout = ({ children }) => {
           gap: 2
         }}>
           <Avatar sx={{ width: 48, height: 48 }}>
-            {user?.name?.charAt(0).toUpperCase()}
+            {user?.FullName?.charAt(0).toUpperCase() || 'U'}
           </Avatar>
           <Box sx={{ overflow: 'hidden' }}>
             <Typography variant="subtitle1" noWrap>
-              {user?.name || 'Admin'}
+              {user?.FullName || 'User'}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
-              {user?.email || 'admin@example.com'}
+              {user?.Email || 'user@example.com'}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {user?.RoleName || 'Role'}
             </Typography>
           </Box>
         </Box>
@@ -280,40 +382,33 @@ const Layout = ({ children }) => {
       }}>
         {isAuthenticated ? (
           <>
-            <Tooltip title="Dashboard" placement="right" arrow>
-              <ListItem disablePadding>
-                <ListItemButton 
-                  component={Link} 
-                  to="/dashboard"
-                  selected={location.pathname === '/dashboard'}
-                >
-                  <ListItemIcon>
-                    <DashboardIcon />
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary="Dashboard" 
-                    primaryTypographyProps={{ 
-                      fontWeight: location.pathname === '/dashboard' ? '600' : 'normal' 
-                    }} 
-                  />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-            
-            {/* Admin Dashboard Section */}
-            {renderMenuSection('Admin Dashboard', adminMenuItems, <DashboardIcon />, 'admin')}
-            
-            {/* Patient's Dashboard Section */}
-            {renderMenuSection("Patient's Dashboard", patientMenuItems, <PersonIcon />, 'patient')}
-            
-            {/* Doctor's Dashboard Section */}
-            {renderMenuSection("Doctor's Dashboard", doctorMenuItems, <MedicalServicesIcon />, 'doctor')}
-            
-            {/* Pharmacist's Dashboard Section */}
-            {renderMenuSection("Pharmacist's Dashboard", pharmacistMenuItems, <LocalPharmacyIcon />, 'pharmacist')}
-            
-            {/* Sales Team Dashboard Section */}
-            {renderMenuSection("Sales Team Dashboard", salesMenuItems, <PointOfSaleIcon />, 'sales')}
+            {getMenuSectionsForRole().map(section => (
+              <React.Fragment key={section.key}>
+                {section.items.length === 1 ? (
+                  <Tooltip title={section.title} placement="right" arrow>
+                    <ListItem disablePadding>
+                      <ListItemButton 
+                        component={Link} 
+                        to={section.items[0].path}
+                        selected={location.pathname === section.items[0].path}
+                      >
+                        <ListItemIcon>
+                          {section.icon}
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={section.title} 
+                          primaryTypographyProps={{ 
+                            fontWeight: location.pathname === section.items[0].path ? '600' : 'normal' 
+                          }} 
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  </Tooltip>
+                ) : (
+                  renderMenuSection(section)
+                )}
+              </React.Fragment>
+            ))}
           </>
         ) : (
           <Tooltip title="Login" placement="right" arrow>
@@ -397,6 +492,11 @@ const Layout = ({ children }) => {
               Medskls
             </GradientText>
           </Box>
+          {isAuthenticated && (
+            <Typography variant="subtitle2" sx={{ mr: 2 }}>
+              {user?.RoleName || 'Role'}
+            </Typography>
+          )}
         </Toolbar>
       </AppBar>
       

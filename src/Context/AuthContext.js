@@ -1,12 +1,16 @@
-// AuthContext.js
 import { createContext, useContext, useState } from 'react';
 import { authService } from './authService';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('token');
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,8 +23,6 @@ export const AuthProvider = ({ children }) => {
         const userData = result.data;
         localStorage.setItem('token', result.token || '');
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('userId', userData.UserId);
-        localStorage.setItem('fullName', userData.FullName || userData.Username);
         setUser(userData);
         setIsAuthenticated(true);
       } else {
@@ -43,7 +45,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAuthenticated, 
+      loading, 
+      error, 
+      login, 
+      logout,
+      role: user?.RoleId || null
+    }}>
       {children}
     </AuthContext.Provider>
   );
