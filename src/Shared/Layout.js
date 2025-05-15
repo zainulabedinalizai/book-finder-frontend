@@ -134,31 +134,30 @@ const Layout = ({ children }) => {
 
   const patientMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePatient' },
-    { text: 'My Request', icon: <DescriptionIcon />, path: '/MyRequests' },
-    { text: 'Application Status', icon: <DescriptionIcon />, path: '/patient/status' },
+    { text: 'My Request', icon: <DescriptionIcon />, path: '/PatientSurvey' },
+    { text: 'Application Status', icon: <DescriptionIcon />, path: '/AppStatsPatient' },
     { text: 'Invoice Notification', icon: <NotificationsIcon />, path: '/patient/invoice-notifications' },
     { text: 'Download Invoice', icon: <DownloadIcon />, path: '/patient/download-invoice' },
-    { text: 'Email Notifications', icon: <EmailIcon />, path: '/patient/email-notifications' }
   ];
 
   const doctorMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileDoc' },
-    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/doctor/applications' },
-    { text: 'Prescription List', icon: <MedicalServicesIcon />, path: '/doctor/prescriptions' },
+    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationDoc' },
+    { text: 'Prescription List', icon: <MedicalServicesIcon />, path: '/PrescriptionListDoc' },
     { text: 'Send to Pharmacy', icon: <LocalPharmacyIcon />, path: '/doctor/send-pharmacy' }
   ];
 
   const pharmacistMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePharma' },
-    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/pharmacist/applications' },
-    { text: 'Add Invoice', icon: <DescriptionIcon />, path: '/pharmacist/add-invoice' },
+    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationPharma' },
+    { text: 'Add Invoice', icon: <DescriptionIcon />, path: '/AddInvoicePharma' },
     { text: 'Send to Sales', icon: <PointOfSaleIcon />, path: '/pharmacist/send-sales' }
   ];
 
   const salesMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileSaTeam' },
-    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/sales/applications' },
-    { text: 'Attach Final Invoice', icon: <DescriptionIcon />, path: '/sales/attach-invoice' },
+    { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationSales' },
+    { text: 'Attach Final Invoice', icon: <DescriptionIcon />, path: '/AttachInvoiceSales' },
     { text: 'Send Invoice to Patient', icon: <EmailIcon />, path: '/sales/send-invoice' }
   ];
 

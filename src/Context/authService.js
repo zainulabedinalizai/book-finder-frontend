@@ -1,3 +1,4 @@
+// services.js
 import { authAPI, userAPI, patientAPI, questionAPI } from "../Api/api";
 
 export const authService = {
@@ -69,14 +70,12 @@ export const authService = {
   login: async (credentials) => {
     try {
       const response = await authAPI.login(credentials.username, credentials.password);
-      console.log('Login response:', response.data); // Debugging
       
-      if (response.data.success) {  // Changed from Success to success
+      if (response.data.success) {
         const userData = response.data.data && response.data.data.length > 0 
           ? response.data.data[0] 
           : null;
         
-        // Create a token if not provided by backend
         const token = userData?.Token || 'default-token-from-backend';
         
         return {
@@ -88,14 +87,14 @@ export const authService = {
       } else {
         return {
           success: false,
-          message: response.data.message || "Invalid credentials"  // Changed from Message to message
+          message: response.data.message || "Invalid credentials"
         };
       }
     } catch (error) {
       console.error('Login error:', error);
       return {
         success: false,
-        message: error.response?.data?.message ||  // Changed from Message to message
+        message: error.response?.data?.message || 
                error.message || 
                "Invalid credentials"
       };
@@ -180,6 +179,93 @@ export const patientService = {
                error.response?.data?.message || 
                error.message || 
                "Failed to save application"
+      };
+    }
+  },
+
+  getPatientApplication: async (param) => {
+    try {
+      const response = await patientAPI.getPatientApplication(param);
+      
+      if (response.data?.Success) {
+        return {
+          success: true,
+          data: response.data.Data,
+          count: response.data.Count || 0,
+          message: response.data.Message || "Patient application retrieved successfully"
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.Message || "No records found",
+          statusCode: response.data?.StatusCode || "8004"
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.Message || 
+               error.response?.data?.message || 
+               error.message || 
+               "An error occurred while fetching patient application",
+        error: error.message
+      };
+    }
+  },
+
+  updateUserApplication: async (params) => {
+    try {
+      const response = await patientAPI.updateUserApplication(params);
+      
+      if (response.data?.success) {
+        return {
+          success: true,
+          data: response.data.data,
+          message: response.data.message || "Application status updated successfully"
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || "Failed to update application status",
+          statusCode: response.data?.statusCode || "8004"
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 
+               error.message || 
+               "Failed to update application status",
+        error: error.message
+      };
+    }
+  },
+
+  getRoleWiseApplication: async (param) => {
+    try {
+      const response = await patientAPI.getRoleWiseApplication(param);
+      
+      if (response.data?.success) {
+        return {
+          success: true,
+          data: response.data.data,
+          count: response.data.count || 0,
+          message: response.data.message || "Applications retrieved successfully"
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || "No records found",
+          statusCode: response.data?.statusCode || "8004"
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 
+               error.message || 
+               "Failed to fetch applications",
+        error: error.message
       };
     }
   }

@@ -19,6 +19,13 @@ import PersonalProfileDoc from './Pages/DoctorPages/PersonalProfileDoc';
 import PersonalProfilePatient from './Pages/PatientPages/PersonalProfilePatient';
 import PersonalProfilePharma from './Pages/PharmacitsPages/PersonalProfilePharma';
 import PersonalProfileSaTeam from './Pages/SalesTeamPages/PersonalProfileSaTeam';
+import PatientApplicationDoc from './Pages/DoctorPages/PatientApplicationDoct';
+import PatientApplicationPharma from './Pages/PharmacitsPages/PatientApplicationPharma';
+import PatientApplicationSales from './Pages/SalesTeamPages/PatientApplicationSales';
+import AppStatsPatient from './Pages/PatientPages/AppStatsPatient';
+import PrescriptionListDoc from './Pages/DoctorPages/PrescriptionListDoc';
+import AddInvoicePharma from './Pages/PharmacitsPages/AddInvoicePharma';
+import AddInvoiceSales from './Pages/SalesTeamPages/AttachInvoiceSales';
 
 
 const App = () => {
@@ -46,7 +53,7 @@ const App = () => {
               
               {/* Patient Routes */}
               <Route path="/PersonalProfilePatient" element={<PersonalProfilePatient />} />
-              <Route path="/MyRequests" element={<MyRequests />} />
+              <Route path="/AppStatsPatient" element={<AppStatsPatient />} />
               {/* <Route path="/patient/status" element={<PatientStatus />} />
               <Route path="/patient/invoice-notifications" element={<PatientInvoiceNotifications />} />
               <Route path="/patient/download-invoice" element={<PatientDownloadInvoice />} />
@@ -54,21 +61,21 @@ const App = () => {
               
               {/* Doctor Routes */}
               <Route path="/PersonalProfileDoc" element={<PersonalProfileDoc />} />
-              {/* <Route path="/doctor/applications" element={<DoctorApplications />} />
-              <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
-              <Route path="/doctor/send-pharmacy" element={<DoctorSendPharmacy />} /> */}
+              <Route path="/PatientApplicationDoc" element={<PatientApplicationDoc />} />
+              <Route path="/PrescriptionListDoc" element={<PrescriptionListDoc />} />
+              {/* <Route path="/doctor/send-pharmacy" element={<DoctorSendPharmacy />} />  */}
               
               {/* Pharmacist Routes */}
               <Route path="/PersonalProfilePharma" element={<PersonalProfilePharma />} />
-              {/* <Route path="/pharmacist/applications" element={<PharmacistApplications />} />
-              <Route path="/pharmacist/add-invoice" element={<PharmacistAddInvoice />} />
-              <Route path="/pharmacist/send-sales" element={<PharmacistSendSales />} /> */}
+               <Route path="/PatientApplicationPharma" element={<PatientApplicationPharma />} />
+              <Route path="/AddInvoicePharma" element={<AddInvoicePharma />} />
+              {/* <Route path="/pharmacist/send-sales" element={<PharmacistSendSales />} />   */}
               
               {/* Sales Team Routes */}
               <Route path="/PersonalProfileSaTeam" element={<PersonalProfileSaTeam />} />
-              {/* <Route path="/sales/applications" element={<SalesApplications />} />
-              <Route path="/sales/attach-invoice" element={<SalesAttachInvoice />} />
-              <Route path="/sales/send-invoice" element={<SalesSendInvoice />} /> */}
+              <Route path="/PatientApplicationSales" element={<PatientApplicationSales />} />
+               <Route path="/AttachInvoiceSales" element={<AddInvoiceSales />} />
+              {/* <Route path="/sales/send-invoice" element={<SalesSendInvoice />} />   */}
             </Routes>
           </Layout>
         </BookProvider>

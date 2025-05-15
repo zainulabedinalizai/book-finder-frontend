@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'https://localhost:7128/api'
-  // baseURL:'https://210.56.11.158:441/api'
+  // baseURL: 'https://localhost:7128/api'
+  baseURL:'https://210.56.11.158:441/api'
 });
 
 // Request interceptor to add auth token if available
@@ -16,6 +16,7 @@ API.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
+// Auth API Endpoints
 export const authAPI = {
   register: (formData) => API.post('/UserRegistration', formData, {
     headers: {
@@ -42,6 +43,7 @@ export const authAPI = {
   }
 };
 
+// User API Endpoints
 export const userAPI = {
   getUserList: (userId) => {
     const formData = new URLSearchParams();
@@ -110,43 +112,7 @@ export const userAPI = {
   }
 };
 
-export const userService = {
-  updateUserProfile: async (profileData) => {
-    try {
-      const formData = new FormData();
-      formData.append('UserID', profileData.UserID);
-      formData.append('Email', profileData.Email);
-      formData.append('FullName', profileData.FullName);
-      formData.append('DOB', profileData.DOB);
-      formData.append('Gender', profileData.Gender);
-      formData.append('Mobile', profileData.Mobile);
-      formData.append('PostalAddress', profileData.PostalAddress);
-      
-      if (profileData.ImagePath instanceof File) {
-        formData.append('ImagePath', profileData.ImagePath);
-      } else if (profileData.ImagePath) {
-        formData.append('ImagePath', profileData.ImagePath);
-      }
-
-      const response = await userAPI.updateUserProfile(formData);
-      
-      return {
-        success: response.data?.success || false,
-        data: response.data,
-        message: response.data?.message || "Profile updated successfully"
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 
-               error.message || 
-               "Failed to update profile"
-      };
-    }
-  },
-
-};
-
+// Question API Endpoints
 export const questionAPI = {
   getQuestionAndOptionList: () => {
     const formData = new URLSearchParams();
@@ -156,10 +122,10 @@ export const questionAPI = {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
-  },
-
+  }
 };
 
+// Patient API Endpoints
 export const patientAPI = {
   savePatientApplication: (submissionData) => {
     return API.post('/SavePatientApplication', submissionData, {
@@ -167,9 +133,61 @@ export const patientAPI = {
         'Content-Type': 'application/json'
       }
     });
+  },
+
+  getPatientApplication: (param) => {
+    const formData = new URLSearchParams();
+    formData.append('UserID', param.UserID);
+    
+    return API.post('/GetPatientApplication', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+
+  getRoleWiseApplication: (param) => {
+    const formData = new URLSearchParams();
+    formData.append('RoleID', param.RoleID);
+    formData.append('UserID', param.UserID);
+    
+    return API.post('/GetRoleWiseApplication', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+
+  updateUserApplication: (param) => {
+    const formData = new FormData();
+    formData.append('ID', param.ID);
+    formData.append('StatusID', param.StatusID);
+    formData.append('RoleID', param.RoleID);
+    formData.append('Description', param.Description || '');
+    if (param.ImagePath) {
+      formData.append('FilePath', param.ImagePath);
+    }
+    
+    return API.post('/UpdateUserApplication', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+
+  // New endpoint for getting DDL status
+  getDDLStatus: () => {
+    const formData = new URLSearchParams();
+    
+    return API.post('/GetDDLStatus', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
   }
 };
 
+// Role API Endpoints
 export const roleAPI = {
   getRoleList: (roleId = -1) => {
     const formData = new URLSearchParams();
@@ -196,12 +214,27 @@ export const roleAPI = {
   }
 };
 
+// Status API Endpoints
+export const statusAPI = {
+  getDDLStatus: () => {
+    const formData = new URLSearchParams();
+    
+    return API.post('/GetDDLStatus', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  }
+};
+
+// Book API Endpoints (if needed)
 export const bookAPI = {
   search: (query) => API.get(`/books?search=${query}`),
   getBook: (id) => API.get(`/books/${id}`),
   getById: (id) => API.get(`/books/${id}`),
 };
 
+// Favorites API Endpoints (if needed)
 export const favoritesAPI = {
   getFavorites: () => API.get('/favorites'),
   getFavoriteBook: (id) => API.get(`/favorites/${id}`), 
