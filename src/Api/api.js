@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API = axios.create({
-  // baseURL: 'https://localhost:7128/api'
-  baseURL:'https://210.56.11.158:441/api'
+  baseURL: 'https://localhost:7128/api'
+  // baseURL:'https://210.56.11.158:441/api'
 });
 
 // Request interceptor to add auth token if available

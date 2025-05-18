@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -25,12 +25,10 @@ import {
   DialogActions,
   TextareaAutosize
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { Search, Refresh, AttachFile } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { patientAPI } from '../../Api/api';
-import { patientService } from '../../Context/authService';
 
-// Role constants for better readability
 const ROLES = {
   ADMIN: 2,
   DOCTOR: 19,
@@ -39,18 +37,7 @@ const ROLES = {
   PATIENT: 1
 };
 
-// Status constants mapping
-const STATUS_MAPPING = {
-  1: 'Pending',
-  2: 'Doctor Reviewed',
-  3: 'Approved by Doctor',
-  4: 'Rejected by Pharmacist',
-  5: 'Sent to Sales',
-  6: 'Rejected by Sales',
-  7: 'Completed'
-};
-
-const AttachInvoiceSales = () => {
+const AttachInvoiceSale = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,21 +53,17 @@ const AttachInvoiceSales = () => {
   const [selectedApp, setSelectedApp] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [statusOptions, setStatusOptions] = useState([]);
+  const [actionType, setActionType] = useState('approve');
 
-  // Get role-specific title
-  const getRoleTitle = () => {
-    switch(user?.RoleId) {
-      case ROLES.ADMIN: return 'All Applications (Admin View)';
-      case ROLES.DOCTOR: return 'Applications Needing Doctor Review';
-      case ROLES.PHARMACIST: return 'Applications Ready for Pharmacy';
-      case ROLES.SALES: return 'Applications Ready for Sales';
-      case ROLES.PATIENT: return 'My Applications';
-      default: return 'Patient Applications';
-    }
+  // Status IDs specific to Sales role
+  const SALES_STATUS = {
+    APPROVE: 7,  // Completed
+    REJECT: 6    // Rejected by Sales
   };
 
-  // Fetch applications based on role
   const fetchApplications = async () => {
     try {
       if (!user?.UserId || !user?.RoleId) {
@@ -96,11 +79,7 @@ const AttachInvoiceSales = () => {
       });
       
       if (response.data.success) {
-        const formattedData = response.data.data.map(app => ({
-          ...app,
-          status: STATUS_MAPPING[app.status_id] || app.status
-        }));
-        setApplications(formattedData);
+        setApplications(response.data.data);
       } else if (response.data.statusCode === "8004") {
         setApplications([]);
       } else {
@@ -119,11 +98,34 @@ const AttachInvoiceSales = () => {
     }
   };
 
-  // Handle application status update
-  const handleStatusUpdate = async (statusId) => {
+  const fetchStatusOptions = async () => {
     try {
+      const response = await patientAPI.getDDLStatus();
+      if (response.data.success) {
+        setStatusOptions(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching status options:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load status options',
+        severity: 'error'
+      });
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    try {
+      if (!selectedApp) {
+        throw new Error("No application selected");
+      }
+
       setLoading(true);
       
+      const statusId = actionType === 'approve' 
+        ? SALES_STATUS.APPROVE 
+        : SALES_STATUS.REJECT;
+
       const params = {
         ID: selectedApp.application_id,
         StatusID: statusId,
@@ -132,17 +134,23 @@ const AttachInvoiceSales = () => {
         ImagePath: file
       };
 
-      const result = await patientService.updateUserApplication(params);
+      const response = await patientAPI.updateUserApplication(params);
       
-      if (result.success) {
+      if (response.data.success) {
         setSnackbar({
           open: true,
-          message: result.message || 'Application updated successfully',
+          message: 'Application status updated successfully',
           severity: 'success'
         });
-        fetchApplications();
+        // Update the local state with the returned data
+        const updatedApplications = applications.map(app => 
+          app.application_id === selectedApp.application_id 
+            ? response.data.data[0] 
+            : app
+        );
+        setApplications(updatedApplications);
       } else {
-        throw new Error(result.message || 'Failed to update application');
+        throw new Error(response.data.message || "Failed to update application");
       }
     } catch (err) {
       setSnackbar({
@@ -156,34 +164,42 @@ const AttachInvoiceSales = () => {
       setSelectedApp(null);
       setFeedback('');
       setFile(null);
+      setFileName('');
     }
   };
 
-  // Open action dialog
   const openActionDialog = (app, action) => {
     setSelectedApp(app);
-    
-    // Set default status based on action
-    let statusId;
-    switch(action) {
-      case 'approve': 
-        statusId = user.RoleId === ROLES.DOCTOR ? 3 : 
-                  user.RoleId === ROLES.PHARMACIST ? 5 : 7;
-        break;
-      case 'reject':
-        statusId = user.RoleId === ROLES.DOCTOR ? 4 : 6;
-        break;
-      default:
-        statusId = 2; // Default to doctor reviewed
-    }
-    
-    setSelectedApp({...app, actionStatus: statusId});
+    setActionType(action);
     setDialogOpen(true);
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+    }
+  };
+
+  const getStatusColor = (statusId) => {
+    switch (statusId) {
+      case 5: return 'info';    // Ready for Sales
+      case 6: return 'error';   // Rejected by Sales
+      case 7: return 'success'; // Completed
+      default: return 'default';
+    }
+  };
+
+  const getStatusName = (statusId) => {
+    const status = statusOptions.find(s => s.StatusID === statusId);
+    return status ? status.StatusName : `Status ${statusId}`;
   };
 
   useEffect(() => {
     if (user?.UserId && user?.RoleId) {
       fetchApplications();
+      fetchStatusOptions();
     }
   }, [user?.UserId, user?.RoleId]);
 
@@ -200,74 +216,13 @@ const AttachInvoiceSales = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': return 'warning';
-      case 'approved by doctor': return 'success';
-      case 'rejected by pharmacist': return 'error';
-      case 'sent to sales': return 'info';
-      case 'completed': return 'success';
-      default: return 'default';
-    }
-  };
-
-  // Render action buttons based on role and status
-  const renderActions = (app) => {
-    switch(user?.RoleId) {
-      case ROLES.DOCTOR:
-        return (
-          <>
-            <Button 
-              size="small" 
-              color="success" 
-              onClick={() => openActionDialog(app, 'approve')}
-              disabled={app.status_id !== 1 && app.status_id !== 4}
-            >
-              Approve
-            </Button>
-            <Button 
-              size="small" 
-              color="error" 
-              onClick={() => openActionDialog(app, 'reject')}
-              disabled={app.status_id !== 1 && app.status_id !== 4}
-            >
-              Reject
-            </Button>
-          </>
-        );
-      case ROLES.PHARMACIST:
-        return (
-          <Button 
-            size="small" 
-            color="primary" 
-            onClick={() => openActionDialog(app, 'approve')}
-            disabled={app.status_id !== 3}
-          >
-            Process
-          </Button>
-        );
-      case ROLES.SALES:
-        return (
-          <Button 
-            size="small" 
-            color="secondary" 
-            onClick={() => openActionDialog(app, 'approve')}
-            disabled={app.status_id !== 5}
-          >
-            Complete
-          </Button>
-        );
-      default:
-        return null;
-    }
-  };
-
   const filteredApplications = applications.filter(app => {
     const searchLower = searchTerm.toLowerCase();
+    const statusName = getStatusName(app.status_id).toLowerCase();
     return (
-      (app.application_title?.toLowerCase().includes(searchLower)) ||
-      (app.SubmittedDate?.toLowerCase().includes(searchLower)) ||
-      (app.status?.toLowerCase().includes(searchLower))
+      app.application_title?.toLowerCase().includes(searchLower) ||
+      app.SubmittedDate?.toLowerCase().includes(searchLower) ||
+      statusName.includes(searchLower)
     );
   });
 
@@ -276,19 +231,17 @@ const AttachInvoiceSales = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        {getRoleTitle()}
+        Sales Dashboard
       </Typography>
       
       <Paper sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Application List</Typography>
-          <Box>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchApplications} disabled={loading}>
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-          </Box>
+          <Typography variant="h6">Applications Ready for Processing</Typography>
+          <Tooltip title="Refresh">
+            <IconButton onClick={fetchApplications} disabled={loading}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Box>
         
         <TextField
@@ -303,11 +256,7 @@ const AttachInvoiceSales = () => {
           sx={{ mb: 2 }}
         />
         
-        {!user?.UserId || !user?.RoleId ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Please log in to view applications
-          </Alert>
-        ) : loading ? (
+        {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress />
           </Box>
@@ -317,7 +266,7 @@ const AttachInvoiceSales = () => {
           </Alert>
         ) : applications.length === 0 ? (
           <Alert severity="info" sx={{ mb: 2 }}>
-            No applications found matching your role criteria
+            No applications found ready for sales processing
           </Alert>
         ) : (
           <TableContainer component={Paper}>
@@ -328,9 +277,7 @@ const AttachInvoiceSales = () => {
                   <TableCell>Title</TableCell>
                   <TableCell>Submitted Date</TableCell>
                   <TableCell>Status</TableCell>
-                  {[ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.SALES].includes(user?.RoleId) && (
-                    <TableCell>Actions</TableCell>
-                  )}
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -350,24 +297,35 @@ const AttachInvoiceSales = () => {
                       <TableCell>{app.SubmittedDate}</TableCell>
                       <TableCell>
                         <Chip 
-                          label={app.status} 
-                          color={getStatusColor(app.status)}
+                          label={getStatusName(app.status_id)} 
+                          color={getStatusColor(app.status_id)}
                         />
                       </TableCell>
-                      {[ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.SALES].includes(user?.RoleId) && (
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            {renderActions(app)}
-                          </Box>
-                        </TableCell>
-                      )}
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button 
+                            variant="contained" 
+                            color="success" 
+                            size="small"
+                            onClick={() => openActionDialog(app, 'approve')}
+                          >
+                            Complete
+                          </Button>
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            size="small"
+                            onClick={() => openActionDialog(app, 'reject')}
+                          >
+                            Reject
+                          </Button>
+                        </Box>
+                      </TableCell>
                     </TableRow>
                   ))}
                 {emptyRows > 0 && (
                   <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={
-                      [ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.SALES].includes(user?.RoleId) ? 5 : 4
-                    } />
+                    <TableCell colSpan={5} />
                   </TableRow>
                 )}
               </TableBody>
@@ -385,42 +343,73 @@ const AttachInvoiceSales = () => {
         )}
       </Paper>
 
-      {/* Action Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedApp?.actionStatus === 3 || selectedApp?.actionStatus === 5 || selectedApp?.actionStatus === 7 ? 
-            'Approve Application' : 'Reject Application'}
+          {actionType === 'approve' ? 'Complete Application' : 'Reject Application'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
+            <Typography variant="body1" gutterBottom>
+              Application: <strong>{selectedApp?.application_title}</strong>
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              ID: {selectedApp?.application_id}
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 2 }}>
             <TextareaAutosize
               minRows={3}
-              placeholder="Enter your feedback/comments"
+              placeholder={
+                actionType === 'approve' 
+                  ? 'Enter completion notes (optional)...' 
+                  : 'Enter rejection reason (required)...'
+              }
               style={{ width: '100%', padding: '8px' }}
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
+              required={actionType === 'reject'}
             />
           </Box>
           <Box sx={{ mt: 2 }}>
             <input
               type="file"
               id="file-upload"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              accept=".pdf,.jpg,.png"
             />
             <label htmlFor="file-upload">
-              {user.RoleId === ROLES.DOCTOR ? 'Upload Prescription' : 'Upload Invoice'}
+              <Button
+                variant="outlined"
+                component="span"
+                startIcon={<AttachFile />}
+                sx={{ mr: 2 }}
+              >
+                {actionType === 'approve' ? 'Upload Final Documents' : 'Upload Rejection Notes'}
+              </Button>
             </label>
+            {fileName && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Selected file: {fileName}
+              </Typography>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button 
-            onClick={() => handleStatusUpdate(selectedApp.actionStatus)} 
-            color="primary"
+            onClick={handleStatusUpdate} 
+            color={actionType === 'approve' ? 'success' : 'error'}
             variant="contained"
-            disabled={loading}
+            disabled={loading || (actionType === 'reject' && !feedback)}
           >
-            Submit
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : actionType === 'approve' ? (
+              'Mark as Completed'
+            ) : (
+              'Reject Application'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -442,4 +431,4 @@ const AttachInvoiceSales = () => {
   );
 };
 
-export default AttachInvoiceSales;
+export default AttachInvoiceSale;

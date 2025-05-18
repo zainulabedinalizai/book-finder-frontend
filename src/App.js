@@ -26,6 +26,7 @@ import AppStatsPatient from './Pages/PatientPages/AppStatsPatient';
 import PrescriptionListDoc from './Pages/DoctorPages/PrescriptionListDoc';
 import AddInvoicePharma from './Pages/PharmacitsPages/AddInvoicePharma';
 import AddInvoiceSales from './Pages/SalesTeamPages/AttachInvoiceSales';
+import PatientInvoice from './Pages/PatientPages/PatientInvoice';
 
 
 const App = () => {
@@ -53,7 +54,9 @@ const App = () => {
               
               {/* Patient Routes */}
               <Route path="/PersonalProfilePatient" element={<PersonalProfilePatient />} />
-              <Route path="/AppStatsPatient" element={<AppStatsPatient />} />
+              <Route path="/AppStatsPatient" element={<AppStatsPatient />} />            
+              <Route path="/AppStatsPatient" element={<PatientInvoice />} />
+
               {/* <Route path="/patient/status" element={<PatientStatus />} />
               <Route path="/patient/invoice-notifications" element={<PatientInvoiceNotifications />} />
               <Route path="/patient/download-invoice" element={<PatientDownloadInvoice />} />

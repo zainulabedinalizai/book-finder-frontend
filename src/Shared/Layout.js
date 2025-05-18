@@ -136,8 +136,7 @@ const Layout = ({ children }) => {
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePatient' },
     { text: 'My Request', icon: <DescriptionIcon />, path: '/PatientSurvey' },
     { text: 'Application Status', icon: <DescriptionIcon />, path: '/AppStatsPatient' },
-    { text: 'Invoice Notification', icon: <NotificationsIcon />, path: '/patient/invoice-notifications' },
-    { text: 'Download Invoice', icon: <DownloadIcon />, path: '/patient/download-invoice' },
+    { text: 'Download Invoice', icon: <DownloadIcon />, path: '/PatientInvoice' },
   ];
 
   const doctorMenuItems = [

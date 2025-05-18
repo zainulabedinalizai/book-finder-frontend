@@ -1,40 +1,14 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  TextField,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Alert,
-  Avatar,
-  Chip,
-  Snackbar,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextareaAutosize,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel
+  Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, TablePagination, TextField, IconButton, Tooltip,
+  CircularProgress, Alert, Avatar, Chip, Snackbar, Button, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextareaAutosize
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { Search, Refresh, AttachFile } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
-import { patientAPI, statusAPI } from '../../Api/api';
-import { patientService } from '../../Context/authService';
+import { patientAPI } from '../../Api/api';
 
-// Role constants for better readability
 const ROLES = {
   ADMIN: 2,
   DOCTOR: 19,
@@ -51,51 +25,21 @@ const PrescriptionListDoc = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [selectedApp, setSelectedApp] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [file, setFile] = useState(null);
+  const [fileName, setFileName] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [actionType, setActionType] = useState('approve');
 
-  // Fetch status options from API
-  const fetchStatusOptions = async () => {
-    try {
-      const response = await statusAPI.getDDLStatus();
-      if (response.data.success) {
-        setStatusOptions(response.data.data);
-        if (response.data.data.length > 0) {
-          setSelectedStatus(response.data.data[0].StatusID); // Set default to first option
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching status options:', err);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load status options',
-        severity: 'error'
-      });
-    }
+  // Status IDs specific to Doctor role (matches SP logic)
+  const DOCTOR_STATUS = {
+    APPROVE: 2,  // Forward to Pharmacist
+    REJECT: 4    // Rejected by Doctor
   };
 
-  // Get role-specific title
-  const getRoleTitle = () => {
-    switch(user?.RoleId) {
-      case ROLES.ADMIN: return 'All Applications (Admin View)';
-      case ROLES.DOCTOR: return 'Applications Needing Doctor Review';
-      case ROLES.PHARMACIST: return 'Applications Ready for Pharmacy';
-      case ROLES.SALES: return 'Applications Ready for Sales';
-      case ROLES.PATIENT: return 'My Applications';
-      default: return 'Patient Applications';
-    }
-  };
-
-  // Fetch applications based on role
   const fetchApplications = async () => {
     try {
       if (!user?.UserId || !user?.RoleId) {
@@ -130,34 +74,59 @@ const PrescriptionListDoc = () => {
     }
   };
 
-  // Handle application status update
+  const fetchStatusOptions = async () => {
+    try {
+      const response = await patientAPI.getDDLStatus();
+      if (response.data.success) {
+        setStatusOptions(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching status options:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to load status options',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleStatusUpdate = async () => {
     try {
-      if (!selectedStatus) {
-        throw new Error("Please select a status");
+      if (!selectedApp) {
+        throw new Error("No application selected");
       }
 
       setLoading(true);
       
+      const statusId = actionType === 'approve' 
+        ? DOCTOR_STATUS.APPROVE 
+        : DOCTOR_STATUS.REJECT;
+
       const params = {
         ID: selectedApp.application_id,
-        StatusID: selectedStatus,
+        StatusID: statusId,
         RoleID: user.RoleId,
         Description: feedback,
         ImagePath: file
       };
 
-      const result = await patientService.updateUserApplication(params);
+      const response = await patientAPI.updateUserApplication(params);
       
-      if (result.success) {
+      if (response.data.success) {
         setSnackbar({
           open: true,
-          message: result.message || 'Application updated successfully',
+          message: 'Application status updated successfully',
           severity: 'success'
         });
-        fetchApplications();
+        // Update the specific application in state
+        const updatedApplications = applications.map(app => 
+          app.application_id === selectedApp.application_id 
+            ? response.data.data[0] 
+            : app
+        );
+        setApplications(updatedApplications);
       } else {
-        throw new Error(result.message || 'Failed to update application');
+        throw new Error(response.data.message || "Failed to update application");
       }
     } catch (err) {
       setSnackbar({
@@ -171,46 +140,29 @@ const PrescriptionListDoc = () => {
       setSelectedApp(null);
       setFeedback('');
       setFile(null);
+      setFileName('');
     }
   };
 
-  // Open action dialog
-  const openActionDialog = (app) => {
+  const openActionDialog = (app, action) => {
     setSelectedApp(app);
+    setActionType(action);
     setDialogOpen(true);
   };
 
-  useEffect(() => {
-    if (user?.UserId && user?.RoleId) {
-      fetchApplications();
-      fetchStatusOptions();
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
     }
-  }, [user?.UserId, user?.RoleId]);
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   const getStatusColor = (statusId) => {
     switch (statusId) {
       case 1: return 'warning'; // Pending
-      case 2: // ReviewedByDoctor
-      case 3: // SentToPharmacist
-      case 5: // SentToSales
-        return 'info';
-      case 4: // ObjectionByPharmacist
-      case 6: // ObjectionBySales
-        return 'error';
-      case 7: return 'success'; // Completed
+      case 2: return 'info';    // Forwarded to Pharmacist
+      case 4: return 'error';   // Rejected by Doctor
       default: return 'default';
     }
   };
@@ -220,26 +172,20 @@ const PrescriptionListDoc = () => {
     return status ? status.StatusName : `Status ${statusId}`;
   };
 
-  // Render action buttons based on role and status
-  const renderActions = (app) => {
-    return (
-      <Button 
-        size="small" 
-        color="primary" 
-        onClick={() => openActionDialog(app)}
-      >
-        Update Status
-      </Button>
-    );
-  };
+  useEffect(() => {
+    if (user?.UserId && user?.RoleId) {
+      fetchApplications();
+      fetchStatusOptions();
+    }
+  }, [user?.UserId, user?.RoleId]);
 
   const filteredApplications = applications.filter(app => {
     const searchLower = searchTerm.toLowerCase();
     const statusName = getStatusName(app.status_id).toLowerCase();
     return (
-      (app.application_title?.toLowerCase().includes(searchLower)) ||
-      (app.SubmittedDate?.toLowerCase().includes(searchLower)) ||
-      (statusName.includes(searchLower))
+      app.application_title?.toLowerCase().includes(searchLower) ||
+      app.SubmittedDate?.toLowerCase().includes(searchLower) ||
+      statusName.includes(searchLower)
     );
   });
 
@@ -248,22 +194,17 @@ const PrescriptionListDoc = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        {getRoleTitle()}
+        Doctor Review Dashboard
       </Typography>
       
       <Paper sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Application List</Typography>
-          <Box>
-            <Tooltip title="Refresh">
-              <IconButton onClick={() => {
-                fetchApplications();
-                fetchStatusOptions();
-              }} disabled={loading}>
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-          </Box>
+          <Typography variant="h6">Applications Needing Review</Typography>
+          <Tooltip title="Refresh">
+            <IconButton onClick={fetchApplications} disabled={loading}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Box>
         
         <TextField
@@ -272,27 +213,19 @@ const PrescriptionListDoc = () => {
           placeholder="Search applications..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-          }}
+          InputProps={{ startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} /> }}
           sx={{ mb: 2 }}
         />
         
-        {!user?.UserId || !user?.RoleId ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Please log in to view applications
-          </Alert>
-        ) : loading ? (
+        {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
+          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
         ) : applications.length === 0 ? (
           <Alert severity="info" sx={{ mb: 2 }}>
-            No applications found matching your role criteria
+            No applications found needing doctor review
           </Alert>
         ) : (
           <TableContainer component={Paper}>
@@ -329,7 +262,22 @@ const PrescriptionListDoc = () => {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
-                          {renderActions(app)}
+                          <Button 
+                            variant="contained" 
+                            color="success" 
+                            size="small"
+                            onClick={() => openActionDialog(app, 'approve')}
+                          >
+                            Approve
+                          </Button>
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            size="small"
+                            onClick={() => openActionDialog(app, 'reject')}
+                          >
+                            Reject
+                          </Button>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -347,66 +295,83 @@ const PrescriptionListDoc = () => {
               count={filteredApplications.length}
               rowsPerPage={rowsPerPage}
               page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
+              onPageChange={(e, newPage) => setPage(newPage)}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
             />
           </TableContainer>
         )}
       </Paper>
 
-      {/* Action Dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          Update Application Status
+          {actionType === 'approve' ? 'Approve Application' : 'Reject Application'}
         </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
-            <FormControl fullWidth>
-              <InputLabel id="status-select-label">Status</InputLabel>
-              <Select
-                labelId="status-select-label"
-                id="status-select"
-                value={selectedStatus}
-                label="Status"
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                {statusOptions.map((status) => (
-                  <MenuItem key={status.StatusID} value={status.StatusID}>
-                    {status.StatusName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Typography variant="body1" gutterBottom>
+              Application ID: <strong>{selectedApp?.application_id}</strong>
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              Title: <strong>{selectedApp?.application_title}</strong>
+            </Typography>
           </Box>
           <Box sx={{ mt: 2 }}>
             <TextareaAutosize
               minRows={3}
-              placeholder="Enter your feedback/comments"
+              placeholder={
+                actionType === 'approve' 
+                  ? 'Enter prescription notes...' 
+                  : 'Enter rejection reason (required)...'
+              }
               style={{ width: '100%', padding: '8px' }}
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
+              required={actionType === 'reject'}
             />
           </Box>
           <Box sx={{ mt: 2 }}>
             <input
               type="file"
               id="file-upload"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+              accept=".pdf,.jpg,.png"
             />
             <label htmlFor="file-upload">
-              {user?.RoleId === ROLES.DOCTOR ? 'Upload Prescription' : 'Upload Invoice'}
+              <Button
+                variant="outlined"
+                component="span"
+                startIcon={<AttachFile />}
+                sx={{ mr: 2 }}
+              >
+                Upload Prescription
+              </Button>
             </label>
+            {fileName && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Selected file: {fileName}
+              </Typography>
+            )}
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
           <Button 
             onClick={handleStatusUpdate} 
-            color="primary"
+            color={actionType === 'approve' ? 'success' : 'error'}
             variant="contained"
-            disabled={loading || !selectedStatus}
+            disabled={loading || (actionType === 'reject' && !feedback)}
           >
-            {loading ? <CircularProgress size={24} /> : 'Update Status'}
+            {loading ? (
+              <CircularProgress size={24} />
+            ) : actionType === 'approve' ? (
+              'Approve'
+            ) : (
+              'Reject'
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -414,10 +379,10 @@ const PrescriptionListDoc = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
       >
         <Alert 
-          onClose={handleCloseSnackbar} 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
           severity={snackbar.severity}
           sx={{ width: '100%' }}
         >
