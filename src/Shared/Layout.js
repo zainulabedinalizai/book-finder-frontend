@@ -19,7 +19,8 @@ import {
   Avatar,
   styled,
   Tooltip,
-  Collapse
+  Collapse,
+  Badge
 } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../Context/AuthContext';
@@ -79,12 +80,15 @@ const GradientText = styled(Typography)(({ theme }) => ({
 }));
 
 const NavItem = styled(ListItemButton)(({ theme, level = 0, selected }) => ({
-  borderRadius: 2,
+  borderRadius: 8,
   mx: 1,
   my: 0.5,
   minHeight: 48,
   paddingLeft: theme.spacing(3 + level * 2),
   justifyContent: 'initial',
+  transition: theme.transitions.create(['background-color', 'color'], {
+    duration: theme.transitions.duration.shortest,
+  }),
   '&.Mui-selected': {
     backgroundColor: theme.palette.primary.light,
     color: theme.palette.primary.main,
@@ -105,6 +109,9 @@ const Layout = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
+
+  // Dummy notifications count
+  const [notificationCount] = useState(3);
 
   const hideDrawer = ['/login', '/register'].includes(location.pathname);
 
@@ -143,21 +150,19 @@ const Layout = ({ children }) => {
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileDoc' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationDoc' },
     { text: 'Prescription List', icon: <MedicalServicesIcon />, path: '/PrescriptionListDoc' },
-    { text: 'Send to Pharmacy', icon: <LocalPharmacyIcon />, path: '/doctor/send-pharmacy' }
   ];
 
   const pharmacistMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfilePharma' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationPharma' },
     { text: 'Add Invoice', icon: <DescriptionIcon />, path: '/AddInvoicePharma' },
-    { text: 'Send to Sales', icon: <PointOfSaleIcon />, path: '/pharmacist/send-sales' }
   ];
 
   const salesMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfileSaTeam' },
     { text: 'Patient Applications', icon: <DescriptionIcon />, path: '/PatientApplicationSales' },
     { text: 'Attach Final Invoice', icon: <DescriptionIcon />, path: '/AttachInvoiceSales' },
-    { text: 'Send Invoice to Patient', icon: <EmailIcon />, path: '/sales/send-invoice' }
+    { text: 'Send Invoice to Patient', icon: <EmailIcon />, path: '/SendInvoiceToPatient' }
   ];
 
   // Function to determine which menus to show based on role
@@ -269,7 +274,10 @@ const Layout = ({ children }) => {
         selected={location.pathname === item.path}
         level={level}
       >
-        <ListItemIcon sx={{ minWidth: '40px' }}>
+        <ListItemIcon sx={{ 
+          minWidth: '40px',
+          color: location.pathname === item.path ? theme.palette.primary.main : 'inherit'
+        }}>
           {item.icon}
         </ListItemIcon>
         <ListItemText 
@@ -284,15 +292,31 @@ const Layout = ({ children }) => {
   };
 
   const renderMenuSection = (section) => {
-    const isOpen = openMenus[section.key];
+    const isOpen = openMenus[section.key] ?? true;
     
     return (
       <>
-        <ListItemButton onClick={() => toggleMenu(section.key)}>
-          <ListItemIcon sx={{ minWidth: '40px' }}>
+        <ListItemButton 
+          onClick={() => toggleMenu(section.key)}
+          sx={{
+            borderRadius: 2,
+            mx: 1,
+            my: 0.5,
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover,
+            }
+          }}
+        >
+          <ListItemIcon sx={{ 
+            minWidth: '40px',
+            color: isOpen ? theme.palette.primary.main : 'inherit'
+          }}>
             {section.icon}
           </ListItemIcon>
-          <ListItemText primary={section.title} />
+          <ListItemText 
+            primary={section.title} 
+            primaryTypographyProps={{ fontWeight: '500' }} 
+          />
           {isOpen ? <ExpandLess /> : <ExpandMore />}
         </ListItemButton>
         <Collapse in={isOpen} timeout="auto" unmountOnExit>
@@ -308,7 +332,8 @@ const Layout = ({ children }) => {
     <Box sx={{ 
       display: 'flex',
       flexDirection: 'column',
-      height: '100%'
+      height: '100%',
+      background: theme.palette.background.paper
     }}>
       <DrawerHeader>
         {!isMobile && (
@@ -324,13 +349,21 @@ const Layout = ({ children }) => {
           py: 2,
           display: 'flex',
           alignItems: 'center',
-          gap: 2
+          gap: 2,
+          borderBottom: `1px solid ${theme.palette.divider}`
         }}>
-          <Avatar sx={{ width: 48, height: 48 }}>
+          <Avatar 
+            sx={{ 
+              width: 48, 
+              height: 48,
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText
+            }}
+          >
             {user?.FullName?.charAt(0).toUpperCase() || 'U'}
           </Avatar>
           <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant="subtitle1" noWrap>
+            <Typography variant="subtitle1" noWrap fontWeight="500">
               {user?.FullName || 'User'}
             </Typography>
             <Typography variant="body2" color="text.secondary" noWrap>
@@ -347,6 +380,7 @@ const Layout = ({ children }) => {
       
       <List sx={{ 
         flexGrow: 1,
+        overflowY: 'auto',
         '& .MuiListItemButton-root': {
           borderRadius: 2,
           mx: 1,
@@ -390,7 +424,10 @@ const Layout = ({ children }) => {
                         to={section.items[0].path}
                         selected={location.pathname === section.items[0].path}
                       >
-                        <ListItemIcon>
+                        <ListItemIcon sx={{
+                          color: location.pathname === section.items[0].path ? 
+                            theme.palette.primary.main : 'inherit'
+                        }}>
                           {section.icon}
                         </ListItemIcon>
                         <ListItemText 
@@ -416,7 +453,10 @@ const Layout = ({ children }) => {
                 to="/login"
                 selected={location.pathname === '/login'}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{
+                  color: location.pathname === '/login' ? 
+                    theme.palette.primary.main : 'inherit'
+                }}>
                   <LoginIcon />
                 </ListItemIcon>
                 <ListItemText 
@@ -452,7 +492,7 @@ const Layout = ({ children }) => {
   );
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
+    <Box sx={{ display: 'flex', height: '100vh', bgcolor: 'background.default' }}>
       <CssBaseline />
       <AppBar 
         position="fixed"
@@ -468,13 +508,13 @@ const Layout = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          boxShadow: 'none',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
           backgroundColor: theme.palette.background.paper,
           color: theme.palette.text.primary,
           borderBottom: `1px solid ${theme.palette.divider}`
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
           {!hideDrawer && (
             <IconButton
               color="inherit"
@@ -491,9 +531,20 @@ const Layout = ({ children }) => {
             </GradientText>
           </Box>
           {isAuthenticated && (
-            <Typography variant="subtitle2" sx={{ mr: 2 }}>
-              {user?.RoleName || 'Role'}
-            </Typography>
+            <>
+              <IconButton color="inherit" sx={{ mr: 1 }}>
+                <Badge badgeContent={notificationCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+              <Typography variant="subtitle2" sx={{ 
+                mr: 2,
+                fontWeight: 500,
+                color: theme.palette.text.secondary
+              }}>
+                {user?.RoleName || 'Role'}
+              </Typography>
+            </>
           )}
         </Toolbar>
       </AppBar>
@@ -513,7 +564,7 @@ const Layout = ({ children }) => {
                 duration: theme.transitions.duration.enteringScreen,
               }),
               borderRight: 'none',
-              boxShadow: theme.shadows[2],
+              boxShadow: '2px 0 10px rgba(0,0,0,0.1)',
               backgroundColor: theme.palette.background.paper,
             },
           }}
@@ -548,10 +599,11 @@ const Layout = ({ children }) => {
           maxWidth: 1700,
           mx: 'auto',
           my: 4,
-          p: 3,
+          p: 4,
           borderRadius: 2,
           backgroundColor: theme.palette.background.paper,
-          boxShadow: theme.shadows[1]
+          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+          border: `1px solid ${theme.palette.divider}`
         }}>
           <Outlet />
           {children}

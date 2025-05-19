@@ -1,327 +1,185 @@
-// PersonalProfileDesign.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box, Typography, Container, Card, CardContent,
-  TextField, Button, Avatar, FormControl, InputLabel,
-  Select, MenuItem, Divider, Grid, CircularProgress, Alert
+  Button, Divider, Grid, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow,
+  Paper, IconButton
 } from '@mui/material';
-import { Edit, Save, Cancel } from '@mui/icons-material';
-import { userAPI } from '../../Api/api';
+import { Download, PictureAsPdf, Receipt } from '@mui/icons-material';
 
 const PatientInvoice = () => {
-  const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState(null);
-  const [formErrors, setFormErrors] = useState({});
-  const [previewImage, setPreviewImage] = useState(null);
+  // Sample invoice data - in a real app, this would come from an API
+  const [invoices, setInvoices] = useState([
+    {
+      id: 'INV-2023-001',
+      date: '2023-05-15',
+      description: 'Annual Checkup',
+      amount: 120.00,
+      status: 'Paid',
+      pdfUrl: '/sample-invoice.pdf'
+    },
+    {
+      id: 'INV-2023-002',
+      date: '2023-06-20',
+      description: 'Blood Tests',
+      amount: 85.50,
+      status: 'Paid',
+      pdfUrl: '/sample-invoice.pdf'
+    },
+    {
+      id: 'INV-2023-003',
+      date: '2023-07-10',
+      description: 'Consultation',
+      amount: 65.00,
+      status: 'Pending',
+      pdfUrl: '/sample-invoice.pdf'
+    },
+  ]);
 
-  const [formData, setFormData] = useState({
-    UserID: '',
-    Username: '',
-    FullName: '',
-    Email: '',
-    DateOfBirth: '',
-    Phone: '',
-    Gender: '',
-    ResidentialAddress: '',
-    RoleName: '',
-    AccountStatus: 0,
-    ProfilePath: ''
-  });
-
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-
-    if (user) {
-      setFormData({
-        UserID: user.UserID || '',
-        Username: user.Username || '',
-        FullName: user.FullName || '',
-        Email: user.Email || '',
-        DateOfBirth: user.DateOfBirth?.split('T')[0] || '',
-        Phone: user.Phone || '',
-        Gender: user.Gender || 'M',
-        ResidentialAddress: user.ResidentialAddress || '',
-        RoleName: user.RoleName || 'User',
-        AccountStatus: user.AccountStatus || 0,
-        ProfilePath: user.ProfilePicture || ''
-      });
-
-      if (user.ProfilePicture) {
-        setPreviewImage(user.ProfilePicture);
-      }
-    }
-  }, []);
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when field is edited
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setPreviewImage(previewUrl);
-      
-      // Update user data with the file
-      setFormData(prev => ({
-        ...prev,
-        ProfilePath: file
-      }));
-    }
-  };
-
-  const validateForm = () => {
-    const errors = {};
-    
-    if (!formData.Email.trim()) errors.Email = 'Email is required';
-    if (!formData.FullName.trim()) errors.FullName = 'Full name is required';
-    if (!formData.DateOfBirth) errors.DateOfBirth = 'Date of birth is required';
-    if (!formData.Gender) errors.Gender = 'Gender is required';
-    if (!formData.Phone.trim()) errors.Phone = 'Phone number is required';
-    
-    // Email validation
-    if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
-      errors.Email = 'Please enter a valid email address';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validateForm()) return;
-    
-    try {
-      setSubmitting(true);
-      setError(null);
-      
-      // Prepare the profile data
-      const profileData = {
-        UserID: formData.UserID,
-        Email: formData.Email.trim(),
-        FullName: formData.FullName.trim(),
-        DOB: formData.DateOfBirth,
-        Gender: formData.Gender,
-        Mobile: formData.Phone.trim(),
-        PostalAddress: formData.ResidentialAddress.trim(),
-        ImagePath: formData.ProfilePath
-      };
-      
-      const response = await userAPI.updateUserProfile(profileData);
-      
-      if (response.data) {
-        // Update local storage with new data
-        const user = JSON.parse(localStorage.getItem('user'));
-        const updatedUser = {
-          ...user,
-          Email: formData.Email,
-          FullName: formData.FullName,
-          DateOfBirth: formData.DateOfBirth,
-          Gender: formData.Gender,
-          Phone: formData.Phone,
-          ResidentialAddress: formData.ResidentialAddress,
-          ProfilePicture: previewImage || user.ProfilePicture
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
-        setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-          setEditMode(false);
-        }, 1500);
-      }
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to update profile. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleCancel = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    setFormData({
-      UserID: user.UserID || '',
-      Username: user.Username || '',
-      FullName: user.FullName || '',
-      Email: user.Email || '',
-      DateOfBirth: user.DateOfBirth?.split('T')[0] || '',
-      Phone: user.Phone || '',
-      Gender: user.Gender || 'M',
-      ResidentialAddress: user.ResidentialAddress || '',
-      RoleName: user.RoleName || 'User',
-      AccountStatus: user.AccountStatus || 0,
-      ProfilePath: user.ProfilePicture || ''
-    });
-    setPreviewImage(user.ProfilePicture || null);
-    setEditMode(false);
-    setError(null);
-    setFormErrors({});
+  // Function to handle PDF download
+  const handleDownload = (invoiceId) => {
+    // In a real app, this would fetch the PDF from the server
+    console.log(`Downloading invoice ${invoiceId}`);
+    // For demo purposes, we'll just show an alert
+    alert(`Invoice ${invoiceId} download started (simulated)`);
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Card>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h4">My Profile</Typography>
-            {editMode ? (
-              <Box>
-                <Button variant="contained" color="success" startIcon={<Save />} onClick={handleSave} disabled={submitting}>
-                  {submitting ? <CircularProgress size={24} /> : 'Save'}
-                </Button>
-                <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={handleCancel} disabled={submitting} sx={{ ml: 1 }}>
-                  Cancel
-                </Button>
-              </Box>
-            ) : (
-              <Button variant="contained" startIcon={<Edit />} onClick={() => setEditMode(true)}>
-                Edit Profile
-              </Button>
-            )}
+          <Box display="flex" alignItems="center" mb={3}>
+            <Receipt fontSize="large" color="primary" sx={{ mr: 2 }} />
+            <Typography variant="h4">Medical Invoices</Typography>
           </Box>
 
-          {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-          <Box display="flex" alignItems="center" mb={4}>
-            <Avatar 
-              sx={{ width: 100, height: 100, mr: 3 }} 
-              src={previewImage || formData.ProfilePath}
-            >
-              {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
-            </Avatar>
-            {editMode && (
-              <Button variant="contained" component="label">
-                Change Photo
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </Button>
-            )}
-            <Box sx={{ ml: 3 }}>
-              <Typography variant="h5">{formData.FullName}</Typography>
-              <Typography variant="subtitle1">@{formData.Username}</Typography>
-              <Typography variant="body2">{formData.RoleName}</Typography>
-            </Box>
-          </Box>
+          <Typography variant="body1" paragraph>
+            Below you can find all your medical invoices. You can view and download each invoice as a PDF document.
+          </Typography>
 
           <Divider sx={{ my: 3 }} />
 
-          <Grid container spacing={3}>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                  <TableCell><strong>Invoice #</strong></TableCell>
+                  <TableCell><strong>Date</strong></TableCell>
+                  <TableCell><strong>Description</strong></TableCell>
+                  <TableCell><strong>Amount ($)</strong></TableCell>
+                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell><strong>Actions</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>{invoice.id}</TableCell>
+                    <TableCell>{invoice.date}</TableCell>
+                    <TableCell>{invoice.description}</TableCell>
+                    <TableCell>{invoice.amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Box 
+                        component="span" 
+                        sx={{
+                          p: '4px 8px',
+                          borderRadius: '4px',
+                          backgroundColor: invoice.status === 'Paid' ? '#e6f7ee' : '#fff3e0',
+                          color: invoice.status === 'Paid' ? '#00a65a' : '#ff9800'
+                        }}
+                      >
+                        {invoice.status}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <IconButton 
+                        color="primary" 
+                        onClick={() => handleDownload(invoice.id)}
+                        aria-label="Download invoice"
+                      >
+                        <PictureAsPdf />
+                      </IconButton>
+                      <Button 
+                        variant="outlined" 
+                        startIcon={<Download />}
+                        onClick={() => handleDownload(invoice.id)}
+                        size="small"
+                        sx={{ ml: 1 }}
+                      >
+                        PDF
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Grid container spacing={3} mt={2}>
             <Grid item xs={12} md={6}>
-              <TextField 
-                fullWidth 
-                label="Username" 
-                value={formData.Username} 
-                disabled 
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                name="FullName"
-                value={formData.FullName}
-                onChange={handleInputChange}
-                disabled={!editMode}
-                error={!!formErrors.FullName}
-                helperText={formErrors.FullName}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Email"
-                name="Email"
-                value={formData.Email}
-                onChange={handleInputChange}
-                disabled={!editMode}
-                error={!!formErrors.Email}
-                helperText={formErrors.Email}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Date of Birth"
-                type="date"
-                name="DateOfBirth"
-                value={formData.DateOfBirth}
-                onChange={handleInputChange}
-                InputLabelProps={{ shrink: true }}
-                disabled={!editMode}
-                error={!!formErrors.DateOfBirth}
-                helperText={formErrors.DateOfBirth}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Phone"
-                name="Phone"
-                value={formData.Phone}
-                onChange={handleInputChange}
-                disabled={!editMode}
-                error={!!formErrors.Phone}
-                helperText={formErrors.Phone}
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={!editMode} error={!!formErrors.Gender}>
-                <InputLabel>Gender</InputLabel>
-                <Select
-                  name="Gender"
-                  value={formData.Gender}
-                  onChange={handleInputChange}
-                  label="Gender"
-                >
-                  <MenuItem value="M">Male</MenuItem>
-                  <MenuItem value="F">Female</MenuItem>
-                  <MenuItem value="O">Other</MenuItem>
-                </Select>
-                {formErrors.Gender && (
-                  <Typography variant="caption" color="error" sx={{ ml: 2 }}>
-                    {formErrors.Gender}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    <Box display="flex" alignItems="center">
+                      <Receipt color="primary" sx={{ mr: 1 }} />
+                      Invoice Summary
+                    </Box>
                   </Typography>
-                )}
-              </FormControl>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography>Total Invoices:</Typography>
+                    <Typography><strong>{invoices.length}</strong></Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography>Paid Invoices:</Typography>
+                    <Typography><strong>{invoices.filter(i => i.status === 'Paid').length}</strong></Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography>Pending Invoices:</Typography>
+                    <Typography><strong>{invoices.filter(i => i.status === 'Pending').length}</strong></Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Address"
-                name="ResidentialAddress"
-                multiline
-                rows={3}
-                value={formData.ResidentialAddress}
-                onChange={handleInputChange}
-                disabled={!editMode}
-              />
+            <Grid item xs={12} md={6}>
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    <Box display="flex" alignItems="center">
+                      <Receipt color="primary" sx={{ mr: 1 }} />
+                      Total Amounts
+                    </Box>
+                  </Typography>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography>Total Billed:</Typography>
+                    <Typography><strong>${invoices.reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between" mb={1}>
+                    <Typography>Total Paid:</Typography>
+                    <Typography><strong>${invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography>Total Pending:</Typography>
+                    <Typography><strong>${invoices.filter(i => i.status === 'Pending').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3 }} />
-
-          <Box display="flex" justifyContent="space-between">
-            <Typography><strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}</Typography>
-            <Typography><strong>Role:</strong> {formData.RoleName}</Typography>
+          <Box mt={4} textAlign="center">
+            <Button 
+              variant="contained" 
+              startIcon={<Download />}
+              size="large"
+              onClick={() => {
+                // This would download all invoices as a zip file in a real app
+                alert('Downloading all invoices as PDFs (simulated)');
+              }}
+            >
+              Download All Invoices
+            </Button>
           </Box>
         </CardContent>
       </Card>
@@ -329,4 +187,4 @@ const PatientInvoice = () => {
   );
 };
 
-export default PatientInvoice ;
+export default PatientInvoice;
