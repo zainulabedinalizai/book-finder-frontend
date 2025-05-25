@@ -1,8 +1,18 @@
 import axios from 'axios';
 
+// SIMPLE URL SWITCH - just comment/uncomment the line you want to use
+// const baseURL = 'https://localhost:7128/api';       // Local development
+const baseURL = 'https://210.56.11.158:441/api';  // Live production API
+// const baseURL = 'https://portal.medskls.com/api'; // Other environment
+// const baseURL = 'http://210.56.11.154:777/api';  // Live production API
+
 const API = axios.create({
-  baseURL: 'https://localhost:7128/api'
-  // baseURL:'https://210.56.11.158:441/api'
+  baseURL: baseURL,  // Using the selected URL
+  timeout: 30000,
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/x-www-form-urlencoded'
+  }
 });
 
 // Request interceptor to add auth token if available
@@ -15,6 +25,31 @@ API.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+// Response interceptor to handle errors globally
+API.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject({ message: 'Request timeout. Please check your network connection.' });
+    }
+    
+    if (!error.response) {
+      return Promise.reject({ 
+        message: 'Network Error. Please check your internet connection.',
+        isNetworkError: true 
+      });
+    }
+    
+    if (error.response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location = '/login';
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Auth API Endpoints
 export const authAPI = {
@@ -236,11 +271,6 @@ export const bookAPI = {
 
 // Favorites API Endpoints (if needed)
 export const favoritesAPI = {
-  getFavorites: () => API.get('/favorites'),
-  getFavoriteBook: (id) => API.get(`/favorites/${id}`), 
-  searchFavorites: (query) => API.get(`/favorites/search?query=${encodeURIComponent(query)}`),
-  addFavorite: (bookData) => API.post('/favorites', bookData),
-  removeFavorite: (bookId) => API.delete(`/favorites/${bookId}`),
 };
 
 export default API;

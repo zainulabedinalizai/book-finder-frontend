@@ -1,4 +1,3 @@
-// services.js
 import { authAPI, userAPI, patientAPI, questionAPI } from "../Api/api";
 
 export const authService = {
@@ -29,7 +28,8 @@ export const authService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Registration failed"
+        message: error.response?.data?.message || "Registration failed",
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -62,7 +62,8 @@ export const authService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Admin registration failed"
+        message: error.response?.data?.message || "Admin registration failed",
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -92,11 +93,22 @@ export const authService = {
       }
     } catch (error) {
       console.error('Login error:', error);
+      
+      let errorMessage = "An error occurred during login";
+      
+      if (error.isNetworkError) {
+        errorMessage = "Network Error. Please check your internet connection.";
+      } else if (error.isCorsError) {
+        errorMessage = "CORS Error. Please contact support.";
+      } else if (error.response) {
+        errorMessage = error.response.data?.message || error.message;
+      }
+      
       return {
         success: false,
-        message: error.response?.data?.message || 
-               error.message || 
-               "Invalid credentials"
+        message: errorMessage,
+        isNetworkError: error.isNetworkError || false,
+        isCorsError: error.isCorsError || false
       };
     }
   },
@@ -124,7 +136,8 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Failed to fetch users"
+        message: error.response?.data?.message || "Failed to fetch users",
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -140,7 +153,8 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Failed to delete user"
+        message: error.response?.data?.message || "Failed to delete user",
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -156,7 +170,8 @@ export const userService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Failed to update profile"
+        message: error.response?.data?.message || "Failed to update profile",
+        isNetworkError: error.isNetworkError || false
       };
     }
   }
@@ -178,7 +193,8 @@ export const patientService = {
         message: error.response?.data?.Message || 
                error.response?.data?.message || 
                error.message || 
-               "Failed to save application"
+               "Failed to save application",
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -208,7 +224,8 @@ export const patientService = {
                error.response?.data?.message || 
                error.message || 
                "An error occurred while fetching patient application",
-        error: error.message
+        error: error.message,
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -236,7 +253,8 @@ export const patientService = {
         message: error.response?.data?.message || 
                error.message || 
                "Failed to update application status",
-        error: error.message
+        error: error.message,
+        isNetworkError: error.isNetworkError || false
       };
     }
   },
@@ -265,7 +283,8 @@ export const patientService = {
         message: error.response?.data?.message || 
                error.message || 
                "Failed to fetch applications",
-        error: error.message
+        error: error.message,
+        isNetworkError: error.isNetworkError || false
       };
     }
   }
@@ -283,7 +302,8 @@ export const questionService = {
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Failed to fetch questions"
+        message: error.response?.data?.message || "Failed to fetch questions",
+        isNetworkError: error.isNetworkError || false
       };
     }
   }

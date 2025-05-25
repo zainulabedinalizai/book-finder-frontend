@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from './authService';
 
 const AuthContext = createContext();
@@ -13,8 +13,33 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
+
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => setNetworkStatus(true);
+    const handleOffline = () => setNetworkStatus(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const login = async (credentials) => {
+    // Check network status before attempting login
+    if (!networkStatus) {
+      setError('Network Error. Please check your internet connection.');
+      return { 
+        success: false, 
+        message: 'Network Error. Please check your internet connection.',
+        isNetworkError: true
+      };
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -30,8 +55,23 @@ export const AuthProvider = ({ children }) => {
       }
       return result;
     } catch (err) {
-      setError("An error occurred during login");
-      return { success: false, message: "An error occurred during login" };
+      let errorMessage = 'An error occurred during login';
+      
+      if (err.isNetworkError) {
+        errorMessage = 'Network Error. Please check your internet connection.';
+      } else if (err.isSSLError) {
+        errorMessage = 'SSL Certificate Error. Please contact support.';
+      } else if (err.isCorsError) {
+        errorMessage = 'CORS Error. Please contact support.';
+      }
+      
+      setError(errorMessage);
+      return { 
+        success: false, 
+        message: errorMessage,
+        isNetworkError: err.isNetworkError || false,
+        isSSLError: err.isSSLError || false
+      };
     } finally {
       setLoading(false);
     }
@@ -50,6 +90,7 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated, 
       loading, 
       error, 
+      networkStatus,
       login, 
       logout,
       role: user?.RoleId || null
