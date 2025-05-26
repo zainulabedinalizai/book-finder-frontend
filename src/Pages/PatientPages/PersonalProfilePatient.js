@@ -1,14 +1,17 @@
-// PersonalProfileDesign.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, Card, CardContent,
   TextField, Button, Avatar, FormControl, InputLabel,
-  Select, MenuItem, Divider, Grid, CircularProgress, Alert
+  Select, MenuItem, Divider, Grid, CircularProgress, Alert,
+  useMediaQuery, useTheme, Stack
 } from '@mui/material';
 import { Edit, Save, Cancel } from '@mui/icons-material';
 import { userAPI } from '../../Api/api';
 
 const PersonalProfilePatient = () => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +62,6 @@ const PersonalProfilePatient = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when field is edited
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -71,11 +73,9 @@ const PersonalProfilePatient = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setPreviewImage(previewUrl);
       
-      // Update user data with the file
       setFormData(prev => ({
         ...prev,
         ProfilePath: file
@@ -92,7 +92,6 @@ const PersonalProfilePatient = () => {
     if (!formData.Gender) errors.Gender = 'Gender is required';
     if (!formData.Phone.trim()) errors.Phone = 'Phone number is required';
     
-    // Email validation
     if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
       errors.Email = 'Please enter a valid email address';
     }
@@ -108,7 +107,6 @@ const PersonalProfilePatient = () => {
       setSubmitting(true);
       setError(null);
       
-      // Prepare the profile data
       const profileData = {
         UserID: formData.UserID,
         Email: formData.Email.trim(),
@@ -123,7 +121,6 @@ const PersonalProfilePatient = () => {
       const response = await userAPI.updateUserProfile(profileData);
       
       if (response.data) {
-        // Update local storage with new data
         const user = JSON.parse(localStorage.getItem('user'));
         const updatedUser = {
           ...user,
@@ -173,64 +170,97 @@ const PersonalProfilePatient = () => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="md" sx={{ p: isSmallScreen ? 1 : 3 }}>
       <Card>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h4">My Profile</Typography>
+          <Stack direction={isSmallScreen ? "column" : "row"} justifyContent="space-between" alignItems={isSmallScreen ? "flex-start" : "center"} spacing={1} mb={3}>
+            <Typography variant={isSmallScreen ? "h5" : "h4"}>My Profile</Typography>
             {editMode ? (
-              <Box>
-                <Button variant="contained" color="success" startIcon={<Save />} onClick={handleSave} disabled={submitting}>
+              <Stack direction="row" spacing={1}>
+                <Button 
+                  variant="contained" 
+                  color="success" 
+                  startIcon={<Save />} 
+                  onClick={handleSave} 
+                  disabled={submitting}
+                  size={isSmallScreen ? "small" : "medium"}
+                >
                   {submitting ? <CircularProgress size={24} /> : 'Save'}
                 </Button>
-                <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={handleCancel} disabled={submitting} sx={{ ml: 1 }}>
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  startIcon={<Cancel />} 
+                  onClick={handleCancel} 
+                  disabled={submitting} 
+                  size={isSmallScreen ? "small" : "medium"}
+                >
                   Cancel
                 </Button>
-              </Box>
+              </Stack>
             ) : (
-              <Button variant="contained" startIcon={<Edit />} onClick={() => setEditMode(true)}>
+              <Button 
+                variant="contained" 
+                startIcon={<Edit />} 
+                onClick={() => setEditMode(true)}
+                size={isSmallScreen ? "small" : "medium"}
+              >
                 Edit Profile
               </Button>
             )}
-          </Box>
+          </Stack>
 
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          <Box display="flex" alignItems="center" mb={4}>
+          <Stack direction={isSmallScreen ? "column" : "row"} alignItems={isSmallScreen ? "center" : "flex-start"} spacing={2} mb={4}>
             <Avatar 
-              sx={{ width: 100, height: 100, mr: 3 }} 
+              sx={{ 
+                width: isSmallScreen ? 80 : 100, 
+                height: isSmallScreen ? 80 : 100 
+              }} 
               src={previewImage || formData.ProfilePath}
             >
               {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
             </Avatar>
-            {editMode && (
-              <Button variant="contained" component="label">
-                Change Photo
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </Button>
-            )}
-            <Box sx={{ ml: 3 }}>
-              <Typography variant="h5">{formData.FullName}</Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: isSmallScreen ? 'center' : 'flex-start',
+              textAlign: isSmallScreen ? 'center' : 'left'
+            }}>
+              <Typography variant={isSmallScreen ? "h6" : "h5"}>{formData.FullName}</Typography>
               <Typography variant="subtitle1">@{formData.Username}</Typography>
               <Typography variant="body2">{formData.RoleName}</Typography>
+              {editMode && (
+                <Button 
+                  variant="contained" 
+                  component="label"
+                  size={isSmallScreen ? "small" : "medium"}
+                  sx={{ mt: 1 }}
+                >
+                  Change Photo
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </Button>
+              )}
             </Box>
-          </Box>
+          </Stack>
 
           <Divider sx={{ my: 3 }} />
 
-          <Grid container spacing={3}>
+          <Grid container spacing={isSmallScreen ? 1 : 3}>
             <Grid item xs={12} md={6}>
               <TextField 
                 fullWidth 
                 label="Username" 
                 value={formData.Username} 
                 disabled 
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -243,6 +273,7 @@ const PersonalProfilePatient = () => {
                 disabled={!editMode}
                 error={!!formErrors.FullName}
                 helperText={formErrors.FullName}
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -255,6 +286,7 @@ const PersonalProfilePatient = () => {
                 disabled={!editMode}
                 error={!!formErrors.Email}
                 helperText={formErrors.Email}
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -269,6 +301,7 @@ const PersonalProfilePatient = () => {
                 disabled={!editMode}
                 error={!!formErrors.DateOfBirth}
                 helperText={formErrors.DateOfBirth}
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -281,16 +314,18 @@ const PersonalProfilePatient = () => {
                 disabled={!editMode}
                 error={!!formErrors.Phone}
                 helperText={formErrors.Phone}
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <FormControl fullWidth disabled={!editMode} error={!!formErrors.Gender}>
-                <InputLabel>Gender</InputLabel>
+                <InputLabel size={isSmallScreen ? "small" : "medium"}>Gender</InputLabel>
                 <Select
                   name="Gender"
                   value={formData.Gender}
                   onChange={handleInputChange}
                   label="Gender"
+                  size={isSmallScreen ? "small" : "medium"}
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
@@ -309,24 +344,25 @@ const PersonalProfilePatient = () => {
                 label="Address"
                 name="ResidentialAddress"
                 multiline
-                rows={3}
+                rows={isSmallScreen ? 2 : 3}
                 value={formData.ResidentialAddress}
                 onChange={handleInputChange}
                 disabled={!editMode}
+                size={isSmallScreen ? "small" : "medium"}
               />
             </Grid>
           </Grid>
 
           <Divider sx={{ my: 3 }} />
 
-          <Box display="flex" justifyContent="space-between">
-            <Typography><strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}</Typography>
-            <Typography><strong>Role:</strong> {formData.RoleName}</Typography>
-          </Box>
+          <Stack direction={isSmallScreen ? "column" : "row"} justifyContent="space-between" spacing={1}>
+            <Typography variant="body2"><strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}</Typography>
+            <Typography variant="body2"><strong>Role:</strong> {formData.RoleName}</Typography>
+          </Stack>
         </CardContent>
       </Card>
     </Container>
   );
 };
 
-export default PersonalProfilePatient ;
+export default PersonalProfilePatient;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -17,14 +17,17 @@ import {
   Alert,
   Avatar,
   Chip,
-  Snackbar
+  Snackbar,
+  useMediaQuery,
+  useTheme,
+  Stack
 } from '@mui/material';
 import { Search, Refresh } from '@mui/icons-material';
 import { patientAPI } from '../../Api/api';
 import { useAuth } from '../../Context/AuthContext';
 
 const AppStatsPatient = () => {
-  const { user } = useAuth(); // Get the authenticated user from context
+  const { user } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,7 +40,9 @@ const AppStatsPatient = () => {
     severity: 'success'
   });
 
-  // Fetch patient applications from API
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   const fetchApplications = async () => {
     try {
       if (!user?.UserId) {
@@ -71,7 +76,7 @@ const AppStatsPatient = () => {
     if (user?.UserId) {
       fetchApplications();
     }
-  }, [user?.UserId]); // Refetch when user ID changes
+  }, [user?.UserId]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -111,22 +116,22 @@ const AppStatsPatient = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
+    <Box sx={{ p: isSmallScreen ? 1 : 3 }}>
+      <Typography variant={isSmallScreen ? "h5" : "h4"} gutterBottom sx={{ mb: 2 }}>
         My Patient Applications
       </Typography>
       
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Application List</Typography>
+      <Paper sx={{ p: isSmallScreen ? 1 : 2 }}>
+        <Stack direction={isSmallScreen ? "column" : "row"} justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+          <Typography variant={isSmallScreen ? "subtitle1" : "h6"}>Application List</Typography>
           <Box>
             <Tooltip title="Refresh">
-              <IconButton onClick={fetchApplications} disabled={loading}>
-                <Refresh />
+              <IconButton onClick={fetchApplications} disabled={loading} size={isSmallScreen ? "small" : "medium"}>
+                <Refresh fontSize={isSmallScreen ? "small" : "medium"} />
               </IconButton>
             </Tooltip>
           </Box>
-        </Box>
+        </Stack>
         
         <TextField
           fullWidth
@@ -136,6 +141,7 @@ const AppStatsPatient = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+            size: isSmallScreen ? "small" : "medium"
           }}
           sx={{ mb: 2 }}
         />
@@ -146,7 +152,7 @@ const AppStatsPatient = () => {
           </Alert>
         ) : loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+            <CircularProgress size={isSmallScreen ? 24 : 40} />
           </Box>
         ) : error ? (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -156,9 +162,48 @@ const AppStatsPatient = () => {
           <Alert severity="info" sx={{ mb: 2 }}>
             No applications found
           </Alert>
+        ) : isSmallScreen ? (
+          // Mobile view - card list
+          <Box>
+            {filteredApplications
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((app, index) => (
+                <Paper key={index} sx={{ p: 2, mb: 2 }}>
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                    <Avatar sx={{ width: 32, height: 32 }}>
+                      {app.application_title?.charAt(0) || 'A'}
+                    </Avatar>
+                    <Typography variant="subtitle2" noWrap>
+                      {app.application_title}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body2" color="text.secondary">
+                      {app.SubmittedDate}
+                    </Typography>
+                    <Chip 
+                      label={app.status} 
+                      color={getStatusColor(app.status)}
+                      size="small"
+                    />
+                  </Stack>
+                </Paper>
+              ))}
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25]}
+              component="div"
+              count={filteredApplications.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              size="small"
+            />
+          </Box>
         ) : (
+          // Desktop view - table
           <TableContainer component={Paper}>
-            <Table>
+            <Table size="medium">
               <TableHead>
                 <TableRow>
                   <TableCell>Application Title</TableCell>
@@ -173,7 +218,7 @@ const AppStatsPatient = () => {
                     <TableRow key={index}>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>
+                          <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
                             {app.application_title?.charAt(0) || 'A'}
                           </Avatar>
                           {app.application_title}
@@ -184,6 +229,7 @@ const AppStatsPatient = () => {
                         <Chip 
                           label={app.status} 
                           color={getStatusColor(app.status)}
+                          size="medium"
                         />
                       </TableCell>
                     </TableRow>
@@ -212,6 +258,7 @@ const AppStatsPatient = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 

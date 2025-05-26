@@ -1,14 +1,17 @@
-// PersonalProfileDesign.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, Card, CardContent,
   TextField, Button, Avatar, FormControl, InputLabel,
-  Select, MenuItem, Divider, Grid, CircularProgress, Alert
+  Select, MenuItem, Divider, Grid, CircularProgress, Alert,
+  useMediaQuery, useTheme
 } from '@mui/material';
 import { Edit, Save, Cancel } from '@mui/icons-material';
 import { userAPI } from '../../Api/api';
 
 const PersonalProfileDesign = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +62,6 @@ const PersonalProfileDesign = () => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
-    // Clear error when field is edited
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -71,11 +73,8 @@ const PersonalProfileDesign = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setPreviewImage(previewUrl);
-      
-      // Update user data with the file
       setFormData(prev => ({
         ...prev,
         ProfilePath: file
@@ -92,7 +91,6 @@ const PersonalProfileDesign = () => {
     if (!formData.Gender) errors.Gender = 'Gender is required';
     if (!formData.Phone.trim()) errors.Phone = 'Phone number is required';
     
-    // Email validation
     if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
       errors.Email = 'Please enter a valid email address';
     }
@@ -108,7 +106,6 @@ const PersonalProfileDesign = () => {
       setSubmitting(true);
       setError(null);
       
-      // Prepare the profile data
       const profileData = {
         UserID: formData.UserID,
         Email: formData.Email.trim(),
@@ -123,7 +120,6 @@ const PersonalProfileDesign = () => {
       const response = await userAPI.updateUserProfile(profileData);
       
       if (response.data) {
-        // Update local storage with new data
         const user = JSON.parse(localStorage.getItem('user'));
         const updatedUser = {
           ...user,
@@ -173,22 +169,45 @@ const PersonalProfileDesign = () => {
   };
 
   return (
-    <Container maxWidth="md">
-      <Card>
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h4">My Profile</Typography>
+    <Container maxWidth="md" sx={{ px: isMobile ? 1 : 3, py: 2 }}>
+      <Card sx={{ boxShadow: isMobile ? 'none' : undefined }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} 
+            justifyContent="space-between" alignItems={isMobile ? 'flex-start' : 'center'} 
+            mb={isMobile ? 2 : 3} gap={1}>
+            <Typography variant={isMobile ? "h5" : "h4"} sx={{ mb: isMobile ? 1 : 0 }}>
+              My Profile
+            </Typography>
             {editMode ? (
-              <Box>
-                <Button variant="contained" color="success" startIcon={<Save />} onClick={handleSave} disabled={submitting}>
+              <Box display="flex" gap={1} mt={isMobile ? 1 : 0}>
+                <Button 
+                  variant="contained" 
+                  color="success" 
+                  startIcon={<Save />} 
+                  onClick={handleSave} 
+                  disabled={submitting}
+                  size={isMobile ? "small" : "medium"}
+                >
                   {submitting ? <CircularProgress size={24} /> : 'Save'}
                 </Button>
-                <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={handleCancel} disabled={submitting} sx={{ ml: 1 }}>
+                <Button 
+                  variant="outlined" 
+                  color="error" 
+                  startIcon={<Cancel />} 
+                  onClick={handleCancel} 
+                  disabled={submitting} 
+                  size={isMobile ? "small" : "medium"}
+                >
                   Cancel
                 </Button>
               </Box>
             ) : (
-              <Button variant="contained" startIcon={<Edit />} onClick={() => setEditMode(true)}>
+              <Button 
+                variant="contained" 
+                startIcon={<Edit />} 
+                onClick={() => setEditMode(true)}
+                size={isMobile ? "small" : "medium"}
+              >
                 Edit Profile
               </Button>
             )}
@@ -197,40 +216,58 @@ const PersonalProfileDesign = () => {
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          <Box display="flex" alignItems="center" mb={4}>
-            <Avatar 
-              sx={{ width: 100, height: 100, mr: 3 }} 
-              src={previewImage || formData.ProfilePath}
-            >
-              {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
-            </Avatar>
-            {editMode && (
-              <Button variant="contained" component="label">
-                Change Photo
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </Button>
-            )}
-            <Box sx={{ ml: 3 }}>
-              <Typography variant="h5">{formData.FullName}</Typography>
-              <Typography variant="subtitle1">@{formData.Username}</Typography>
-              <Typography variant="body2">{formData.RoleName}</Typography>
+          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} 
+            alignItems={isMobile ? 'center' : 'flex-start'} mb={4} gap={2}>
+            <Box display="flex" flexDirection="column" alignItems="center">
+              <Avatar 
+                sx={{ 
+                  width: isMobile ? 80 : 100, 
+                  height: isMobile ? 80 : 100,
+                  mb: isMobile ? 1 : 0
+                }} 
+                src={previewImage || formData.ProfilePath}
+              >
+                {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
+              </Avatar>
+              {editMode && (
+                <Button 
+                  variant="contained" 
+                  component="label"
+                  size={isMobile ? "small" : "medium"}
+                >
+                  Change Photo
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ ml: isMobile ? 0 : 3, mt: isMobile ? 2 : 0 }}>
+              <Typography variant={isMobile ? "h6" : "h5"} textAlign={isMobile ? "center" : "left"}>
+                {formData.FullName}
+              </Typography>
+              <Typography variant="subtitle1" textAlign={isMobile ? "center" : "left"}>
+                @{formData.Username}
+              </Typography>
+              <Typography variant="body2" textAlign={isMobile ? "center" : "left"}>
+                {formData.RoleName}
+              </Typography>
             </Box>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: isMobile ? 2 : 3 }} />
 
-          <Grid container spacing={3}>
+          <Grid container spacing={isMobile ? 1 : 3}>
             <Grid item xs={12} md={6}>
               <TextField 
                 fullWidth 
                 label="Username" 
                 value={formData.Username} 
                 disabled 
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -243,6 +280,7 @@ const PersonalProfileDesign = () => {
                 disabled={!editMode}
                 error={!!formErrors.FullName}
                 helperText={formErrors.FullName}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -255,6 +293,7 @@ const PersonalProfileDesign = () => {
                 disabled={!editMode}
                 error={!!formErrors.Email}
                 helperText={formErrors.Email}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -269,6 +308,7 @@ const PersonalProfileDesign = () => {
                 disabled={!editMode}
                 error={!!formErrors.DateOfBirth}
                 helperText={formErrors.DateOfBirth}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -281,10 +321,16 @@ const PersonalProfileDesign = () => {
                 disabled={!editMode}
                 error={!!formErrors.Phone}
                 helperText={formErrors.Phone}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={!editMode} error={!!formErrors.Gender}>
+              <FormControl 
+                fullWidth 
+                disabled={!editMode} 
+                error={!!formErrors.Gender}
+                size={isMobile ? "small" : "medium"}
+              >
                 <InputLabel>Gender</InputLabel>
                 <Select
                   name="Gender"
@@ -309,19 +355,25 @@ const PersonalProfileDesign = () => {
                 label="Address"
                 name="ResidentialAddress"
                 multiline
-                rows={3}
+                rows={isMobile ? 2 : 3}
                 value={formData.ResidentialAddress}
                 onChange={handleInputChange}
                 disabled={!editMode}
+                size={isMobile ? "small" : "medium"}
               />
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: isMobile ? 2 : 3 }} />
 
-          <Box display="flex" justifyContent="space-between">
-            <Typography><strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}</Typography>
-            <Typography><strong>Role:</strong> {formData.RoleName}</Typography>
+          <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} 
+            justifyContent="space-between" gap={1}>
+            <Typography>
+              <strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}
+            </Typography>
+            <Typography>
+              <strong>Role:</strong> {formData.RoleName}
+            </Typography>
           </Box>
         </CardContent>
       </Card>

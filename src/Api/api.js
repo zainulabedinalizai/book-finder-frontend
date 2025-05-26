@@ -2,9 +2,10 @@ import axios from 'axios';
 
 // SIMPLE URL SWITCH - just comment/uncomment the line you want to use
 // const baseURL = 'https://localhost:7128/api';       // Local development
-const baseURL = 'https://210.56.11.158:441/api';  // Live production API
+// const baseURL = 'https://210.56.11.158:441/api';  // Live production API
 // const baseURL = 'https://portal.medskls.com/api'; // Other environment
 // const baseURL = 'http://210.56.11.154:777/api';  // Live production API
+const baseURL = 'https://portal.medskls.com:441/API';
 
 const API = axios.create({
   baseURL: baseURL,  // Using the selected URL

@@ -12,7 +12,9 @@ import {
   IconButton,
   CircularProgress,
   Grow,
-  Slide
+  Slide,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { 
   Visibility, 
@@ -30,6 +32,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading, error } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -53,19 +57,28 @@ const Login = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+    <Container 
+      maxWidth="sm" 
+      sx={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center',
+        px: isMobile ? 2 : 4,
+        py: isMobile ? 0 : 4
+      }}
+    >
       <Fade in={true} timeout={500}>
         <Paper 
-          elevation={6} 
+          elevation={isMobile ? 0 : 6} 
           sx={{
-            p: 4,
-            borderRadius: 3,
+            p: isMobile ? 3 : 4,
+            borderRadius: isMobile ? 0 : 3,
             width: '100%',
-            background: 'linear-gradient(145deg, #ffffff, #f5f5f5)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+            background: isMobile ? 'transparent' : 'linear-gradient(145deg, #ffffff, #f5f5f5)',
+            boxShadow: isMobile ? 'none' : '0 8px 32px rgba(0,0,0,0.1)',
             transition: 'transform 0.3s ease, box-shadow 0.3s ease',
             '&:hover': {
-              boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+              boxShadow: isMobile ? 'none' : '0 12px 40px rgba(0,0,0,0.15)'
             }
           }}
         >
@@ -73,23 +86,24 @@ const Login = () => {
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center',
-            mb: 4
+            mb: isMobile ? 2 : 4
           }}>
             <Grow in={true} timeout={800}>
               <Typography 
-                variant="h4" 
+                variant={isMobile ? "h5" : "h4"} 
                 gutterBottom
                 sx={{ 
                   fontWeight: 700,
                   background: 'linear-gradient(45deg, #1976d2, #2196f3)',
                   WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  WebkitTextFillColor: 'transparent',
+                  textAlign: 'center'
                 }}
               >
                 Welcome Back
               </Typography>
             </Grow>
-            <Typography variant="body1" color="text.secondary">
+            <Typography variant={isMobile ? "body2" : "body1"} color="text.secondary">
               Sign in to access your account
             </Typography>
           </Box>
@@ -105,7 +119,8 @@ const Login = () => {
                   backgroundColor: 'rgba(244, 67, 54, 0.1)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  fontSize: isMobile ? '0.875rem' : '1rem'
                 }}
               >
                 {error}
@@ -126,12 +141,13 @@ const Login = () => {
               name="username"
               autoComplete="username"
               autoFocus
+              size={isMobile ? "small" : "medium"}
               value={credentials.username}
               onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <AccountCircle color="primary" />
+                    <AccountCircle color="primary" fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -158,12 +174,13 @@ const Login = () => {
               label="Password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
+              size={isMobile ? "small" : "medium"}
               value={credentials.password}
               onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock color="primary" />
+                    <Lock color="primary" fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -172,8 +189,9 @@ const Login = () => {
                       aria-label="toggle password visibility"
                       onClick={handleClickShowPassword}
                       edge="end"
+                      size={isMobile ? "small" : "medium"}
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? <VisibilityOff fontSize={isMobile ? "small" : "medium"} /> : <Visibility fontSize={isMobile ? "small" : "medium"} />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -197,10 +215,10 @@ const Login = () => {
               sx={{
                 transition: 'transform 0.2s ease',
                 '&:hover': {
-                  transform: 'scale(1.01)'
+                  transform: !isMobile ? 'scale(1.01)' : 'none'
                 },
                 '&:active': {
-                  transform: 'scale(0.99)'
+                  transform: !isMobile ? 'scale(0.99)' : 'scale(0.98)'
                 }
               }}
             >
@@ -208,14 +226,14 @@ const Login = () => {
                 type="submit"
                 fullWidth
                 variant="contained"
-                size="large"
+                size={isMobile ? "medium" : "large"}
                 disabled={loading}
                 sx={{
                   mt: 3,
                   mb: 2,
-                  py: 1.5,
+                  py: isMobile ? 1 : 1.5,
                   borderRadius: 2,
-                  fontSize: '1rem',
+                  fontSize: isMobile ? '0.875rem' : '1rem',
                   fontWeight: 600,
                   background: 'linear-gradient(45deg, #1976d2, #2196f3)',
                   boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -236,10 +254,13 @@ const Login = () => {
 
             <Box sx={{ 
               display: 'flex', 
+              flexDirection: isMobile ? 'column' : 'row',
               justifyContent: 'space-between',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              gap: isMobile ? 1 : 0,
               mt: 2
             }}>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ mb: isMobile ? 1 : 0 }}>
                 <Link 
                   to="/forgot-password" 
                   style={{ 

@@ -13,7 +13,9 @@ import {
   Paper,
   Fade,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { 
   AccountCircle,
@@ -41,6 +43,8 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,35 +77,64 @@ const Register = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ display: 'flex', alignItems: 'center', minHeight: '100vh' }}>
+    <Container 
+      maxWidth="sm" 
+      sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        minHeight: '100vh',
+        px: isMobile ? 1 : 3,
+        py: isMobile ? 0 : 4
+      }}
+    >
       <Fade in={true}>
-        <Paper elevation={3} sx={{ p: 3, width: '100%', borderRadius: 2 }}>
-          <Box sx={{ mb: 3, textAlign: 'center' }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+        <Paper 
+          elevation={isMobile ? 0 : 3} 
+          sx={{ 
+            p: isMobile ? 2 : 3, 
+            width: '100%', 
+            borderRadius: isMobile ? 0 : 2,
+            boxShadow: isMobile ? 'none' : undefined
+          }}
+        >
+          <Box sx={{ mb: isMobile ? 2 : 3, textAlign: 'center' }}>
+            <Typography variant={isMobile ? "h6" : "h5"} sx={{ fontWeight: 600 }}>
               Create Account
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant={isMobile ? "caption" : "body2"} color="text.secondary">
               Join us today
             </Typography>
           </Box>
 
           {error && (
-            <Typography color="error" sx={{ 
-              mb: 2, 
-              p: 1,
-              backgroundColor: 'error.light',
-              borderRadius: 1,
-              textAlign: 'center'
-            }}>
+            <Typography 
+              color="error" 
+              sx={{ 
+                mb: 2, 
+                p: 1,
+                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                backgroundColor: 'error.light',
+                borderRadius: 1,
+                textAlign: 'center'
+              }}
+            >
               {error}
             </Typography>
           )}
 
-          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box 
+            component="form" 
+            onSubmit={handleSubmit} 
+            sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: isMobile ? 1.5 : 2 
+            }}
+          >
             <TextField
               required
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Username"
               name="username"
               value={userData.username}
@@ -109,7 +142,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <AccountCircle fontSize="small" />
+                    <AccountCircle fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -118,7 +151,7 @@ const Register = () => {
             <TextField
               required
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Email"
               name="email"
               type="email"
@@ -127,7 +160,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Email fontSize="small" />
+                    <Email fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -136,7 +169,7 @@ const Register = () => {
             <TextField
               required
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Password"
               name="password"
               type="password"
@@ -145,7 +178,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock fontSize="small" />
+                    <Lock fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -153,7 +186,7 @@ const Register = () => {
 
             <TextField
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Full Name"
               name="fullName"
               value={userData.fullName}
@@ -161,7 +194,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Person fontSize="small" />
+                    <Person fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -169,7 +202,7 @@ const Register = () => {
 
             <TextField
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Date of Birth"
               name="dob"
               type="date"
@@ -179,13 +212,13 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Cake fontSize="small" />
+                    <Cake fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
             />
 
-            <FormControl fullWidth size="small">
+            <FormControl fullWidth size={isMobile ? "small" : "medium"}>
               <InputLabel>Gender</InputLabel>
               <Select
                 name="gender"
@@ -201,7 +234,7 @@ const Register = () => {
 
             <TextField
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Phone Number"
               name="mobile"
               value={userData.mobile}
@@ -209,7 +242,7 @@ const Register = () => {
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Phone fontSize="small" />
+                    <Phone fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -217,17 +250,17 @@ const Register = () => {
 
             <TextField
               fullWidth
-              size="small"
+              size={isMobile ? "small" : "medium"}
               label="Address"
               name="address"
               multiline
-              rows={2}
+              rows={isMobile ? 2 : 3}
               value={userData.address}
               onChange={handleChange}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Home fontSize="small" />
+                    <Home fontSize={isMobile ? "small" : "medium"} />
                   </InputAdornment>
                 ),
               }}
@@ -237,16 +270,34 @@ const Register = () => {
               type="submit"
               fullWidth
               variant="contained"
-              size="medium"
+              size={isMobile ? "medium" : "large"}
               disabled={loading}
-              sx={{ mt: 1, py: 1 }}
+              sx={{ 
+                mt: 1, 
+                py: isMobile ? 0.75 : 1,
+                fontSize: isMobile ? '0.875rem' : '1rem'
+              }}
             >
               {loading ? <CircularProgress size={24} /> : 'Register'}
             </Button>
 
-            <Typography variant="body2" sx={{ textAlign: 'center', mt: 1 }}>
+            <Typography 
+              variant={isMobile ? "caption" : "body2"} 
+              sx={{ 
+                textAlign: 'center', 
+                mt: 1,
+                fontSize: isMobile ? '0.75rem' : '0.875rem'
+              }}
+            >
               Already have an account?{' '}
-              <Link to="/login" style={{ textDecoration: 'none', color: '#1976d2' }}>
+              <Link 
+                to="/login" 
+                style={{ 
+                  textDecoration: 'none', 
+                  color: '#1976d2',
+                  fontWeight: 500
+                }}
+              >
                 Sign in
               </Link>
             </Typography>

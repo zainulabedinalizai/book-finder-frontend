@@ -10,34 +10,7 @@ import {
 import { Edit, Send, Save, Cancel, Add, Delete, Receipt } from '@mui/icons-material';
 
 const SendInvoiceToPatient = () => {
-  // Sample invoice data
-  const [invoices, setInvoices] = useState([
-    {
-      id: 'INV-2023-001',
-      date: '2023-05-15',
-      patientName: 'John Doe',
-      description: 'Annual Checkup',
-      amount: 120.00,
-      status: 'Draft',
-    },
-    {
-      id: 'INV-2023-002',
-      date: '2023-06-20',
-      patientName: 'Jane Smith',
-      description: 'Blood Tests',
-      amount: 85.50,
-      status: 'Pending',
-    },
-    {
-      id: 'INV-2023-003',
-      date: '2023-07-10',
-      patientName: 'Robert Johnson',
-      description: 'Consultation',
-      amount: 65.00,
-      status: 'Sent',
-    },
-  ]);
-
+  const [invoices, setInvoices] = useState([]);
   const [editMode, setEditMode] = useState(null);
   const [editedInvoice, setEditedInvoice] = useState({});
   const [newInvoice, setNewInvoice] = useState({
@@ -77,7 +50,6 @@ const SendInvoiceToPatient = () => {
     setInvoices(invoices.map(invoice => 
       invoice.id === id ? { ...invoice, status: 'Sent' } : invoice
     ));
-    alert(`Invoice ${id} sent to patient`);
   };
 
   const handleAddInvoice = () => {

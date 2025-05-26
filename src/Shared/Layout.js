@@ -273,6 +273,11 @@ const Layout = ({ children }) => {
         to={item.path}
         selected={location.pathname === item.path}
         level={level}
+        onClick={() => {
+          if (isMobile) {
+            setMobileOpen(false);
+          }
+        }}
       >
         <ListItemIcon sx={{ 
           minWidth: '40px',
@@ -295,7 +300,7 @@ const Layout = ({ children }) => {
     const isOpen = openMenus[section.key] ?? true;
     
     return (
-      <>
+      <React.Fragment key={section.key}>
         <ListItemButton 
           onClick={() => toggleMenu(section.key)}
           sx={{
@@ -324,7 +329,7 @@ const Layout = ({ children }) => {
             {renderMenuItems(section.items, 1)}
           </List>
         </Collapse>
-      </>
+      </React.Fragment>
     );
   };
 
@@ -415,34 +420,37 @@ const Layout = ({ children }) => {
         {isAuthenticated ? (
           <>
             {getMenuSectionsForRole().map(section => (
-              <React.Fragment key={section.key}>
-                {section.items.length === 1 ? (
-                  <Tooltip title={section.title} placement="right" arrow>
-                    <ListItem disablePadding>
-                      <ListItemButton 
-                        component={Link} 
-                        to={section.items[0].path}
-                        selected={location.pathname === section.items[0].path}
-                      >
-                        <ListItemIcon sx={{
-                          color: location.pathname === section.items[0].path ? 
-                            theme.palette.primary.main : 'inherit'
-                        }}>
-                          {section.icon}
-                        </ListItemIcon>
-                        <ListItemText 
-                          primary={section.title} 
-                          primaryTypographyProps={{ 
-                            fontWeight: location.pathname === section.items[0].path ? '600' : 'normal' 
-                          }} 
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  </Tooltip>
-                ) : (
-                  renderMenuSection(section)
-                )}
-              </React.Fragment>
+              section.items.length === 1 ? (
+                <Tooltip key={section.key} title={section.title} placement="right" arrow>
+                  <ListItem disablePadding>
+                    <ListItemButton 
+                      component={Link} 
+                      to={section.items[0].path}
+                      selected={location.pathname === section.items[0].path}
+                      onClick={() => {
+                        if (isMobile) {
+                          setMobileOpen(false);
+                        }
+                      }}
+                    >
+                      <ListItemIcon sx={{
+                        color: location.pathname === section.items[0].path ? 
+                          theme.palette.primary.main : 'inherit'
+                      }}>
+                        {section.icon}
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={section.title} 
+                        primaryTypographyProps={{ 
+                          fontWeight: location.pathname === section.items[0].path ? '600' : 'normal' 
+                        }} 
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                </Tooltip>
+              ) : (
+                renderMenuSection(section)
+              )
             ))}
           </>
         ) : (
