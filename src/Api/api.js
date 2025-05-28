@@ -2,10 +2,10 @@ import axios from 'axios';
 
 // SIMPLE URL SWITCH - just comment/uncomment the line you want to use
 // const baseURL = 'https://localhost:7128/api';       // Local development
-// const baseURL = 'https://210.56.11.158:441/api';  // Live production API
+//const baseURL = 'https://210.56.11.158:441/api';  // Live production API
 // const baseURL = 'https://portal.medskls.com/api'; // Other environment
 // const baseURL = 'http://210.56.11.154:777/api';  // Live production API
-const baseURL = 'https://portal.medskls.com:441/API';
+const baseURL = 'https://portal.medskls.com:441/API';  // Live production API
 
 const API = axios.create({
   baseURL: baseURL,  // Using the selected URL
@@ -275,3 +275,25 @@ export const favoritesAPI = {
 };
 
 export default API;
+
+export const UploadEmployeeFiles = async (params) => {
+  try {
+    let response = await fetch(`${baseURL}/FileUpload/UploadFiles`, {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+     body: JSON.stringify(params),
+    });
+
+    const data = await response.json();
+    console.log('data', data);
+    if (response.ok) {
+      return { error: false, data };
+    } else {
+      return { error: true, message: data.message || 'Failed to update attendance status' };
+    }
+  } catch (error) {
+    return { error: true, message: error.message || 'Network error' };
+  }
+};

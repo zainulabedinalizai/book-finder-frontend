@@ -32,7 +32,8 @@ import { Add, Edit, Delete, Search, Refresh } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { authService, userService } from '../../Context/authService';
 import EditUserDialog from './EditUserDialog'; // Import the new component
-
+import CloseIcon from "@mui/icons-material/Close";
+import { UploadEmployeeFiles } from '../../Api/api';
 const roles = [
   { id: 1, name: 'User', description: 'Regular authenticated user' },
   { id: 2, name: 'Admin', description: 'System administrator' },
@@ -56,6 +57,7 @@ const AddUser = () => {
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [filePath, setFilePath] = useState(null);
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -217,6 +219,86 @@ const AddUser = () => {
     fetchUsers(); // Refresh the user list after update
   };
 
+  const handleImageUpload = async (e) => {
+    e.preventDefault();
+    const field = e.target.name;
+    const files = e.target.files;
+
+    if (!files.length) return;
+
+    const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "image/png",
+        "image/jpeg",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+    ];
+
+    let uploaded = [];
+
+    // Convert each file to Base64 and store it in an array
+    const filePromises = Array.from(files).map((file) => {
+        return new Promise((resolve, reject) => {
+            if (!allowedTypes.includes(file.type)) {
+               setError(`${file.name} is not a valid file type.`);
+                e.target.value = "";
+                reject(new Error(`${file.name} is not a valid file type`));
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                let ImageB = file.name + "|" + reader.result;
+                allowedTypes.forEach((type) => {
+                    ImageB = ImageB.replace(`data:${type};base64,`, "");
+                });
+
+                const row = {
+                    Image: ImageB,
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileData: reader.result,
+                };
+
+                uploaded.push(row);
+                resolve(row);
+            };
+
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    });
+
+    try {
+        // Wait for all files to be processed
+        await Promise.all(filePromises);
+
+        // Ensure `uploaded` is fully populated before sending request
+        console.log("Final Uploaded Files:", uploaded);
+
+        const jsonFile = JSON.stringify(uploaded);
+        const params = {
+            SubjectName: field,
+            AssignmentTitle: "Application Files",
+            Path: `Assets/UsersFiles/`,
+            Assignments: jsonFile,
+        };
+        console.log("Params", params);
+        const response = await UploadEmployeeFiles(params);
+        console.log("Response", response);
+        if (!response.error) {
+            setFilePath(response.data[0]); // Set the file path from the API response
+        } else {
+            setError("Failed to upload file!");
+        }
+    } catch (error) {
+        setError("Failed to upload file!");
+    }
+};
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
@@ -498,6 +580,23 @@ const AddUser = () => {
                   helperText={formErrors.address}
                 />
               </Grid>
+               <Grid item xs={12} sm={3} md={3} xl={3}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={10}>
+                <TextField
+                  label="Upload Files"
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  name="uploadFiles"
+                  type="file"
+                  InputLabelProps={{ shrink: true }}
+                  defaultValue={newUser.uploadFiles}
+                  onChange={handleImageUpload}
+                />
+              </Grid>
+            </Grid>
+          </Grid>
             </Grid>
           </Box>
         </DialogContent>
@@ -523,6 +622,7 @@ const AddUser = () => {
         roles={roles}
       />
     </Box>
+    
   );
 };
 
