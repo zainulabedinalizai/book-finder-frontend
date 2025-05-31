@@ -79,6 +79,19 @@ export const authAPI = {
   }
 };
 
+export const submittedAnswersAPI = {
+  getByApplicationId: (applicationId) => {
+    const formData = new URLSearchParams();
+    formData.append('ID', applicationId);
+    
+    return API.post('/GetSubmitedQuestionAnswer', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+  },
+};
+
 // User API Endpoints
 export const userAPI = {
   getUserList: (userId) => {
@@ -158,7 +171,7 @@ export const questionAPI = {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
-  }
+  },
 };
 
 // Patient API Endpoints

@@ -3,11 +3,13 @@ import {
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TablePagination, TextField, IconButton, Tooltip,
   CircularProgress, Alert, Avatar, Chip, Snackbar, Button, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextareaAutosize
+  DialogTitle, DialogContent, DialogActions, TextareaAutosize, DialogContentText,
+  List, ListItem, ListItemText, Divider
 } from '@mui/material';
-import { Search, Refresh, AttachFile } from '@mui/icons-material';
+import { Search, Refresh, AttachFile, Visibility } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
-import { patientAPI } from '../../Api/api';
+import { patientAPI, submittedAnswersAPI } from '../../Api/api';
+import { UploadEmployeeFiles } from '../../Api/api';
 
 const ROLES = {
   ADMIN: 2,
@@ -30,9 +32,13 @@ const PrescriptionListDoc = () => {
   const [feedback, setFeedback] = useState('');
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [filePath, setFilePath] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
   const [actionType, setActionType] = useState('approve');
+  const [answersDialogOpen, setAnswersDialogOpen] = useState(false);
+  const [patientAnswers, setPatientAnswers] = useState([]);
+  const [answersLoading, setAnswersLoading] = useState(false);
 
   // Status IDs specific to Doctor role (matches SP logic)
   const DOCTOR_STATUS = {
@@ -74,6 +80,35 @@ const PrescriptionListDoc = () => {
     }
   };
 
+  const fetchPatientAnswers = async (applicationId) => {
+    try {
+      setAnswersLoading(true);
+      const response = await submittedAnswersAPI.getByApplicationId(applicationId);
+      
+      if (response.data.success) {
+        setPatientAnswers(response.data.data);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch patient answers");
+      }
+    } catch (err) {
+      console.error('Error fetching patient answers:', err);
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to fetch patient answers',
+        severity: 'error'
+      });
+    } finally {
+      setAnswersLoading(false);
+    }
+  };
+
+const handleViewAnswers = (app) => {
+  setPatientAnswers([]); // Clear previous answers
+  setSelectedApp(app);
+  fetchPatientAnswers(app.application_id);
+  setAnswersDialogOpen(true);
+};
+
   const fetchStatusOptions = async () => {
     try {
       const response = await patientAPI.getDDLStatus();
@@ -90,10 +125,53 @@ const PrescriptionListDoc = () => {
     }
   };
 
+  const handleFileUpload = async (file) => {
+    try {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64String = e.target.result.split(',')[1];
+        const imageData = {
+          Image: `${file.name}|${base64String}`,
+          fileName: file.name,
+          fileType: file.type
+        };
+
+        const params = {
+          SubjectName: 'DoctorPrescriptions',
+          AssignmentTitle: `Prescription_${selectedApp?.application_id}`,
+          Path: 'Assets/DoctorPrescriptions/',
+          Assignments: JSON.stringify([imageData])
+        };
+
+        const response = await UploadEmployeeFiles(params);
+        if (!response.error) {
+          setFilePath(response.data[0]);
+          setFileName(file.name);
+        } else {
+          throw new Error(response.message || 'Failed to upload file');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to upload file. Please try again.',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleStatusUpdate = async () => {
     try {
       if (!selectedApp) {
         throw new Error("No application selected");
+      }
+
+      if (actionType === 'reject' && !feedback) {
+        throw new Error("Rejection reason is required");
       }
 
       setLoading(true);
@@ -107,7 +185,7 @@ const PrescriptionListDoc = () => {
         StatusID: statusId,
         RoleID: user.RoleId,
         Description: feedback,
-        ImagePath: file
+        ImagePath: filePath
       };
 
       const response = await patientAPI.updateUserApplication(params);
@@ -118,7 +196,6 @@ const PrescriptionListDoc = () => {
           message: 'Application status updated successfully',
           severity: 'success'
         });
-        // Update the specific application in state
         const updatedApplications = applications.map(app => 
           app.application_id === selectedApp.application_id 
             ? response.data.data[0] 
@@ -141,6 +218,7 @@ const PrescriptionListDoc = () => {
       setFeedback('');
       setFile(null);
       setFileName('');
+      setFilePath(null);
     }
   };
 
@@ -150,19 +228,19 @@ const PrescriptionListDoc = () => {
     setDialogOpen(true);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setFileName(selectedFile.name);
+      await handleFileUpload(selectedFile);
     }
   };
 
   const getStatusColor = (statusId) => {
     switch (statusId) {
-      case 1: return 'warning'; // Pending
-      case 2: return 'info';    // Forwarded to Pharmacist
-      case 4: return 'error';   // Rejected by Doctor
+      case 1: return 'warning';
+      case 2: return 'info';
+      case 4: return 'error';
       default: return 'default';
     }
   };
@@ -190,6 +268,19 @@ const PrescriptionListDoc = () => {
   });
 
   const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredApplications.length - page * rowsPerPage);
+
+  // Group answers by question for better display
+  const groupedAnswers = patientAnswers.reduce((acc, answer) => {
+    if (!acc[answer.QuestionId]) {
+      acc[answer.QuestionId] = {
+        questionText: answer.QuestionText,
+        questionType: answer.QuestionType,
+        responses: []
+      };
+    }
+    acc[answer.QuestionId].responses.push(answer);
+    return acc;
+  }, {});
 
   return (
     <Box sx={{ p: 3 }}>
@@ -262,6 +353,16 @@ const PrescriptionListDoc = () => {
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            variant="outlined"
+                            color="info"
+                            size="small"
+                            startIcon={<Visibility />}
+                            onClick={() => handleViewAnswers(app)}
+                            sx={{ mr: 1 }}
+                          >
+                            View Answers
+                          </Button>
                           <Button 
                             variant="contained" 
                             color="success" 
@@ -305,6 +406,7 @@ const PrescriptionListDoc = () => {
         )}
       </Paper>
 
+      {/* Action Dialog (Approve/Reject) */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           {actionType === 'approve' ? 'Approve Application' : 'Reject Application'}
@@ -353,6 +455,11 @@ const PrescriptionListDoc = () => {
             {fileName && (
               <Typography variant="body2" sx={{ mt: 1 }}>
                 Selected file: {fileName}
+                {filePath && (
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    File uploaded successfully
+                  </Typography>
+                )}
               </Typography>
             )}
           </Box>
@@ -363,7 +470,7 @@ const PrescriptionListDoc = () => {
             onClick={handleStatusUpdate} 
             color={actionType === 'approve' ? 'success' : 'error'}
             variant="contained"
-            disabled={loading || (actionType === 'reject' && !feedback)}
+            disabled={loading || (actionType === 'reject' && !feedback) || (actionType === 'approve' && !filePath)}
           >
             {loading ? (
               <CircularProgress size={24} />
@@ -373,6 +480,65 @@ const PrescriptionListDoc = () => {
               'Reject'
             )}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Patient Answers Dialog */}
+<Dialog 
+  open={answersDialogOpen} 
+  onClose={() => {
+    setAnswersDialogOpen(false);
+    setPatientAnswers([]); // Clear answers when closing
+  }} 
+  maxWidth="md" 
+  fullWidth
+>
+        <DialogTitle>
+          Patient Questionnaire Answers
+          <Typography variant="subtitle1">
+            Application ID: {selectedApp?.application_id}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          {answersLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : patientAnswers.length === 0 ? (
+            <Alert severity="info">No answers found for this application</Alert>
+          ) : (
+            <List>
+              {Object.entries(groupedAnswers).map(([questionId, questionData]) => (
+                <React.Fragment key={questionId}>
+                  <ListItem alignItems="flex-start">
+                    <ListItemText
+                      primary={questionData.questionText}
+                      secondary={
+                        <>
+                          <Typography component="span" variant="body2" color="text.primary">
+                            {questionData.questionType === 'multiple_choice' ? 
+                              'Selected options:' : 'Selected option:'}
+                          </Typography>
+                          <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
+                            {questionData.responses.map((response, idx) => (
+                              <li key={idx}>
+                                {response.OptionText}
+                                {response.TextResponse && ` - ${response.TextResponse}`}
+                              </li>
+                            ))}
+                          </Box>
+                        </>
+                      }
+                    />
+                  </ListItem>
+                  <Divider component="li" />
+                </React.Fragment>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAnswersDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 

@@ -8,6 +8,7 @@ import {
 import { Search, Refresh, AttachFile } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { patientAPI } from '../../Api/api';
+import { UploadEmployeeFiles } from '../../Api/api'; // Import the file upload service
 
 const ROLES = {
   ADMIN: 2,
@@ -30,6 +31,7 @@ const AddInvoicePharma = () => {
   const [feedback, setFeedback] = useState('');
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [filePath, setFilePath] = useState(null); // Added for storing server file path
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
   const [actionType, setActionType] = useState('approve');
@@ -90,10 +92,57 @@ const AddInvoicePharma = () => {
     }
   };
 
+  const handleFileUpload = async (file) => {
+    try {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64String = e.target.result.split(',')[1];
+        const fileData = {
+          Image: `${file.name}|${base64String}`,
+          fileName: file.name,
+          fileType: file.type
+        };
+
+        const params = {
+          SubjectName: 'PharmacyInvoices',
+          AssignmentTitle: `Invoice_${selectedApp?.application_id}`,
+          Path: 'Assets/PharmacyInvoices/',
+          Assignments: JSON.stringify([fileData])
+        };
+
+        const response = await UploadEmployeeFiles(params);
+        if (!response.error) {
+          setFilePath(response.data[0]); // Store the server path
+          setFileName(file.name);
+        } else {
+          throw new Error(response.message || 'Failed to upload file');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setSnackbar({
+        open: true,
+        message: 'Failed to upload file. Please try again.',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleStatusUpdate = async () => {
     try {
       if (!selectedApp) {
         throw new Error("No application selected");
+      }
+
+      if (actionType === 'reject' && !feedback) {
+        throw new Error("Rejection reason is required");
+      }
+
+      if (actionType === 'approve' && !filePath) {
+        throw new Error("Invoice file is required for approval");
       }
 
       setLoading(true);
@@ -107,7 +156,7 @@ const AddInvoicePharma = () => {
         StatusID: statusId,
         RoleID: user.RoleId,
         Description: feedback,
-        ImagePath: file
+        ImagePath: filePath // Use the server file path instead of the file object
       };
 
       const response = await patientAPI.updateUserApplication(params);
@@ -141,6 +190,7 @@ const AddInvoicePharma = () => {
       setFeedback('');
       setFile(null);
       setFileName('');
+      setFilePath(null);
     }
   };
 
@@ -150,11 +200,11 @@ const AddInvoicePharma = () => {
     setDialogOpen(true);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setFileName(selectedFile.name);
+      await handleFileUpload(selectedFile);
     }
   };
 
@@ -338,7 +388,7 @@ const AddInvoicePharma = () => {
               id="file-upload"
               onChange={handleFileChange}
               style={{ display: 'none' }}
-              accept=".pdf"
+              accept=".pdf,.jpg,.png"
             />
             <label htmlFor="file-upload">
               <Button
@@ -353,6 +403,11 @@ const AddInvoicePharma = () => {
             {fileName && (
               <Typography variant="body2" sx={{ mt: 1 }}>
                 Selected file: {fileName}
+                {filePath && (
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    File uploaded successfully
+                  </Typography>
+                )}
               </Typography>
             )}
           </Box>
@@ -363,7 +418,7 @@ const AddInvoicePharma = () => {
             onClick={handleStatusUpdate} 
             color={actionType === 'approve' ? 'success' : 'error'}
             variant="contained"
-            disabled={loading || (actionType === 'reject' && !feedback)}
+            disabled={loading || (actionType === 'reject' && !feedback) || (actionType === 'approve' && !filePath)}
           >
             {loading ? (
               <CircularProgress size={24} />

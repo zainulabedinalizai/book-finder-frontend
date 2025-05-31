@@ -142,73 +142,7 @@ const PatientInvoice = () => {
               </Table>
             </TableContainer>
           )}
-
-          <Divider sx={{ my: 3 }} />
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                    <Receipt color="primary" fontSize={isSmallScreen ? "small" : "medium"} />
-                    <Typography variant={isSmallScreen ? "subtitle1" : "h6"}>Invoice Summary</Typography>
-                  </Stack>
-                  <Stack spacing={1}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Total Invoices:</Typography>
-                      <Typography variant="body2"><strong>{invoices.length}</strong></Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Paid Invoices:</Typography>
-                      <Typography variant="body2"><strong>{invoices.filter(i => i.status === 'Paid').length}</strong></Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Pending Invoices:</Typography>
-                      <Typography variant="body2"><strong>{invoices.filter(i => i.status === 'Pending').length}</strong></Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                    <Receipt color="primary" fontSize={isSmallScreen ? "small" : "medium"} />
-                    <Typography variant={isSmallScreen ? "subtitle1" : "h6"}>Total Amounts</Typography>
-                  </Stack>
-                  <Stack spacing={1}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Total Billed:</Typography>
-                      <Typography variant="body2"><strong>${invoices.reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Total Paid:</Typography>
-                      <Typography variant="body2"><strong>${invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                    </Box>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">Total Pending:</Typography>
-                      <Typography variant="body2"><strong>${invoices.filter(i => i.status === 'Pending').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          <Box mt={4} textAlign="center">
-            <Button 
-              variant="contained" 
-              startIcon={<Download />}
-              size={isSmallScreen ? "medium" : "large"}
-              onClick={() => {
-                alert('Downloading all invoices as PDFs (simulated)');
-              }}
-              fullWidth={isSmallScreen}
-            >
-              Download All Invoices
-            </Button>
-          </Box>
+         
         </CardContent>
       </Card>
     </Container>

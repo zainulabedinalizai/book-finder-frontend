@@ -34,6 +34,7 @@ import { alpha } from '@mui/material/styles';
 import MainCard from '../Components/MainCard';
 import { questionAPI, patientAPI } from '../Api/api';
 import { useAuth } from '../Context/AuthContext';
+import { UploadEmployeeFiles } from '../Api/api'; // Import the file upload service
 
 // ==============================|| STYLED COMPONENTS ||============================== //
 
@@ -96,6 +97,11 @@ const PatientSurvey = () => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [capturedImages, setCapturedImages] = useState({
+    'Front View': null,
+    'Side View (Left)': null,
+    'Side View (Right)': null
+  });
+  const [imagePaths, setImagePaths] = useState({
     'Front View': null,
     'Side View (Left)': null,
     'Side View (Right)': null
@@ -203,17 +209,45 @@ const PatientSurvey = () => {
     }
   };
 
-  const handleFileUpload = (event, label) => {
+  const handleFileUpload = async (event, label) => {
     const file = event.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    try {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setCapturedImages(prev => ({
-          ...prev,
-          [label]: e.target.result
-        }));
+      reader.onload = async (e) => {
+        const base64String = e.target.result.split(',')[1];
+        const imageData = {
+          Image: `${file.name}|${base64String}`,
+          fileName: file.name,
+          fileType: file.type
+        };
+
+        const params = {
+          SubjectName: 'PatientImages',
+          AssignmentTitle: label.replace(/\s+/g, ''),
+          Path: 'Assets/PatientImages/',
+          Assignments: JSON.stringify([imageData])
+        };
+
+        const response = await UploadEmployeeFiles(params);
+        if (!response.error) {
+          setCapturedImages(prev => ({
+            ...prev,
+            [label]: e.target.result
+          }));
+          setImagePaths(prev => ({
+            ...prev,
+            [label]: response.data[0]
+          }));
+        } else {
+          throw new Error(response.message || 'Failed to upload image');
+        }
       };
       reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error uploading file:', err);
+      setError('Failed to upload image. Please try again.');
     }
   };
 
@@ -234,7 +268,7 @@ const PatientSurvey = () => {
     }
   };
 
-  const handleCapturePhoto = () => {
+  const handleCapturePhoto = async () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -243,10 +277,40 @@ const PatientSurvey = () => {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       
       const imageDataUrl = canvas.toDataURL('image/png');
-      setCapturedImages(prev => ({
-        ...prev,
-        [currentCaptureLabel]: imageDataUrl
-      }));
+      const base64String = imageDataUrl.split(',')[1];
+      const fileName = `patient_${currentCaptureLabel.replace(/\s+/g, '_')}_${Date.now()}.png`;
+      
+      try {
+        const imageData = {
+          Image: `${fileName}|${base64String}`,
+          fileName: fileName,
+          fileType: 'image/png'
+        };
+
+        const params = {
+          SubjectName: 'PatientImages',
+          AssignmentTitle: currentCaptureLabel.replace(/\s+/g, ''),
+          Path: 'Assets/PatientImages/',
+          Assignments: JSON.stringify([imageData])
+        };
+
+        const response = await UploadEmployeeFiles(params);
+        if (!response.error) {
+          setCapturedImages(prev => ({
+            ...prev,
+            [currentCaptureLabel]: imageDataUrl
+          }));
+          setImagePaths(prev => ({
+            ...prev,
+            [currentCaptureLabel]: response.data[0]
+          }));
+        } else {
+          throw new Error(response.message || 'Failed to upload captured image');
+        }
+      } catch (err) {
+        console.error('Error uploading captured image:', err);
+        setError('Failed to save captured image. Please try again.');
+      }
       
       // Stop camera
       const stream = videoRef.current.srcObject;
@@ -360,9 +424,9 @@ const PatientSurvey = () => {
                 QuestionId: parseInt(questionId),
                 OptionId: answer.join(','), // Join multiple options with commas
                 TextResponse: specifyTexts[questionId] || null,
-                FrontSide: capturedImages['Front View'] || null,
-                LeftSide: capturedImages['Side View (Left)'] || null,
-                RightSide: capturedImages['Side View (Right)'] || null,
+                FrontSide: imagePaths['Front View'] || null,
+                LeftSide: imagePaths['Side View (Left)'] || null,
+                RightSide: imagePaths['Side View (Right)'] || null,
                 ApplicationID: 0 // Will be set by the server
               });
             }
@@ -373,9 +437,9 @@ const PatientSurvey = () => {
               QuestionId: parseInt(questionId),
               OptionId: answer.toString(),
               TextResponse: specifyTexts[questionId] || null,
-              FrontSide: capturedImages['Front View'] || null,
-              LeftSide: capturedImages['Side View (Left)'] || null,
-              RightSide: capturedImages['Side View (Right)'] || null,
+              FrontSide: imagePaths['Front View'] || null,
+              LeftSide: imagePaths['Side View (Left)'] || null,
+              RightSide: imagePaths['Side View (Right)'] || null,
               ApplicationID: 0 // Will be set by the server
             });
           }
