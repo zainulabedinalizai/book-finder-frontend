@@ -74,15 +74,7 @@ const Dashboard = () => {
         }}>
           Medical Dashboard
         </Typography>
-        <Box display="flex" alignItems="center">
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-            {user?.username?.charAt(0).toUpperCase()}
-          </Avatar>
-          <Box>
-            <Typography variant="subtitle1">Welcome back,</Typography>
-            <Typography variant="h6">{user?.username}</Typography>
-          </Box>
-        </Box>
+
       </Box>
       
       {/* Tabs Section */}
@@ -100,7 +92,6 @@ const Dashboard = () => {
         }}
       >
         <Tab label={isMobile ? null : "Overview"} icon={<MedicalServices />} iconPosition="start" />
-        <Tab label={isMobile ? null : "Patients"} icon={<People />} iconPosition="start" />
         <Tab label={isMobile ? null : "Appointments"} icon={<CalendarToday />} iconPosition="start" />
       </Tabs>
 
@@ -198,11 +189,10 @@ const Dashboard = () => {
         </>
       )}
 
-      {/* Patients Tab */}
-      {tabValue === 1 && <FavoritesQuerySearch />}
+
 
       {/* Appointments Tab */}
-      {tabValue === 2 && (
+      {tabValue === 1 && (
         <Paper elevation={3} sx={{ p: isMobile ? 1 : 3, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>All Appointments</Typography>
           <TableContainer>

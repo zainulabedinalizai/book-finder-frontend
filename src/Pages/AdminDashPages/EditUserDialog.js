@@ -208,49 +208,7 @@ const EditUserDialog = ({
         ) : (
           <Box sx={{ mt: 2 }}>
             <Grid container spacing={2}>
-              {/* Profile Image Upload */}
-              <Grid item xs={12}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  {previewImage ? (
-                    <Box
-                      component="img"
-                      src={previewImage}
-                      alt="Profile preview"
-                      sx={{
-                        width: 120,
-                        height: 120,
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        mb: 2
-                      }}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        width: 120,
-                        height: 120,
-                        borderRadius: '50%',
-                        backgroundColor: 'grey.300',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2
-                      }}
-                    >
-                      <Typography variant="body2">No Image</Typography>
-                    </Box>
-                  )}
-                  <Button variant="contained" component="label">
-                    Upload Photo
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                  </Button>
-                </Box>
-              </Grid>
+
 
               <Grid item xs={12} sm={6}>
                 <TextField

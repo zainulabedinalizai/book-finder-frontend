@@ -29,6 +29,61 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  const register = async (userData) => {
+    // Check network status before attempting registration
+    if (!networkStatus) {
+      setError('Network Error. Please check your internet connection.');
+      return { 
+        success: false, 
+        message: 'Network Error. Please check your internet connection.',
+        isNetworkError: true
+      };
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await authService.register(userData);
+      if (result.success) {
+        // Optional: Automatically log in user after registration
+        // You might want to modify this based on your requirements
+        const loginResult = await authService.login({
+          username: userData.username,
+          password: userData.password
+        });
+        
+        if (loginResult.success && loginResult.data) {
+          localStorage.setItem('token', loginResult.token || '');
+          localStorage.setItem('user', JSON.stringify(loginResult.data));
+          setUser(loginResult.data);
+          setIsAuthenticated(true);
+        }
+      } else {
+        setError(result.message || 'Registration failed');
+      }
+      return result;
+    } catch (err) {
+      let errorMessage = 'An error occurred during registration';
+      
+      if (err.isNetworkError) {
+        errorMessage = 'Network Error. Please check your internet connection.';
+      } else if (err.isSSLError) {
+        errorMessage = 'SSL Certificate Error. Please contact support.';
+      } else if (err.isCorsError) {
+        errorMessage = 'CORS Error. Please contact support.';
+      }
+      
+      setError(errorMessage);
+      return { 
+        success: false, 
+        message: errorMessage,
+        isNetworkError: err.isNetworkError || false,
+        isSSLError: err.isSSLError || false
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
   const login = async (credentials) => {
     // Check network status before attempting login
     if (!networkStatus) {
@@ -91,6 +146,7 @@ export const AuthProvider = ({ children }) => {
       loading, 
       error, 
       networkStatus,
+      register, // Make sure to include register in the context value
       login, 
       logout,
       role: user?.RoleId || null

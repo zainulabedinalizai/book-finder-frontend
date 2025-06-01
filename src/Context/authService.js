@@ -20,15 +20,18 @@ export const authService = {
       formData.append('PostalAddress', userData.address);
 
       const response = await authAPI.register(formData.toString());
+      
       return {
-        success: true,
+        success: response.data?.Success || true,
         data: response.data,
-        message: "Registration successful"
+        message: response.data?.Message || "Registration successful"
       };
     } catch (error) {
       return {
         success: false,
-        message: error.response?.data?.message || "Registration failed",
+        message: error.response?.data?.Message || 
+               error.response?.data?.message || 
+               "Registration failed",
         isNetworkError: error.isNetworkError || false
       };
     }

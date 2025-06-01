@@ -44,7 +44,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import DownloadIcon from '@mui/icons-material/Download';
 
-const drawerWidth = 280;
+const drawerWidth = 240;
 const collapsedWidth = 72;
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -80,22 +80,30 @@ const GradientText = styled(Typography)(({ theme }) => ({
 }));
 
 const NavItem = styled(ListItemButton)(({ theme, level = 0, selected }) => ({
-  borderRadius: 8,
-  mx: 1,
-  my: 0.5,
-  minHeight: 48,
-  paddingLeft: theme.spacing(3 + level * 2),
-  justifyContent: 'initial',
-  transition: theme.transitions.create(['background-color', 'color'], {
-    duration: theme.transitions.duration.shortest,
-  }),
+  borderRadius: 6,
+  margin: theme.spacing(0.5, 1),
+  minHeight: 44,
+  paddingLeft: theme.spacing(level > 0 ? 4 : 3),
+  transition: 'all 0.2s ease',
   '&.Mui-selected': {
-    backgroundColor: theme.palette.primary.light,
-    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.primary.lighter,
+    color: theme.palette.primary.dark,
     '& .MuiListItemIcon-root': {
-      color: theme.palette.primary.main,
+      color: theme.palette.primary.dark,
     },
   },
+  '&.Mui-selected:hover': {
+    backgroundColor: theme.palette.primary.light,
+  },
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  }
+}));
+
+const NavSectionButton = styled(ListItemButton)(({ theme }) => ({
+  borderRadius: 6,
+  margin: theme.spacing(0.5, 1),
+  minHeight: 44,
   '&:hover': {
     backgroundColor: theme.palette.action.hover,
   }
@@ -110,9 +118,7 @@ const Layout = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
 
-  // Dummy notifications count
   const [notificationCount] = useState(3);
-
   const hideDrawer = ['/login', '/register'].includes(location.pathname);
 
   const handleDrawerToggle = () => {
@@ -130,7 +136,7 @@ const Layout = ({ children }) => {
     }));
   };
 
-  // Define all menu items
+  // Menu items definitions remain the same...
   const adminMenuItems = [
     { text: 'Personal Profile', icon: <PersonIcon />, path: '/PersonalProfile' },
     { text: 'Add User', icon: <PeopleIcon />, path: '/AddUser' }, 
@@ -165,7 +171,7 @@ const Layout = ({ children }) => {
     { text: 'Send Invoice to Patient', icon: <EmailIcon />, path: '/SendInvoiceToPatient' }
   ];
 
-  // Function to determine which menus to show based on role
+  // getMenuSectionsForRole function remains the same...
   const getMenuSectionsForRole = () => {
     if (!user || !user.RoleId) return [];
     
@@ -280,58 +286,57 @@ const Layout = ({ children }) => {
         }}
       >
         <ListItemIcon sx={{ 
-          minWidth: '40px',
-          color: location.pathname === item.path ? theme.palette.primary.main : 'inherit'
+          minWidth: '36px',
+          color: location.pathname === item.path ? theme.palette.primary.dark : theme.palette.text.secondary
         }}>
           {item.icon}
         </ListItemIcon>
         <ListItemText 
           primary={item.text} 
           primaryTypographyProps={{ 
+            fontSize: '0.875rem',
             fontWeight: location.pathname === item.path ? '600' : 'normal',
-            fontSize: level > 0 ? '0.875rem' : '0.9375rem'
+            color: location.pathname === item.path ? theme.palette.primary.dark : theme.palette.text.primary
           }} 
         />
       </NavItem>
     ));
   };
 
-  const renderMenuSection = (section) => {
-    const isOpen = openMenus[section.key] ?? true;
-    
-    return (
-      <React.Fragment key={section.key}>
-        <ListItemButton 
-          onClick={() => toggleMenu(section.key)}
-          sx={{
-            borderRadius: 2,
-            mx: 1,
-            my: 0.5,
-            '&:hover': {
-              backgroundColor: theme.palette.action.hover,
-            }
-          }}
-        >
-          <ListItemIcon sx={{ 
-            minWidth: '40px',
-            color: isOpen ? theme.palette.primary.main : 'inherit'
-          }}>
-            {section.icon}
-          </ListItemIcon>
-          <ListItemText 
-            primary={section.title} 
-            primaryTypographyProps={{ fontWeight: '500' }} 
-          />
-          {isOpen ? <ExpandLess /> : <ExpandMore />}
-        </ListItemButton>
-        <Collapse in={isOpen} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            {renderMenuItems(section.items, 1)}
-          </List>
-        </Collapse>
-      </React.Fragment>
-    );
-  };
+const renderMenuSection = (section) => {
+  const isOpen = openMenus[section.key] ?? false; // Changed from true to false
+  
+  return (
+    <React.Fragment key={section.key}>
+      <NavSectionButton onClick={() => toggleMenu(section.key)}>
+        <ListItemIcon sx={{ 
+          minWidth: '36px',
+          color: isOpen ? theme.palette.primary.dark : theme.palette.text.secondary
+        }}>
+          {section.icon}
+        </ListItemIcon>
+        {desktopOpen && (
+          <>
+            <ListItemText 
+              primary={section.title} 
+              primaryTypographyProps={{ 
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: isOpen ? theme.palette.primary.dark : theme.palette.text.primary
+              }} 
+            />
+            {isOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+          </>
+        )}
+      </NavSectionButton>
+      <Collapse in={isOpen} timeout="auto" unmountOnExit>
+        <List component="div" disablePadding sx={{ pl: 1 }}>
+          {renderMenuItems(section.items, 1)}
+        </List>
+      </Collapse>
+    </React.Fragment>
+  );
+};
 
   const drawer = (
     <Box sx={{ 
@@ -342,7 +347,7 @@ const Layout = ({ children }) => {
     }}>
       <DrawerHeader>
         {!isMobile && (
-          <IconButton onClick={handleDrawerToggle}>
+          <IconButton onClick={handleDrawerToggle} size="small">
             {desktopOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
           </IconButton>
         )}
@@ -350,32 +355,30 @@ const Layout = ({ children }) => {
       
       {isAuthenticated && desktopOpen && (
         <Box sx={{ 
-          px: 3, 
-          py: 2,
+          px: 2, 
+          py: 1.5,
           display: 'flex',
           alignItems: 'center',
-          gap: 2,
+          gap: 1.5,
           borderBottom: `1px solid ${theme.palette.divider}`
         }}>
           <Avatar 
             sx={{ 
-              width: 48, 
-              height: 48,
+              width: 40, 
+              height: 40,
               bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText
+              color: theme.palette.primary.contrastText,
+              fontSize: '1rem'
             }}
           >
             {user?.FullName?.charAt(0).toUpperCase() || 'U'}
           </Avatar>
           <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant="subtitle1" noWrap fontWeight="500">
+            <Typography variant="subtitle2" noWrap fontWeight="500">
               {user?.FullName || 'User'}
             </Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>
-              {user?.Email || 'user@example.com'}
-            </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
-              {user?.RoleName || 'Role'}
+              {user?.Email || 'user@example.com'}
             </Typography>
           </Box>
         </Box>
@@ -386,18 +389,19 @@ const Layout = ({ children }) => {
       <List sx={{ 
         flexGrow: 1,
         overflowY: 'auto',
+        py: 1,
         '& .MuiListItemButton-root': {
-          borderRadius: 2,
+          borderRadius: 6,
           mx: 1,
           my: 0.5,
-          minHeight: 48,
+          minHeight: 44,
           justifyContent: desktopOpen ? 'initial' : 'center',
-          px: 2.5,
+          px: 2,
           '&.Mui-selected': {
-            backgroundColor: theme.palette.primary.light,
-            color: theme.palette.primary.main,
+            backgroundColor: theme.palette.primary.lighter,
+            color: theme.palette.primary.dark,
             '& .MuiListItemIcon-root': {
-              color: theme.palette.primary.main,
+              color: theme.palette.primary.dark,
             },
           },
           '&:hover': {
@@ -406,7 +410,7 @@ const Layout = ({ children }) => {
         },
         '& .MuiListItemIcon-root': {
           minWidth: 0,
-          mr: desktopOpen ? 3 : 'auto',
+          mr: desktopOpen ? 2 : 'auto',
           justifyContent: 'center',
         },
         '& .MuiListItemText-root': {
@@ -421,33 +425,45 @@ const Layout = ({ children }) => {
           <>
             {getMenuSectionsForRole().map(section => (
               section.items.length === 1 ? (
-                <Tooltip key={section.key} title={section.title} placement="right" arrow>
-                  <ListItem disablePadding>
-                    <ListItemButton 
-                      component={Link} 
-                      to={section.items[0].path}
-                      selected={location.pathname === section.items[0].path}
-                      onClick={() => {
-                        if (isMobile) {
-                          setMobileOpen(false);
-                        }
-                      }}
-                    >
-                      <ListItemIcon sx={{
-                        color: location.pathname === section.items[0].path ? 
-                          theme.palette.primary.main : 'inherit'
-                      }}>
-                        {section.icon}
-                      </ListItemIcon>
-                      <ListItemText 
-                        primary={section.title} 
-                        primaryTypographyProps={{ 
-                          fontWeight: location.pathname === section.items[0].path ? '600' : 'normal' 
-                        }} 
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                </Tooltip>
+ <Tooltip key={section.key} title={section.title} placement="right" arrow>
+    <ListItem disablePadding>
+      <ListItemButton 
+        component={Link} 
+        to={section.items[0].path}
+        selected={location.pathname === section.items[0].path}
+        onClick={() => {
+          if (isMobile) {
+            setMobileOpen(false);
+          }
+        }}
+        sx={{
+          justifyContent: desktopOpen ? 'initial' : 'center',
+          px: desktopOpen ? 2 : '12px'
+        }}
+      >
+        <ListItemIcon sx={{
+          color: location.pathname === section.items[0].path ? 
+            theme.palette.primary.dark : theme.palette.text.secondary,
+          minWidth: '36px',
+          mr: desktopOpen ? 2 : 'auto',
+          justifyContent: 'center'
+        }}>
+          {section.icon}
+        </ListItemIcon>
+        {desktopOpen && (
+          <ListItemText 
+            primary={section.title} 
+            primaryTypographyProps={{ 
+              fontSize: '0.875rem',
+              fontWeight: location.pathname === section.items[0].path ? '600' : 'normal',
+              color: location.pathname === section.items[0].path ? 
+                theme.palette.primary.dark : theme.palette.text.primary
+            }} 
+          />
+        )}
+      </ListItemButton>
+    </ListItem>
+  </Tooltip>
               ) : (
                 renderMenuSection(section)
               )
@@ -463,14 +479,17 @@ const Layout = ({ children }) => {
               >
                 <ListItemIcon sx={{
                   color: location.pathname === '/login' ? 
-                    theme.palette.primary.main : 'inherit'
+                    theme.palette.primary.dark : theme.palette.text.secondary
                 }}>
                   <LoginIcon />
                 </ListItemIcon>
                 <ListItemText 
                   primary="Login" 
                   primaryTypographyProps={{ 
-                    fontWeight: location.pathname === '/login' ? '600' : 'normal' 
+                    fontSize: '0.875rem',
+                    fontWeight: location.pathname === '/login' ? '600' : 'normal',
+                    color: location.pathname === '/login' ? 
+                      theme.palette.primary.dark : theme.palette.text.primary
                   }} 
                 />
               </ListItemButton>
@@ -482,14 +501,20 @@ const Layout = ({ children }) => {
       {isAuthenticated && (
         <>
           <Divider />
-          <List>
+          <List sx={{ py: 1 }}>
             <Tooltip title="Logout" placement="right" arrow>
               <ListItem disablePadding>
                 <ListItemButton onClick={logout}>
-                  <ListItemIcon>
+                  <ListItemIcon sx={{ color: theme.palette.text.secondary }}>
                     <ExitToAppIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Logout" />
+                  <ListItemText 
+                    primary="Logout" 
+                    primaryTypographyProps={{ 
+                      fontSize: '0.875rem',
+                      color: theme.palette.text.primary
+                    }} 
+                  />
                 </ListItemButton>
               </ListItem>
             </Tooltip>
@@ -516,13 +541,13 @@ const Layout = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          boxShadow: 'none',
           backgroundColor: theme.palette.background.paper,
           color: theme.palette.text.primary,
           borderBottom: `1px solid ${theme.palette.divider}`
         }}
       >
-        <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
+        <Toolbar sx={{ px: { xs: 2, sm: 3 }, minHeight: '64px !important' }}>
           {!hideDrawer && (
             <IconButton
               color="inherit"
@@ -541,14 +566,15 @@ const Layout = ({ children }) => {
           {isAuthenticated && (
             <>
               <IconButton color="inherit" sx={{ mr: 1 }}>
-                <Badge badgeContent={notificationCount} color="error">
-                  <NotificationsIcon />
+                <Badge badgeContent={notificationCount} color="error" overlap="circular">
+                  <NotificationsIcon fontSize="small" />
                 </Badge>
               </IconButton>
               <Typography variant="subtitle2" sx={{ 
                 mr: 2,
                 fontWeight: 500,
-                color: theme.palette.text.secondary
+                color: theme.palette.text.secondary,
+                fontSize: '0.875rem'
               }}>
                 {user?.RoleName || 'Role'}
               </Typography>
@@ -572,7 +598,7 @@ const Layout = ({ children }) => {
                 duration: theme.transitions.duration.enteringScreen,
               }),
               borderRight: 'none',
-              boxShadow: '2px 0 10px rgba(0,0,0,0.1)',
+              boxShadow: '1px 0 4px rgba(0,0,0,0.08)',
               backgroundColor: theme.palette.background.paper,
             },
           }}
@@ -606,11 +632,11 @@ const Layout = ({ children }) => {
         <Box sx={{ 
           maxWidth: 1700,
           mx: 'auto',
-          my: 4,
-          p: 4,
+          my: 2,
+          p: 3,
           borderRadius: 2,
           backgroundColor: theme.palette.background.paper,
-          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           border: `1px solid ${theme.palette.divider}`
         }}>
           <Outlet />

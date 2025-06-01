@@ -119,7 +119,6 @@ const PatientSurvey = () => {
   const [specifyTexts, setSpecifyTexts] = useState({});
   const totalSteps = 5;
 
-  // Form state
   const [formData, setFormData] = useState({
     personalInfo: {
       fullName: '',
@@ -152,7 +151,6 @@ const PatientSurvey = () => {
     return acc;
   }, {});
 
-  // Sort questions by DisplayOrder
   const sortedQuestions = Object.values(groupedQuestions).sort((a, b) => a.DisplayOrder - b.DisplayOrder);
 
   useEffect(() => {
@@ -163,7 +161,6 @@ const PatientSurvey = () => {
         if (response.data.success) {
           setQuestions(response.data.data);
           
-          // Initialize answers state
           const initialAnswers = {};
           const initialConsents = {};
           response.data.data.forEach(q => {
@@ -196,7 +193,6 @@ const PatientSurvey = () => {
 
     fetchQuestions();
   }, []);
-
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
@@ -396,20 +392,18 @@ const PatientSurvey = () => {
     setOpenConfirmation(false);
   };
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     setOpenConfirmation(false);
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(false);
     
     try {
-      // Verify user is authenticated
       const userId = user?.UserId || parseInt(localStorage.getItem('userId'));
       if (!userId) {
         throw new Error('User not authenticated');
       }
 
-      // Prepare submission data in the required format
       const responses = [];
       
       // Process all answered questions
@@ -417,30 +411,41 @@ const PatientSurvey = () => {
         const question = questions.find(q => q.QuestionId === parseInt(questionId));
         
         if (question) {
-          // For multiple choice questions (checkboxes)
-          if (Array.isArray(answer)) {
-            if (answer.length > 0) {
-              responses.push({
-                QuestionId: parseInt(questionId),
-                OptionId: answer.join(','), // Join multiple options with commas
-                TextResponse: specifyTexts[questionId] || null,
-                FrontSide: imagePaths['Front View'] || null,
-                LeftSide: imagePaths['Side View (Left)'] || null,
-                RightSide: imagePaths['Side View (Right)'] || null,
-                ApplicationID: 0 // Will be set by the server
-              });
-            }
+          // For image question (ID 13), handle differently
+          if (question.QuestionId === 13) {
+            responses.push({
+              QuestionId: 13,
+              OptionId: [39, 40, 41].filter(id => {
+                // Only include options that have images uploaded
+                if (id === 39 && imagePaths['Front View']) return true;
+                if (id === 40 && imagePaths['Side View (Left)']) return true;
+                if (id === 41 && imagePaths['Side View (Right)']) return true;
+                return false;
+              }).join(','),
+              TextResponse: null,
+              FrontSide: imagePaths['Front View'] || null,
+              LeftSide: imagePaths['Side View (Left)'] || null,
+              RightSide: imagePaths['Side View (Right)'] || null
+            });
           } 
-          // For single choice questions (radio buttons)
-          else if (answer) {
+          // For all other questions
+          else if (Array.isArray(answer) && answer.length > 0) {
+            responses.push({
+              QuestionId: parseInt(questionId),
+              OptionId: answer.join(','),
+              TextResponse: specifyTexts[questionId] || null,
+              FrontSide: null,
+              LeftSide: null,
+              RightSide: null
+            });
+          } else if (answer) {
             responses.push({
               QuestionId: parseInt(questionId),
               OptionId: answer.toString(),
               TextResponse: specifyTexts[questionId] || null,
-              FrontSide: imagePaths['Front View'] || null,
-              LeftSide: imagePaths['Side View (Left)'] || null,
-              RightSide: imagePaths['Side View (Right)'] || null,
-              ApplicationID: 0 // Will be set by the server
+              FrontSide: null,
+              LeftSide: null,
+              RightSide: null
             });
           }
         }
@@ -455,10 +460,10 @@ const PatientSurvey = () => {
       // Call the patient service to save the application
       const response = await patientAPI.savePatientApplication(submissionData);
       
-      if (response.data.success) {
+      if (response.success) {
         setSubmitSuccess(true);
       } else {
-        throw new Error(response.data.message || 'Failed to submit application');
+        throw new Error(response.message || 'Failed to submit application');
       }
     } catch (err) {
       console.error('Error submitting application:', err);
@@ -466,57 +471,114 @@ const PatientSurvey = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  if (loading) {
-    return (
-      <Container maxWidth="md">
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
-      </Container>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container maxWidth="md">
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {error}
-        </Alert>
-      </Container>
-    );
-  }
-
-  if (submitSuccess) {
-    return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <StyledMainCard>
-          <Box textAlign="center" py={4}>
-            <Avatar sx={{ width: 80, height: 80, bgcolor: 'success.main', mx: 'auto', mb: 2 }}>
-              <Save fontSize="large" />
-            </Avatar>
-            <Typography variant="h4" gutterBottom sx={{ color: 'success.main' }}>
-              Application Submitted Successfully!
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              Thank you for completing your patient onboarding. Our team will review your information and contact you shortly.
-            </Typography>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              size="large"
-              onClick={() => window.location.reload()}
-            >
-              Start New Application
-            </Button>
-          </Box>
-        </StyledMainCard>
-      </Container>
-    );
-  }
+};
+  // ... (keep all your render functions the same until renderQuestionInput) ...
 
   const renderQuestionInput = (question) => {
+    if (question.QuestionId === 13) {
+      // Special handling for the image upload question
+      return (
+        <Stack spacing={2}>
+          {showCamera ? (
+            <Stack spacing={2}>
+              <Typography variant="body2" sx={{ color: '#6a1b9a' }}>
+                Capturing: {currentCaptureLabel}
+              </Typography>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                style={{ width: '100%', borderRadius: '12px' }}
+              />
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="contained"
+                  onClick={handleCapturePhoto}
+                  sx={{
+                    backgroundColor: '#6a1b9a',
+                    '&:hover': { backgroundColor: '#7b1fa2' }
+                  }}
+                >
+                  Capture Photo
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleCancelCamera}
+                  sx={{
+                    color: '#6a1b9a',
+                    borderColor: '#6a1b9a',
+                    '&:hover': { borderColor: '#6a1b9a' }
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack spacing={2}>
+              {question.Options.map((option) => (
+                <Stack key={option.OptionId} spacing={1}>
+                  {capturedImages[option.OptionText] && (
+                    <img 
+                      src={capturedImages[option.OptionText]} 
+                      alt={`Captured ${option.OptionText}`} 
+                      style={{ 
+                        width: '100%', 
+                        maxHeight: '200px', 
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        border: `1px solid ${alpha('#6a1b9a', 0.3)}`
+                      }} 
+                    />
+                  )}
+                  <Stack direction="row" spacing={2}>
+                    <Button 
+                      fullWidth 
+                      size="small" 
+                      variant="outlined" 
+                      component="label"
+                      sx={{
+                        borderColor: alpha('#6a1b9a', 0.3),
+                        color: '#6a1b9a',
+                        '&:hover': {
+                          borderColor: '#6a1b9a',
+                          backgroundColor: alpha('#6a1b9a', 0.04)
+                        }
+                      }}
+                    >
+                      Upload {option.OptionText}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        hidden 
+                        onChange={(e) => handleFileUpload(e, option.OptionText)}
+                      />
+                    </Button>
+                    <Button 
+                      fullWidth 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => handleStartCamera(option.OptionText)}
+                      sx={{
+                        borderColor: alpha('#6a1b9a', 0.3),
+                        color: '#6a1b9a',
+                        '&:hover': {
+                          borderColor: '#6a1b9a',
+                          backgroundColor: alpha('#6a1b9a', 0.04)
+                        }
+                      }}
+                    >
+                      Capture {option.OptionText}
+                    </Button>
+                  </Stack>
+                </Stack>
+              ))}
+            </Stack>
+          )}
+        </Stack>
+      );
+    }
+
     switch (question.QuestionType) {
       case 'multiple_choice':
         return (
@@ -546,7 +608,6 @@ const PatientSurvey = () => {
               value={formData.answers[question.QuestionId] || ''}
               onChange={(e) => {
                 handleAnswerChange(question.QuestionId, e.target.value);
-                // Clear specify text if switching from "Yes" to another option
                 if (e.target.value !== 'yes' && specifyTexts[question.QuestionId]) {
                   handleSpecifyTextChange(question.QuestionId, '');
                 }

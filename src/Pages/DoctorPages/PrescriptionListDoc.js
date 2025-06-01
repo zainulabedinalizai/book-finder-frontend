@@ -4,7 +4,7 @@ import {
   TableHead, TableRow, TablePagination, TextField, IconButton, Tooltip,
   CircularProgress, Alert, Avatar, Chip, Snackbar, Button, Dialog,
   DialogTitle, DialogContent, DialogActions, TextareaAutosize, DialogContentText,
-  List, ListItem, ListItemText, Divider
+  List, ListItem, ListItemText, Divider, Grid
 } from '@mui/material';
 import { Search, Refresh, AttachFile, Visibility } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
@@ -102,12 +102,12 @@ const PrescriptionListDoc = () => {
     }
   };
 
-const handleViewAnswers = (app) => {
-  setPatientAnswers([]); // Clear previous answers
-  setSelectedApp(app);
-  fetchPatientAnswers(app.application_id);
-  setAnswersDialogOpen(true);
-};
+  const handleViewAnswers = (app) => {
+    setPatientAnswers([]); // Clear previous answers
+    setSelectedApp(app);
+    fetchPatientAnswers(app.application_id);
+    setAnswersDialogOpen(true);
+  };
 
   const fetchStatusOptions = async () => {
     try {
@@ -484,15 +484,15 @@ const handleViewAnswers = (app) => {
       </Dialog>
 
       {/* Patient Answers Dialog */}
-<Dialog 
-  open={answersDialogOpen} 
-  onClose={() => {
-    setAnswersDialogOpen(false);
-    setPatientAnswers([]); // Clear answers when closing
-  }} 
-  maxWidth="md" 
-  fullWidth
->
+      <Dialog 
+        open={answersDialogOpen} 
+        onClose={() => {
+          setAnswersDialogOpen(false);
+          setPatientAnswers([]);
+        }} 
+        maxWidth="md" 
+        fullWidth
+      >
         <DialogTitle>
           Patient Questionnaire Answers
           <Typography variant="subtitle1">
@@ -508,32 +508,93 @@ const handleViewAnswers = (app) => {
             <Alert severity="info">No answers found for this application</Alert>
           ) : (
             <List>
-              {Object.entries(groupedAnswers).map(([questionId, questionData]) => (
-                <React.Fragment key={questionId}>
-                  <ListItem alignItems="flex-start">
-                    <ListItemText
-                      primary={questionData.questionText}
-                      secondary={
-                        <>
-                          <Typography component="span" variant="body2" color="text.primary">
-                            {questionData.questionType === 'multiple_choice' ? 
-                              'Selected options:' : 'Selected option:'}
-                          </Typography>
-                          <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
-                            {questionData.responses.map((response, idx) => (
-                              <li key={idx}>
-                                {response.OptionText}
-                                {response.TextResponse && ` - ${response.TextResponse}`}
-                              </li>
-                            ))}
-                          </Box>
-                        </>
-                      }
-                    />
-                  </ListItem>
-                  <Divider component="li" />
-                </React.Fragment>
-              ))}
+              {Object.entries(groupedAnswers).map(([questionId, questionData]) => {
+                // Special handling for face photos question
+                if (questionData.questionText.toLowerCase().includes('upload clear photos of your face')) {
+                  try {
+                    // Parse the first response's TextResponse (they all have the same images)
+                    const images = JSON.parse(questionData.responses[0].TextResponse);
+                    return (
+                      <React.Fragment key={questionId}>
+                        <ListItem alignItems="flex-start">
+                          <ListItemText
+                            primary={questionData.questionText}
+                            secondary={
+                              <Box sx={{ mt: 2 }}>
+                                <Grid container spacing={2}>
+                                  <Grid item xs={12} md={4}>
+                                    <Typography variant="body2" color="text.primary" gutterBottom>
+                                      Front View
+                                    </Typography>
+                                    <img 
+                                      src={images.FrontSide} 
+                                      alt="Front View" 
+                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
+                                    />
+                                  </Grid>
+                                  <Grid item xs={12} md={4}>
+                                    <Typography variant="body2" color="text.primary" gutterBottom>
+                                      Left Side View
+                                    </Typography>
+                                    <img 
+                                      src={images.LeftSide} 
+                                      alt="Left Side View" 
+                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
+                                    />
+                                  </Grid>
+                                  <Grid item xs={12} md={4}>
+                                    <Typography variant="body2" color="text.primary" gutterBottom>
+                                      Right Side View
+                                    </Typography>
+                                    <img 
+                                      src={images.RightSide} 
+                                      alt="Right Side View" 
+                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
+                                    />
+                                  </Grid>
+                                </Grid>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        <Divider component="li" />
+                      </React.Fragment>
+                    );
+                  } catch (e) {
+                    console.error('Error parsing face images:', e);
+                    // Fallback to regular display if parsing fails
+                  }
+                }
+
+                // Regular question display
+                return (
+                  <React.Fragment key={questionId}>
+                    <ListItem alignItems="flex-start">
+                      <ListItemText
+                        primary={questionData.questionText}
+                        secondary={
+                          <>
+                            <Typography component="span" variant="body2" color="text.primary">
+                              {questionData.questionType === 'multiple_choice' ? 
+                                'Selected options:' : 'Selected option:'}
+                            </Typography>
+                            <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
+                              {questionData.responses.map((response, idx) => (
+                                <li key={idx}>
+                                  {response.OptionText}
+                                  {response.TextResponse && !response.TextResponse.startsWith('{') && 
+                                    ` - ${response.TextResponse}`}
+                                </li>
+                              ))}
+                            </Box>
+                          </>
+                        }
+                      />
+                    </ListItem>
+                    <Divider component="li" />
+                  </React.Fragment>
+                );
+              })}
             </List>
           )}
         </DialogContent>
