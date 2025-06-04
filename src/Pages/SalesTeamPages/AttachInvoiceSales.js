@@ -23,12 +23,21 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextareaAutosize
+  TextareaAutosize,
+  InputAdornment
 } from '@mui/material';
-import { Search, Refresh, AttachFile } from '@mui/icons-material';
+import { 
+  Search, 
+  Refresh, 
+  AttachFile,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Description as DescriptionIcon,
+  Event as EventIcon
+} from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { patientAPI } from '../../Api/api';
-import { UploadEmployeeFiles } from '../../Api/api'; // Import the file upload service
+import { UploadEmployeeFiles } from '../../Api/api';
 
 const ROLES = {
   ADMIN: 2,
@@ -55,15 +64,14 @@ const AttachInvoiceSale = () => {
   const [feedback, setFeedback] = useState('');
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
-  const [filePath, setFilePath] = useState(null); // Added for storing server file path
+  const [filePath, setFilePath] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
   const [actionType, setActionType] = useState('approve');
 
-  // Status IDs specific to Sales role
   const SALES_STATUS = {
-    APPROVE: 7,  // Completed
-    REJECT: 6    // Rejected by Sales
+    APPROVE: 7,
+    REJECT: 6
   };
 
   const fetchApplications = async () => {
@@ -138,7 +146,7 @@ const AttachInvoiceSale = () => {
 
         const response = await UploadEmployeeFiles(params);
         if (!response.error) {
-          setFilePath(response.data[0]); // Store the server path
+          setFilePath(response.data[0]);
           setFileName(file.name);
         } else {
           throw new Error(response.message || 'Failed to upload file');
@@ -180,7 +188,7 @@ const AttachInvoiceSale = () => {
         StatusID: statusId,
         RoleID: user.RoleId,
         Description: feedback,
-        ImagePath: filePath // Use the server file path instead of the file object
+        ImagePath: filePath
       };
 
       const response = await patientAPI.updateUserApplication(params);
@@ -191,7 +199,6 @@ const AttachInvoiceSale = () => {
           message: 'Application status updated successfully',
           severity: 'success'
         });
-        // Update the local state with the returned data
         const updatedApplications = applications.map(app => 
           app.application_id === selectedApp.application_id 
             ? response.data.data[0] 
@@ -234,9 +241,9 @@ const AttachInvoiceSale = () => {
 
   const getStatusColor = (statusId) => {
     switch (statusId) {
-      case 5: return 'info';    // Ready for Sales
-      case 6: return 'error';   // Rejected by Sales
-      case 7: return 'success'; // Completed
+      case 5: return 'info';
+      case 6: return 'error';
+      case 7: return 'success';
       default: return 'default';
     }
   };
@@ -280,95 +287,223 @@ const AttachInvoiceSale = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        Sales Dashboard
-      </Typography>
-      
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Applications Ready for Processing</Typography>
-          <Tooltip title="Refresh">
-            <IconButton onClick={fetchApplications} disabled={loading}>
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search applications..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        p: 2,
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1
+      }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700,
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <DescriptionIcon fontSize="large" />
+          Sales Applications
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Refresh />}
+          onClick={fetchApplications}
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: 'none',
+            fontWeight: 600
           }}
-          sx={{ mb: 2 }}
-        />
-        
+        >
+          Refresh
+        </Button>
+      </Box>
+
+      <Paper elevation={3} sx={{ 
+        borderRadius: 2,
+        overflow: 'hidden',
+        mb: 3
+      }}>
+        <Box sx={{ 
+          p: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'background.default'
+        }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search applications..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: 'action.active' }} />
+                </InputAdornment>
+              ),
+              sx: {
+                borderRadius: 2,
+                backgroundColor: 'background.paper'
+              }
+            }}
+            sx={{ 
+              maxWidth: 400,
+              '& .MuiOutlinedInput-root': {
+                '& fieldset': {
+                  borderColor: 'divider',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'primary.main',
+                },
+              }
+            }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {filteredApplications.length} applications found
+          </Typography>
+        </Box>
+
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: 300,
+            backgroundColor: 'background.paper'
+          }}>
+            <CircularProgress size={60} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             {error}
           </Alert>
         ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             No applications found ready for sales processing
           </Alert>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
+          <TableContainer>
+            <Table sx={{ minWidth: 750 }}>
+              <TableHead sx={{ 
+                backgroundColor: 'primary.light',
+                '& .MuiTableCell-root': {
+                  color: 'common.white',
+                  fontWeight: 600,
+                  fontSize: '0.95rem'
+                }
+              }}>
                 <TableRow>
                   <TableCell>ID</TableCell>
-                  <TableCell>Title</TableCell>
+                  <TableCell>Application</TableCell>
                   <TableCell>Submitted Date</TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
+                  <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredApplications
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((app) => (
-                    <TableRow key={app.application_id}>
-                      <TableCell>{app.application_id}</TableCell>
+                    <TableRow 
+                      key={app.application_id}
+                      hover
+                      sx={{ '&:last-child td': { borderBottom: 0 } }}
+                    >
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>
+                        <Chip 
+                          label={app.application_id} 
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main',
+                            width: 32,
+                            height: 32
+                          }}>
                             {app.application_title?.charAt(0) || 'A'}
                           </Avatar>
-                          {app.application_title}
+                          <Typography fontWeight={500}>
+                            {app.application_title}
+                          </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{app.SubmittedDate}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <EventIcon color="action" fontSize="small" />
+                          <Typography variant="body2">
+                            {app.SubmittedDate}
+                          </Typography>
+                        </Box>
+                      </TableCell>
                       <TableCell>
                         <Chip 
                           label={getStatusName(app.status_id)} 
                           color={getStatusColor(app.status_id)}
+                          variant="outlined"
+                          size="small"
                         />
                       </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button 
-                            variant="contained" 
-                            color="success" 
-                            size="small"
-                            onClick={() => openActionDialog(app, 'approve')}
-                          >
-                            Complete
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            color="error" 
-                            size="small"
-                            onClick={() => openActionDialog(app, 'reject')}
-                          >
-                            Reject
-                          </Button>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                          <Tooltip title="Complete Application">
+                            <Button
+                              variant="contained"
+                              color="success"
+                              size="small"
+                              onClick={() => openActionDialog(app, 'approve')}
+                              sx={{
+                                borderRadius: 1,
+                                textTransform: 'none',
+                                px: 2,
+                                '&:hover': {
+                                  backgroundColor: 'success.dark'
+                                }
+                              }}
+                              startIcon={<CheckCircleIcon fontSize="small" />}
+                            >
+                              Complete
+                            </Button>
+                          </Tooltip>
+                          <Tooltip title="Reject Application">
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => openActionDialog(app, 'reject')}
+                              sx={{
+                                borderRadius: 1,
+                                textTransform: 'none',
+                                px: 2,
+                                '&:hover': {
+                                  backgroundColor: 'error.light',
+                                  color: 'error.contrastText'
+                                }
+                              }}
+                              startIcon={<CancelIcon fontSize="small" />}
+                            >
+                              Reject
+                            </Button>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                     </TableRow>
@@ -380,47 +515,88 @@ const AttachInvoiceSale = () => {
                 )}
               </TableBody>
             </Table>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredApplications.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
           </TableContainer>
         )}
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredApplications.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            '& .MuiTablePagination-toolbar': {
+              minHeight: 56
+            }
+          }}
+        />
       </Paper>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
+      <Dialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)} 
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          backgroundColor: 'primary.main',
+          color: 'common.white',
+          fontWeight: 600,
+          py: 2
+        }}>
           {actionType === 'approve' ? 'Complete Application' : 'Reject Application'}
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body1" gutterBottom>
-              Application: <strong>{selectedApp?.application_title}</strong>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ 
+            mb: 3,
+            p: 2,
+            backgroundColor: 'background.default',
+            borderRadius: 2
+          }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+              {selectedApp?.application_title}
             </Typography>
-            <Typography variant="body2" gutterBottom>
-              ID: {selectedApp?.application_id}
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>ID:</strong> {selectedApp?.application_id}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Submitted:</strong> {selectedApp?.SubmittedDate}
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ mt: 2 }}>
-            <TextareaAutosize
-              minRows={3}
-              placeholder={
-                actionType === 'approve' 
-                  ? 'Enter completion notes (optional)...' 
-                  : 'Enter rejection reason (required)...'
-              }
-              style={{ width: '100%', padding: '8px' }}
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              required={actionType === 'reject'}
-            />
-          </Box>
-          <Box sx={{ mt: 2 }}>
+
+          <TextField
+            fullWidth
+            variant="outlined"
+            label={actionType === 'approve' ? 'Completion Notes' : 'Rejection Reason'}
+            placeholder={
+              actionType === 'approve' 
+                ? 'Enter completion notes (optional)...' 
+                : 'Enter rejection reason (required)...'
+            }
+            multiline
+            rows={4}
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            required={actionType === 'reject'}
+            sx={{ mb: 3 }}
+          />
+
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            gap: 2,
+            mb: 2
+          }}>
             <input
               type="file"
               id="file-upload"
@@ -430,28 +606,52 @@ const AttachInvoiceSale = () => {
             />
             <label htmlFor="file-upload">
               <Button
-                variant="outlined"
+                variant="contained"
                 component="span"
+                color="primary"
                 startIcon={<AttachFile />}
-                sx={{ mr: 2 }}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 3
+                }}
               >
-                {actionType === 'approve' ? 'Upload Final Documents' : 'Upload Rejection Notes'}
+                {actionType === 'approve' ? 'Upload Documents' : 'Upload Notes'}
               </Button>
             </label>
             {fileName && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Selected file: {fileName}
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: 1
+              }}>
+                <Typography variant="body2">
+                  {fileName}
+                </Typography>
                 {filePath && (
-                  <Typography variant="caption" display="block" color="text.secondary">
-                    File uploaded successfully
-                  </Typography>
+                  <CheckCircleIcon color="success" fontSize="small" />
                 )}
-              </Typography>
+              </Box>
             )}
           </Box>
+          {actionType === 'approve' && !filePath && (
+            <Typography variant="caption" color="error">
+              * Document upload is required for completion
+            </Typography>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none'
+            }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleStatusUpdate} 
             color={actionType === 'approve' ? 'success' : 'error'}
@@ -459,11 +659,16 @@ const AttachInvoiceSale = () => {
             disabled={loading || 
               (actionType === 'reject' && !feedback) || 
               (actionType === 'approve' && !filePath)}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none'
+            }}
           >
             {loading ? (
-              <CircularProgress size={24} />
+              <CircularProgress size={24} color="inherit" />
             ) : actionType === 'approve' ? (
-              'Mark as Completed'
+              'Complete Application'
             ) : (
               'Reject Application'
             )}
@@ -475,11 +680,20 @@ const AttachInvoiceSale = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3
+          }}
+          iconMapping={{
+            success: <CheckCircleIcon fontSize="inherit" />,
+            error: <CancelIcon fontSize="inherit" />
+          }}
         >
           {snackbar.message}
         </Alert>

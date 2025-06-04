@@ -181,26 +181,7 @@ export const userService = {
 };
 
 export const patientService = {
-  savePatientApplication: async (submissionData) => {
-    try {
-      const response = await patientAPI.savePatientApplication(submissionData);
-      return {
-        success: response.data?.Success || false,
-        data: response.data,
-        message: response.data?.Message || "Application saved successfully",
-        count: response.data?.Count || 0
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.Message || 
-               error.response?.data?.message || 
-               error.message || 
-               "Failed to save application",
-        isNetworkError: error.isNetworkError || false
-      };
-    }
-  },
+
 
   getPatientApplication: async (param) => {
     try {

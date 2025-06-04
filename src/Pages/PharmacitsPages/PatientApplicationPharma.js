@@ -17,9 +17,11 @@ import {
   Alert,
   Avatar,
   Chip,
-  Snackbar
+  Snackbar,
+  Button,
+  InputAdornment
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { Search, Refresh, Add } from '@mui/icons-material';
 import { patientAPI } from '../../Api/api';
 import { useAuth } from '../../Context/AuthContext';
 
@@ -38,6 +40,13 @@ const STATUS_MAPPING = {
   3: 'Approved by Doctor',
   4: 'Rejected by Pharmacist',
   5: 'Sent to Sales'
+};
+
+const STATUS_COLORS = {
+  'Pending': 'warning',
+  'Approved by Doctor': 'success',
+  'Rejected by Pharmacist': 'error',
+  'Sent to Sales': 'info'
 };
 
 const PatientApplicationPharma = () => {
@@ -136,66 +145,121 @@ const PatientApplicationPharma = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': return 'warning';
-      case 'approved by doctor': return 'success';
-      case 'rejected by pharmacis': return 'error';
-      case 'sent to sales': return 'info';
-      default: return 'default';
-    }
-  };
-
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        {getRoleTitle()}
-      </Typography>
-      
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Application List</Typography>
-          <Box>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchApplications} disabled={loading}>
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-          </Box>
+      {/* Header Section */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        p: 2,
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1
+      }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700,
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          {getRoleTitle()}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {user?.RoleId === ROLES.PATIENT && (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: 'none',
+                fontWeight: 600
+              }}
+            >
+              New Application
+            </Button>
+          )}
+          
+          <Tooltip title="Refresh">
+            <IconButton 
+              onClick={fetchApplications} 
+              disabled={loading}
+              sx={{
+                backgroundColor: 'primary.light',
+                color: 'common.white',
+                '&:hover': {
+                  backgroundColor: 'primary.main'
+                }
+              }}
+            >
+              <Refresh />
+            </IconButton>
+          </Tooltip>
         </Box>
-        
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search applications..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-          }}
-          sx={{ mb: 2 }}
-        />
-        
+      </Box>
+
+      {/* Search and Table Section */}
+      <Paper elevation={3} sx={{ 
+        borderRadius: 2,
+        overflow: 'hidden',
+        mb: 3
+      }}>
+        <Box sx={{ p: 2 }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search applications..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: 'action.active' }} />
+                </InputAdornment>
+              ),
+              sx: { borderRadius: 2 }
+            }}
+          />
+        </Box>
+
         {!user?.UserId || !user?.RoleId ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="warning" sx={{ m: 2, borderRadius: 2 }}>
             Please log in to view applications
           </Alert>
         ) : loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            minHeight: '200px'
+          }}>
+            <CircularProgress size={60} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ m: 2, borderRadius: 2 }}>
             {error}
           </Alert>
         ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" sx={{ m: 2, borderRadius: 2 }}>
             No applications found matching your role criteria
           </Alert>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
+          <TableContainer>
+            <Table sx={{ minWidth: 750 }}>
+              <TableHead sx={{ 
+                backgroundColor: 'primary.light',
+                '& .MuiTableCell-root': {
+                  color: 'common.white',
+                  fontWeight: 600,
+                  fontSize: '0.95rem'
+                }
+              }}>
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Title</TableCell>
@@ -207,21 +271,47 @@ const PatientApplicationPharma = () => {
                 {filteredApplications
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((app) => (
-                    <TableRow key={app.application_id}>
-                      <TableCell>{app.application_id}</TableCell>
+                    <TableRow 
+                      key={app.application_id}
+                      hover
+                      sx={{ '&:last-child td': { borderBottom: 0 } }}
+                    >
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>
+                        <Chip 
+                          label={app.application_id} 
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main',
+                            width: 32,
+                            height: 32
+                          }}>
                             {app.application_title?.charAt(0) || 'A'}
                           </Avatar>
-                          {app.application_title}
+                          <Typography fontWeight={500}>
+                            {app.application_title}
+                          </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{app.SubmittedDate}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {app.SubmittedDate}
+                        </Typography>
+                      </TableCell>
                       <TableCell>
                         <Chip 
                           label={app.status} 
-                          color={getStatusColor(app.status)}
+                          color={STATUS_COLORS[app.status] || 'default'}
+                          variant="filled"
+                          sx={{ 
+                            fontWeight: 500,
+                            minWidth: 120
+                          }}
                         />
                       </TableCell>
                     </TableRow>
@@ -241,20 +331,29 @@ const PatientApplicationPharma = () => {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                borderTop: '1px solid rgba(224, 224, 224, 1)'
+              }}
             />
           </TableContainer>
         )}
       </Paper>
 
+      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3
+          }}
         >
           {snackbar.message}
         </Alert>

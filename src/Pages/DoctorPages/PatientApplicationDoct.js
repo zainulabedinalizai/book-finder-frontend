@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -17,9 +17,20 @@ import {
   Alert,
   Avatar,
   Chip,
-  Snackbar
+  Snackbar,
+  Button
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { 
+  Search, 
+  Refresh,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Description as DescriptionIcon,
+  LocalHospital as DoctorIcon,
+  MedicalServices as PharmacistIcon,
+  ShoppingCart as SalesIcon,
+  Person as PatientIcon
+} from '@mui/icons-material';
 import { patientAPI } from '../../Api/api';
 import { useAuth } from '../../Context/AuthContext';
 
@@ -54,15 +65,21 @@ const PatientApplicationDoc = () => {
     severity: 'success'
   });
 
-  // Get role-specific title
-  const getRoleTitle = () => {
+  // Get role-specific title and icon
+  const getRoleConfig = () => {
     switch(user?.RoleId) {
-      case ROLES.ADMIN: return 'All Applications (Admin View)';
-      case ROLES.DOCTOR: return 'Applications Needing Doctor Review';
-      case ROLES.PHARMACIST: return 'Applications Ready for Pharmacy';
-      case ROLES.SALES: return 'Applications Ready for Sales';
-      case ROLES.PATIENT: return 'My Applications';
-      default: return 'Patient Applications';
+      case ROLES.ADMIN: 
+        return { title: 'All Applications (Admin View)', icon: <DescriptionIcon fontSize="large" /> };
+      case ROLES.DOCTOR: 
+        return { title: 'Applications Needing Doctor Review', icon: <DoctorIcon fontSize="large" /> };
+      case ROLES.PHARMACIST: 
+        return { title: 'Applications Ready for Pharmacy', icon: <PharmacistIcon fontSize="large" /> };
+      case ROLES.SALES: 
+        return { title: 'Applications Ready for Sales', icon: <SalesIcon fontSize="large" /> };
+      case ROLES.PATIENT: 
+        return { title: 'My Applications', icon: <PatientIcon fontSize="large" /> };
+      default: 
+        return { title: 'Patient Applications', icon: <DescriptionIcon fontSize="large" /> };
     }
   };
 
@@ -140,88 +157,193 @@ const PatientApplicationDoc = () => {
     switch (status?.toLowerCase()) {
       case 'pending': return 'warning';
       case 'approved by doctor': return 'success';
-      case 'rejected by pharmacis': return 'error';
+      case 'rejected by pharmacist': return 'error';
       case 'sent to sales': return 'info';
       default: return 'default';
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'approved by doctor': return <CheckCircleIcon fontSize="small" />;
+      case 'rejected by pharmacist': return <CancelIcon fontSize="small" />;
+      default: return null;
+    }
+  };
+
+  const { title, icon } = getRoleConfig();
+
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        {getRoleTitle()}
-      </Typography>
-      
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Application List</Typography>
-          <Box>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchApplications} disabled={loading}>
-                <Refresh />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-        
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search applications..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        p: 2,
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1
+      }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700,
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          {icon}
+          {title}
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Refresh />}
+          onClick={fetchApplications}
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: 'none',
+            fontWeight: 600
           }}
-          sx={{ mb: 2 }}
-        />
-        
+        >
+          Refresh
+        </Button>
+      </Box>
+
+      <Paper elevation={3} sx={{ 
+        borderRadius: 2,
+        overflow: 'hidden',
+        mb: 3
+      }}>
+        <Box sx={{
+          p: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'background.default'
+        }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search applications..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+            }}
+            sx={{
+              maxWidth: 400,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: 'background.paper'
+              }
+            }}
+          />
+        </Box>
+
         {!user?.UserId || !user?.RoleId ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="warning" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             Please log in to view applications
           </Alert>
         ) : loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '200px',
+            backgroundColor: 'background.paper',
+            borderRadius: 2,
+            p: 4
+          }}>
+            <CircularProgress size={60} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             {error}
           </Alert>
         ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             No applications found matching your role criteria
           </Alert>
         ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
+          <TableContainer>
+            <Table sx={{ minWidth: 750 }}>
+              <TableHead sx={{ 
+                backgroundColor: 'primary.light',
+                '& .MuiTableCell-root': {
+                  color: 'common.white',
+                  fontWeight: 600,
+                  fontSize: '0.95rem'
+                }
+              }}>
                 <TableRow>
                   <TableCell>ID</TableCell>
                   <TableCell>Title</TableCell>
                   <TableCell>Submitted Date</TableCell>
-                  <TableCell>Status</TableCell>
+                  <TableCell align="center">Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredApplications
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((app) => (
-                    <TableRow key={app.application_id}>
-                      <TableCell>{app.application_id}</TableCell>
+                    <TableRow 
+                      key={app.application_id}
+                      hover
+                      sx={{ '&:last-child td': { borderBottom: 0 } }}
+                    >
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>
+                        <Chip 
+                          label={app.application_id} 
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main',
+                            width: 32,
+                            height: 32
+                          }}>
                             {app.application_title?.charAt(0) || 'A'}
                           </Avatar>
-                          {app.application_title}
+                          <Typography fontWeight={500}>
+                            {app.application_title}
+                          </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{app.SubmittedDate}</TableCell>
                       <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {app.SubmittedDate}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
                         <Chip 
                           label={app.status} 
                           color={getStatusColor(app.status)}
+                          icon={getStatusIcon(app.status)}
+                          sx={{
+                            fontWeight: 500,
+                            textTransform: 'capitalize',
+                            minWidth: 180
+                          }}
                         />
                       </TableCell>
                     </TableRow>
@@ -241,6 +363,11 @@ const PatientApplicationDoc = () => {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                '& .MuiTablePagination-toolbar': {
+                  justifyContent: 'flex-end'
+                }
+              }}
             />
           </TableContainer>
         )}
@@ -250,11 +377,20 @@ const PatientApplicationDoc = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3
+          }}
+          iconMapping={{
+            success: <CheckCircleIcon fontSize="inherit" />,
+            error: <CancelIcon fontSize="inherit" />
+          }}
         >
           {snackbar.message}
         </Alert>

@@ -4,9 +4,11 @@ import {
   TableHead, TableRow, TablePagination, TextField, IconButton, Tooltip,
   CircularProgress, Alert, Avatar, Chip, Snackbar, Button, Dialog,
   DialogTitle, DialogContent, DialogActions, TextareaAutosize, DialogContentText,
-  List, ListItem, ListItemText, Divider, Grid
+  List, ListItem, ListItemText, Divider, Grid, Card, CardContent, Stack,
+  Badge, InputAdornment, useTheme
 } from '@mui/material';
-import { Search, Refresh, AttachFile, Visibility } from '@mui/icons-material';
+import { Search, Refresh, AttachFile, Visibility, MedicalServices, 
+  Assignment, DateRange, CheckCircle, Cancel, HelpOutline } from '@mui/icons-material';
 import { useAuth } from '../../Context/AuthContext';
 import { patientAPI, submittedAnswersAPI } from '../../Api/api';
 import { UploadEmployeeFiles } from '../../Api/api';
@@ -21,6 +23,7 @@ const ROLES = {
 
 const PrescriptionListDoc = () => {
   const { user } = useAuth();
+  const theme = useTheme();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,10 +43,9 @@ const PrescriptionListDoc = () => {
   const [patientAnswers, setPatientAnswers] = useState([]);
   const [answersLoading, setAnswersLoading] = useState(false);
 
-  // Status IDs specific to Doctor role (matches SP logic)
   const DOCTOR_STATUS = {
-    APPROVE: 2,  // Forward to Pharmacist
-    REJECT: 4    // Rejected by Doctor
+    APPROVE: 2,
+    REJECT: 4
   };
 
   const fetchApplications = async () => {
@@ -103,7 +105,7 @@ const PrescriptionListDoc = () => {
   };
 
   const handleViewAnswers = (app) => {
-    setPatientAnswers([]); // Clear previous answers
+    setPatientAnswers([]);
     setSelectedApp(app);
     fetchPatientAnswers(app.application_id);
     setAnswersDialogOpen(true);
@@ -239,7 +241,7 @@ const PrescriptionListDoc = () => {
   const getStatusColor = (statusId) => {
     switch (statusId) {
       case 1: return 'warning';
-      case 2: return 'info';
+      case 2: return 'primary';
       case 4: return 'error';
       default: return 'default';
     }
@@ -269,7 +271,6 @@ const PrescriptionListDoc = () => {
 
   const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredApplications.length - page * rowsPerPage);
 
-  // Group answers by question for better display
   const groupedAnswers = patientAnswers.reduce((acc, answer) => {
     if (!acc[answer.QuestionId]) {
       acc[answer.QuestionId] = {
@@ -284,196 +285,418 @@ const PrescriptionListDoc = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
-        Doctor Review Dashboard
-      </Typography>
-      
-      <Paper sx={{ p: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Applications Needing Review</Typography>
-          <Tooltip title="Refresh">
-            <IconButton onClick={fetchApplications} disabled={loading}>
-              <Refresh />
-            </IconButton>
-          </Tooltip>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 4,
+        gap: 2
+      }}>
+        <MedicalServices sx={{ 
+          fontSize: 48, 
+          color: theme.palette.primary.main 
+        }} />
+        <Box>
+          <Typography variant="h4" sx={{ 
+            fontWeight: 700,
+            color: theme.palette.text.primary
+          }}>
+            Prescription Review
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Review and approve patient medication requests
+          </Typography>
         </Box>
-        
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search applications..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{ startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} /> }}
-          sx={{ mb: 2 }}
-        />
-        
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            No applications found needing doctor review
-          </Alert>
-        ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Title</TableCell>
-                  <TableCell>Submitted Date</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredApplications
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((app) => (
-                    <TableRow key={app.application_id}>
-                      <TableCell>{app.application_id}</TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2 }}>
-                            {app.application_title?.charAt(0) || 'A'}
-                          </Avatar>
-                          {app.application_title}
-                        </Box>
-                      </TableCell>
-                      <TableCell>{app.SubmittedDate}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={getStatusName(app.status_id)} 
-                          color={getStatusColor(app.status_id)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button
-                            variant="outlined"
-                            color="info"
-                            size="small"
-                            startIcon={<Visibility />}
-                            onClick={() => handleViewAnswers(app)}
-                            sx={{ mr: 1 }}
-                          >
-                            View Answers
-                          </Button>
-                          <Button 
-                            variant="contained" 
-                            color="success" 
-                            size="small"
-                            onClick={() => openActionDialog(app, 'approve')}
-                          >
-                            Approve
-                          </Button>
-                          <Button 
-                            variant="outlined" 
-                            color="error" 
-                            size="small"
-                            onClick={() => openActionDialog(app, 'reject')}
-                          >
-                            Reject
-                          </Button>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={5} />
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredApplications.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(e, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(e) => {
-                setRowsPerPage(parseInt(e.target.value, 10));
-                setPage(0);
-              }}
-            />
-          </TableContainer>
-        )}
-      </Paper>
+      </Box>
 
-      {/* Action Dialog (Approve/Reject) */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          {actionType === 'approve' ? 'Approve Application' : 'Reject Application'}
+      <Card elevation={3} sx={{ mb: 4 }}>
+        <CardContent>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 3 
+          }}>
+            <Typography variant="h6" sx={{ 
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Assignment color="primary" />
+              Pending Applications
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Search applications..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search color="action" />
+                    </InputAdornment>
+                  ),
+                  sx: { borderRadius: 2 }
+                }}
+                sx={{ width: 300 }}
+              />
+              <Tooltip title="Refresh">
+                <IconButton 
+                  onClick={fetchApplications} 
+                  disabled={loading}
+                  sx={{ 
+                    backgroundColor: theme.palette.action.hover,
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.selected
+                    }
+                  }}
+                >
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+          
+          {loading ? (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              minHeight: 200
+            }}>
+              <CircularProgress size={60} />
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+          ) : applications.length === 0 ? (
+            <Box sx={{ 
+              textAlign: 'center',
+              p: 4,
+              backgroundColor: theme.palette.background.default,
+              borderRadius: 2
+            }}>
+              <HelpOutline sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                No applications requiring review
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                All patient applications have been processed
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead sx={{ 
+                  backgroundColor: theme.palette.primary.light,
+                  '& .MuiTableCell-root': {
+                    color: theme.palette.common.white,
+                    fontWeight: 600
+                  }
+                }}>
+                  <TableRow>
+                    <TableCell>Application</TableCell>
+                    <TableCell>Submitted</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="center">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredApplications
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((app) => (
+                      <TableRow 
+                        key={app.application_id}
+                        hover
+                        sx={{ 
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar sx={{ 
+                              bgcolor: theme.palette.primary.main,
+                              width: 40,
+                              height: 40
+                            }}>
+                              {app.application_title?.charAt(0) || 'P'}
+                            </Avatar>
+                            <Box>
+                              <Typography fontWeight={600}>
+                                {app.application_title || 'Untitled Application'}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                ID: {app.application_id}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <DateRange color="action" fontSize="small" />
+                            <Typography>
+                              {new Date(app.SubmittedDate).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={getStatusName(app.status_id)} 
+                            color={getStatusColor(app.status_id)}
+                            variant="outlined"
+                            size="small"
+                            sx={{ 
+                              fontWeight: 500,
+                              borderRadius: 1
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Stack direction="row" spacing={1} justifyContent="center">
+                            <Tooltip title="View patient answers">
+                              <IconButton
+                                onClick={() => handleViewAnswers(app)}
+                                sx={{
+                                  color: theme.palette.info.main,
+                                  backgroundColor: theme.palette.info.light,
+                                  '&:hover': {
+                                    backgroundColor: theme.palette.info.main,
+                                    color: theme.palette.common.white
+                                  }
+                                }}
+                              >
+                                <Visibility fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Approve application">
+                              <IconButton
+                                onClick={() => openActionDialog(app, 'approve')}
+                                sx={{
+                                  color: theme.palette.success.main,
+                                  backgroundColor: theme.palette.success.light,
+                                  '&:hover': {
+                                    backgroundColor: theme.palette.success.main,
+                                    color: theme.palette.common.white
+                                  }
+                                }}
+                              >
+                                <CheckCircle fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Reject application">
+                              <IconButton
+                                onClick={() => openActionDialog(app, 'reject')}
+                                sx={{
+                                  color: theme.palette.error.main,
+                                  backgroundColor: theme.palette.error.light,
+                                  '&:hover': {
+                                    backgroundColor: theme.palette.error.main,
+                                    color: theme.palette.common.white
+                                  }
+                                }}
+                              >
+                                <Cancel fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {emptyRows > 0 && (
+                    <TableRow style={{ height: 73 * emptyRows }}>
+                      <TableCell colSpan={4} />
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                component="div"
+                count={filteredApplications.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={(e, newPage) => setPage(newPage)}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                sx={{
+                  borderTop: `1px solid ${theme.palette.divider}`
+                }}
+              />
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Action Dialog */}
+      <Dialog 
+        open={dialogOpen} 
+        onClose={() => setDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'visible'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          backgroundColor: actionType === 'approve' 
+            ? theme.palette.success.light 
+            : theme.palette.error.light,
+          color: theme.palette.getContrastText(
+            actionType === 'approve' 
+              ? theme.palette.success.light 
+              : theme.palette.error.light
+          ),
+          fontWeight: 600,
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          {actionType === 'approve' ? (
+            <CheckCircle fontSize="large" />
+          ) : (
+            <Cancel fontSize="large" />
+          )}
+          {actionType === 'approve' ? 'Approve Prescription' : 'Reject Application'}
         </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body1" gutterBottom>
-              Application ID: <strong>{selectedApp?.application_id}</strong>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              <strong>Application Details:</strong>
             </Typography>
-            <Typography variant="body1" gutterBottom>
-              Title: <strong>{selectedApp?.application_title}</strong>
-            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="body1">
+                  <strong>ID:</strong> {selectedApp?.application_id}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body1">
+                  <strong>Title:</strong> {selectedApp?.application_title}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body1">
+                  <strong>Submitted:</strong> {selectedApp?.SubmittedDate && 
+                    new Date(selectedApp.SubmittedDate).toLocaleDateString()}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body1">
+                  <strong>Current Status:</strong> 
+                  <Chip 
+                    label={getStatusName(selectedApp?.status_id)} 
+                    color={getStatusColor(selectedApp?.status_id)}
+                    size="small"
+                    sx={{ ml: 1 }}
+                  />
+                </Typography>
+              </Grid>
+            </Grid>
           </Box>
-          <Box sx={{ mt: 2 }}>
-            <TextareaAutosize
-              minRows={3}
-              placeholder={
-                actionType === 'approve' 
-                  ? 'Enter prescription notes...' 
-                  : 'Enter rejection reason (required)...'
+
+          <TextField
+            fullWidth
+            variant="outlined"
+            label={actionType === 'approve' ? 'Prescription Notes' : 'Rejection Reason'}
+            name="feedback"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            multiline
+            rows={4}
+            required={actionType === 'reject'}
+            sx={{ mb: 3 }}
+            InputProps={{
+              sx: {
+                borderRadius: 2,
+                backgroundColor: theme.palette.background.paper
               }
-              style={{ width: '100%', padding: '8px' }}
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              required={actionType === 'reject'}
-            />
-          </Box>
-          <Box sx={{ mt: 2 }}>
+            }}
+          />
+
+          <Box sx={{ 
+            border: `1px dashed ${theme.palette.divider}`,
+            borderRadius: 2,
+            p: 2,
+            backgroundColor: theme.palette.background.default
+          }}>
             <input
               type="file"
               id="file-upload"
               onChange={handleFileChange}
               style={{ display: 'none' }}
-              accept=".pdf,.jpg,.png"
+              accept=".pdf,.jpg,.png,.jpeg"
             />
             <label htmlFor="file-upload">
               <Button
                 variant="outlined"
                 component="span"
                 startIcon={<AttachFile />}
-                sx={{ mr: 2 }}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  mr: 2
+                }}
               >
-                Upload Prescription
+                Upload {actionType === 'approve' ? 'Prescription' : 'Document'}
               </Button>
             </label>
             {fileName && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                Selected file: {fileName}
+              <Typography variant="body2" component="span" sx={{ ml: 2 }}>
+                <strong>Selected:</strong> {fileName}
                 {filePath && (
-                  <Typography variant="caption" display="block" color="text.secondary">
+                  <Typography 
+                    variant="caption" 
+                    display="block" 
+                    color="success.main"
+                    sx={{ mt: 0.5 }}
+                  >
                     File uploaded successfully
                   </Typography>
                 )}
               </Typography>
             )}
+            <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1 }}>
+              {actionType === 'approve' 
+                ? 'Upload the signed prescription document (PDF or image)' 
+                : 'Optional: Upload any supporting documents for rejection'}
+            </Typography>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none'
+            }}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleStatusUpdate} 
             color={actionType === 'approve' ? 'success' : 'error'}
             variant="contained"
             disabled={loading || (actionType === 'reject' && !feedback) || (actionType === 'approve' && !filePath)}
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none',
+              minWidth: 120
+            }}
           >
             {loading ? (
-              <CircularProgress size={24} />
+              <CircularProgress size={24} color="inherit" />
             ) : actionType === 'approve' ? (
               'Approve'
             ) : (
@@ -489,68 +712,132 @@ const PrescriptionListDoc = () => {
         onClose={() => {
           setAnswersDialogOpen(false);
           setPatientAnswers([]);
-        }} 
-        maxWidth="md" 
+        }}
+        maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden'
+          }
+        }}
       >
-        <DialogTitle>
+        <DialogTitle sx={{ 
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.common.white,
+          fontWeight: 600,
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <Assignment />
           Patient Questionnaire Answers
-          <Typography variant="subtitle1">
-            Application ID: {selectedApp?.application_id}
-          </Typography>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              <strong>Application ID:</strong> {selectedApp?.application_id}
+            </Typography>
+            <Typography variant="subtitle1">
+              <strong>Title:</strong> {selectedApp?.application_title}
+            </Typography>
+          </Box>
+
           {answersLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              minHeight: 200
+            }}>
+              <CircularProgress size={60} />
             </Box>
           ) : patientAnswers.length === 0 ? (
-            <Alert severity="info">No answers found for this application</Alert>
+            <Alert severity="info" sx={{ mb: 2 }}>
+              No answers found for this application
+            </Alert>
           ) : (
-            <List>
+            <List sx={{ 
+              backgroundColor: theme.palette.background.paper,
+              borderRadius: 2,
+              p: 0
+            }}>
               {Object.entries(groupedAnswers).map(([questionId, questionData]) => {
-                // Special handling for face photos question
                 if (questionData.questionText.toLowerCase().includes('upload clear photos of your face')) {
                   try {
-                    // Parse the first response's TextResponse (they all have the same images)
                     const images = JSON.parse(questionData.responses[0].TextResponse);
                     return (
                       <React.Fragment key={questionId}>
-                        <ListItem alignItems="flex-start">
+                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
                           <ListItemText
-                            primary={questionData.questionText}
+                            primary={
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {questionData.questionText}
+                              </Typography>
+                            }
                             secondary={
                               <Box sx={{ mt: 2 }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                  Patient submitted facial photos:
+                                </Typography>
                                 <Grid container spacing={2}>
                                   <Grid item xs={12} md={4}>
-                                    <Typography variant="body2" color="text.primary" gutterBottom>
-                                      Front View
-                                    </Typography>
-                                    <img 
-                                      src={images.FrontSide} 
-                                      alt="Front View" 
-                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
-                                    />
+                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                                      <CardContent sx={{ p: 1 }}>
+                                        <Typography variant="body2" color="text.primary" gutterBottom>
+                                          Front View
+                                        </Typography>
+                                        <img 
+                                          src={images.FrontSide} 
+                                          alt="Front View" 
+                                          style={{ 
+                                            maxWidth: '100%', 
+                                            maxHeight: 200, 
+                                            borderRadius: 1,
+                                            objectFit: 'contain'
+                                          }}
+                                        />
+                                      </CardContent>
+                                    </Card>
                                   </Grid>
                                   <Grid item xs={12} md={4}>
-                                    <Typography variant="body2" color="text.primary" gutterBottom>
-                                      Left Side View
-                                    </Typography>
-                                    <img 
-                                      src={images.LeftSide} 
-                                      alt="Left Side View" 
-                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
-                                    />
+                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                                      <CardContent sx={{ p: 1 }}>
+                                        <Typography variant="body2" color="text.primary" gutterBottom>
+                                          Left Side View
+                                        </Typography>
+                                        <img 
+                                          src={images.LeftSide} 
+                                          alt="Left Side View" 
+                                          style={{ 
+                                            maxWidth: '100%', 
+                                            maxHeight: 200, 
+                                            borderRadius: 1,
+                                            objectFit: 'contain'
+                                          }}
+                                        />
+                                      </CardContent>
+                                    </Card>
                                   </Grid>
                                   <Grid item xs={12} md={4}>
-                                    <Typography variant="body2" color="text.primary" gutterBottom>
-                                      Right Side View
-                                    </Typography>
-                                    <img 
-                                      src={images.RightSide} 
-                                      alt="Right Side View" 
-                                      style={{ maxWidth: '100%', maxHeight: '200px', border: '1px solid #ddd' }}
-                                    />
+                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                                      <CardContent sx={{ p: 1 }}>
+                                        <Typography variant="body2" color="text.primary" gutterBottom>
+                                          Right Side View
+                                        </Typography>
+                                        <img 
+                                          src={images.RightSide} 
+                                          alt="Right Side View" 
+                                          style={{ 
+                                            maxWidth: '100%', 
+                                            maxHeight: 200, 
+                                            borderRadius: 1,
+                                            objectFit: 'contain'
+                                          }}
+                                        />
+                                      </CardContent>
+                                    </Card>
                                   </Grid>
                                 </Grid>
                               </Box>
@@ -562,28 +849,39 @@ const PrescriptionListDoc = () => {
                     );
                   } catch (e) {
                     console.error('Error parsing face images:', e);
-                    // Fallback to regular display if parsing fails
                   }
                 }
 
-                // Regular question display
                 return (
                   <React.Fragment key={questionId}>
-                    <ListItem alignItems="flex-start">
+                    <ListItem alignItems="flex-start" sx={{ py: 2 }}>
                       <ListItemText
-                        primary={questionData.questionText}
+                        primary={
+                          <Typography variant="subtitle1" fontWeight={600}>
+                            {questionData.questionText}
+                          </Typography>
+                        }
                         secondary={
                           <>
                             <Typography component="span" variant="body2" color="text.primary">
                               {questionData.questionType === 'multiple_choice' ? 
                                 'Selected options:' : 'Selected option:'}
                             </Typography>
-                            <Box component="ul" sx={{ pl: 2, mt: 0.5, mb: 0 }}>
+                            <Box component="ul" sx={{ 
+                              pl: 2, 
+                              mt: 0.5, 
+                              mb: 0,
+                              '& li': {
+                                py: 0.5
+                              }
+                            }}>
                               {questionData.responses.map((response, idx) => (
                                 <li key={idx}>
-                                  {response.OptionText}
-                                  {response.TextResponse && !response.TextResponse.startsWith('{') && 
-                                    ` - ${response.TextResponse}`}
+                                  <Typography variant="body2">
+                                    {response.OptionText}
+                                    {response.TextResponse && !response.TextResponse.startsWith('{') && 
+                                      ` - ${response.TextResponse}`}
+                                  </Typography>
                                 </li>
                               ))}
                             </Box>
@@ -598,8 +896,18 @@ const PrescriptionListDoc = () => {
             </List>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAnswersDialogOpen(false)}>Close</Button>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            onClick={() => setAnswersDialogOpen(false)}
+            variant="outlined"
+            sx={{ 
+              borderRadius: 2,
+              px: 3,
+              textTransform: 'none'
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -607,13 +915,27 @@ const PrescriptionListDoc = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
           onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3,
+            alignItems: 'center'
+          }}
+          iconMapping={{
+            success: <CheckCircle fontSize="large" />,
+            error: <Cancel fontSize="large" />,
+            warning: <HelpOutline fontSize="large" />,
+            info: <HelpOutline fontSize="large" />
+          }}
         >
-          {snackbar.message}
+          <Typography fontWeight={500}>
+            {snackbar.message}
+          </Typography>
         </Alert>
       </Snackbar>
     </Box>

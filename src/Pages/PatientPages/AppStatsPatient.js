@@ -18,11 +18,18 @@ import {
   Avatar,
   Chip,
   Snackbar,
+  Button,
   useMediaQuery,
   useTheme,
   Stack
 } from '@mui/material';
-import { Search, Refresh } from '@mui/icons-material';
+import { 
+  Search, 
+  Refresh,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Description as DescriptionIcon
+} from '@mui/icons-material';
 import { patientAPI } from '../../Api/api';
 import { useAuth } from '../../Context/AuthContext';
 
@@ -115,65 +122,149 @@ const AppStatsPatient = () => {
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status?.toLowerCase()) {
+      case 'approved':
+        return <CheckCircleIcon fontSize="small" />;
+      case 'rejected':
+        return <CancelIcon fontSize="small" />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <Box sx={{ p: isSmallScreen ? 1 : 3 }}>
-      <Typography variant={isSmallScreen ? "h5" : "h4"} gutterBottom sx={{ mb: 2 }}>
-        My Patient Applications
-      </Typography>
-      
-      <Paper sx={{ p: isSmallScreen ? 1 : 2 }}>
-        <Stack direction={isSmallScreen ? "column" : "row"} justifyContent="space-between" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <Typography variant={isSmallScreen ? "subtitle1" : "h6"}>Application List</Typography>
-          <Box>
-            <Tooltip title="Refresh">
-              <IconButton onClick={fetchApplications} disabled={loading} size={isSmallScreen ? "small" : "medium"}>
-                <Refresh fontSize={isSmallScreen ? "small" : "medium"} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Stack>
-        
-        <TextField
-          fullWidth
-          variant="outlined"
-          placeholder="Search applications..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-            size: isSmallScreen ? "small" : "medium"
+    <Box sx={{ p: 3 }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        p: 2,
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1
+      }}>
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700,
+          color: 'primary.main',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <DescriptionIcon fontSize="large" />
+          My Patient Applications
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Refresh />}
+          onClick={fetchApplications}
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: 'none',
+            fontWeight: 600
           }}
-          sx={{ mb: 2 }}
-        />
-        
+        >
+          Refresh
+        </Button>
+      </Box>
+
+      <Paper elevation={3} sx={{ 
+        borderRadius: 2,
+        overflow: 'hidden',
+        mb: 3
+      }}>
+        <Box sx={{
+          p: 2,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'background.default'
+        }}>
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search applications..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
+              size: 'medium'
+            }}
+            sx={{
+              maxWidth: 400,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: 'background.paper'
+              }
+            }}
+          />
+        </Box>
+
         {!user?.UserId ? (
-          <Alert severity="warning" sx={{ mb: 2 }}>
+          <Alert severity="warning" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             Please log in to view your applications
           </Alert>
         ) : loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress size={isSmallScreen ? 24 : 40} />
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '200px',
+            backgroundColor: 'background.paper',
+            borderRadius: 2,
+            p: 4
+          }}>
+            <CircularProgress size={60} />
           </Box>
         ) : error ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             {error}
           </Alert>
         ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="info" sx={{ 
+            m: 2,
+            borderRadius: 2,
+            boxShadow: 1
+          }}>
             No applications found
           </Alert>
         ) : isSmallScreen ? (
           // Mobile view - card list
-          <Box>
+          <Box sx={{ p: 2 }}>
             {filteredApplications
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((app, index) => (
-                <Paper key={index} sx={{ p: 2, mb: 2 }}>
+                <Paper 
+                  key={index} 
+                  sx={{ 
+                    p: 2, 
+                    mb: 2,
+                    borderRadius: 2,
+                    boxShadow: 1
+                  }}
+                >
                   <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                    <Avatar sx={{ width: 32, height: 32 }}>
+                    <Avatar sx={{ 
+                      bgcolor: 'primary.main',
+                      width: 32,
+                      height: 32
+                    }}>
                       {app.application_title?.charAt(0) || 'A'}
                     </Avatar>
-                    <Typography variant="subtitle2" noWrap>
+                    <Typography variant="subtitle2" noWrap fontWeight={500}>
                       {app.application_title}
                     </Typography>
                   </Stack>
@@ -185,6 +276,11 @@ const AppStatsPatient = () => {
                       label={app.status} 
                       color={getStatusColor(app.status)}
                       size="small"
+                      icon={getStatusIcon(app.status)}
+                      sx={{
+                        fontWeight: 500,
+                        textTransform: 'capitalize'
+                      }}
                     />
                   </Stack>
                 </Paper>
@@ -198,38 +294,69 @@ const AppStatsPatient = () => {
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               size="small"
+              sx={{
+                '& .MuiTablePagination-toolbar': {
+                  justifyContent: 'center'
+                }
+              }}
             />
           </Box>
         ) : (
           // Desktop view - table
-          <TableContainer component={Paper}>
-            <Table size="medium">
-              <TableHead>
+          <TableContainer>
+            <Table sx={{ minWidth: 750 }}>
+              <TableHead sx={{ 
+                backgroundColor: 'primary.light',
+                '& .MuiTableCell-root': {
+                  color: 'common.white',
+                  fontWeight: 600,
+                  fontSize: '0.95rem'
+                }
+              }}>
                 <TableRow>
                   <TableCell>Application Title</TableCell>
                   <TableCell>Submitted Date</TableCell>
-                  <TableCell>Status</TableCell>
+                  <TableCell align="center">Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredApplications
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((app, index) => (
-                    <TableRow key={index}>
+                    <TableRow 
+                      key={index}
+                      hover
+                      sx={{ '&:last-child td': { borderBottom: 0 } }}
+                    >
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar sx={{ 
+                            bgcolor: 'primary.main',
+                            width: 32,
+                            height: 32
+                          }}>
                             {app.application_title?.charAt(0) || 'A'}
                           </Avatar>
-                          {app.application_title}
+                          <Typography fontWeight={500}>
+                            {app.application_title}
+                          </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>{app.SubmittedDate}</TableCell>
                       <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {app.SubmittedDate}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
                         <Chip 
                           label={app.status} 
                           color={getStatusColor(app.status)}
-                          size="medium"
+                          icon={getStatusIcon(app.status)}
+                          sx={{
+                            fontWeight: 500,
+                            textTransform: 'capitalize',
+                            minWidth: 100
+                          }}
                         />
                       </TableCell>
                     </TableRow>
@@ -249,6 +376,11 @@ const AppStatsPatient = () => {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
+              sx={{
+                '& .MuiTablePagination-toolbar': {
+                  justifyContent: 'flex-end'
+                }
+              }}
             />
           </TableContainer>
         )}
@@ -258,12 +390,20 @@ const AppStatsPatient = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3
+          }}
+          iconMapping={{
+            success: <CheckCircleIcon fontSize="inherit" />,
+            error: <CancelIcon fontSize="inherit" />
+          }}
         >
           {snackbar.message}
         </Alert>
