@@ -101,11 +101,11 @@ const PatientSurvey = () => {
     'Side View (Left)': null,
     'Side View (Right)': null
   });
-  const [imagePaths, setImagePaths] = useState({
-    'Front View': null,
-    'Side View (Left)': null,
-    'Side View (Right)': null
-  });
+const [imagePaths, setImagePaths] = useState({
+  'Front View': null,
+  'Side View (Left)': null,
+  'Side View (Right)': null
+});
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -413,20 +413,20 @@ const handleSubmit = async () => {
         if (question) {
           // For image question (ID 13), handle differently
           if (question.QuestionId === 13) {
-            responses.push({
-              QuestionId: 13,
-              OptionId: [39, 40, 41].filter(id => {
-                // Only include options that have images uploaded
-                if (id === 39 && imagePaths['Front View']) return true;
-                if (id === 40 && imagePaths['Side View (Left)']) return true;
-                if (id === 41 && imagePaths['Side View (Right)']) return true;
-                return false;
-              }).join(','),
-              TextResponse: null,
-              FrontSide: imagePaths['Front View'] || null,
-              LeftSide: imagePaths['Side View (Left)'] || null,
-              RightSide: imagePaths['Side View (Right)'] || null
-            });
+responses.push({
+  QuestionId: 13,
+  OptionId: [39, 40, 41].filter(id => {
+    // Only include options that have images uploaded
+    if (id === 39 && imagePaths['Front View']) return true;
+    if (id === 40 && imagePaths['Side View (Left)']) return true;
+    if (id === 41 && imagePaths['Side View (Right)']) return true;
+    return false;
+  }).join(','),
+  TextResponse: null,
+  FrontSide: imagePaths['Front View'] || null,  // File path for front view
+  LeftSide: imagePaths['Side View (Left)'] || null,  // File path for left side
+  RightSide: imagePaths['Side View (Right)'] || null  // File path for right side
+});
           } 
           // For all other questions
           else if (Array.isArray(answer) && answer.length > 0) {
