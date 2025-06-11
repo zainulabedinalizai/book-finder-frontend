@@ -34,7 +34,7 @@ import { alpha } from '@mui/material/styles';
 import MainCard from '../Components/MainCard';
 import { questionAPI, patientAPI } from '../Api/api';
 import { useAuth } from '../Context/AuthContext';
-import { UploadEmployeeFiles } from '../Api/api'; // Import the file upload service
+import { UploadEmployeeFiles } from '../Api/api';
 
 // ==============================|| STYLED COMPONENTS ||============================== //
 
@@ -91,8 +91,6 @@ const NavigationButton = styled(Button)(({ theme }) => ({
   textTransform: 'none',
 }));
 
-// ==============================|| PATIENT ONBOARDING JOURNEY ||============================== //
-
 const PatientSurvey = () => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
@@ -101,11 +99,11 @@ const PatientSurvey = () => {
     'Side View (Left)': null,
     'Side View (Right)': null
   });
-const [imagePaths, setImagePaths] = useState({
-  'Front View': null,
-  'Side View (Left)': null,
-  'Side View (Right)': null
-});
+  const [imagePaths, setImagePaths] = useState({
+    'Front View': null,
+    'Side View (Left)': null,
+    'Side View (Right)': null
+  });
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -193,6 +191,7 @@ const [imagePaths, setImagePaths] = useState({
 
     fetchQuestions();
   }, []);
+
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
@@ -393,90 +392,104 @@ const [imagePaths, setImagePaths] = useState({
   };
 
 const handleSubmit = async () => {
-    setOpenConfirmation(false);
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setSubmitSuccess(false);
-    
-    try {
-      const userId = user?.UserId || parseInt(localStorage.getItem('userId'));
-      if (!userId) {
-        throw new Error('User not authenticated');
-      }
-
-      const responses = [];
-      
-      // Process all answered questions
-      Object.entries(formData.answers).forEach(([questionId, answer]) => {
-        const question = questions.find(q => q.QuestionId === parseInt(questionId));
-        
-        if (question) {
-          // For image question (ID 13), handle differently
-          if (question.QuestionId === 13) {
-responses.push({
-  QuestionId: 13,
-  OptionId: [39, 40, 41].filter(id => {
-    // Only include options that have images uploaded
-    if (id === 39 && imagePaths['Front View']) return true;
-    if (id === 40 && imagePaths['Side View (Left)']) return true;
-    if (id === 41 && imagePaths['Side View (Right)']) return true;
-    return false;
-  }).join(','),
-  TextResponse: null,
-  FrontSide: imagePaths['Front View'] || null,  // File path for front view
-  LeftSide: imagePaths['Side View (Left)'] || null,  // File path for left side
-  RightSide: imagePaths['Side View (Right)'] || null  // File path for right side
-});
-          } 
-          // For all other questions
-          else if (Array.isArray(answer) && answer.length > 0) {
-            responses.push({
-              QuestionId: parseInt(questionId),
-              OptionId: answer.join(','),
-              TextResponse: specifyTexts[questionId] || null,
-              FrontSide: null,
-              LeftSide: null,
-              RightSide: null
-            });
-          } else if (answer) {
-            responses.push({
-              QuestionId: parseInt(questionId),
-              OptionId: answer.toString(),
-              TextResponse: specifyTexts[questionId] || null,
-              FrontSide: null,
-              LeftSide: null,
-              RightSide: null
-            });
-          }
-        }
-      });
-
-      // Prepare the final submission payload
-      const submissionData = {
-        UserId: userId,
-        Responses: responses
-      };
-
-      // Call the patient service to save the application
-      const response = await patientAPI.savePatientApplication(submissionData);
-      
-      if (response.success) {
-        setSubmitSuccess(true);
-      } else {
-        throw new Error(response.message || 'Failed to submit application');
-      }
-    } catch (err) {
-      console.error('Error submitting application:', err);
-      setSubmitError(err.message || 'Failed to submit application');
-    } finally {
-      setIsSubmitting(false);
+  setOpenConfirmation(false);
+  setIsSubmitting(true);
+  setSubmitError(null);
+  setSubmitSuccess(false);
+  
+  try {
+    const userId = user?.UserId || parseInt(localStorage.getItem('userId'));
+    if (!userId) {
+      throw new Error('User not authenticated');
     }
+
+    const responses = [];
+    
+    // Process all answered questions
+    Object.entries(formData.answers).forEach(([questionId, answer]) => {
+      const question = questions.find(q => q.QuestionId === parseInt(questionId));
+      
+      if (question) {
+        // For image question (ID 13), handle differently
+        if (question.QuestionId === 13) {
+          responses.push({
+            QuestionId: 13,
+            OptionId: [39, 40, 41].filter(id => {
+              // Only include options that have images uploaded
+              if (id === 39 && imagePaths['Front View']) return true;
+              if (id === 40 && imagePaths['Side View (Left)']) return true;
+              if (id === 41 && imagePaths['Side View (Right)']) return true;
+              return false;
+            }).join(','),
+            TextResponse: null,
+            FrontSide: imagePaths['Front View'] || null,
+            LeftSide: imagePaths['Side View (Left)'] || null,
+            RightSide: imagePaths['Side View (Right)'] || null
+          });
+        } 
+        // For all other questions
+        else if (Array.isArray(answer) && answer.length > 0) {
+          responses.push({
+            QuestionId: parseInt(questionId),
+            OptionId: answer.join(','),
+            TextResponse: specifyTexts[questionId] || null,
+            FrontSide: null,
+            LeftSide: null,
+            RightSide: null
+          });
+        } else if (answer) {
+          responses.push({
+            QuestionId: parseInt(questionId),
+            OptionId: answer.toString(),
+            TextResponse: specifyTexts[questionId] || null,
+            FrontSide: null,
+            LeftSide: null,
+            RightSide: null
+          });
+        }
+      }
+    });
+
+    // Prepare the final submission payload
+    const submissionData = {
+      UserId: userId,
+      Responses: responses
+    };
+
+    console.log('Submitting data:', submissionData); // Debug log
+
+    // Call the patient service to save the application
+    const response = await patientAPI.savePatientApplication(submissionData);
+    
+    console.log('API Response:', response); // Debug log
+
+    if (!response) {
+      throw new Error('No response received from server');
+    }
+
+    if (response.error) {
+      throw new Error(response.error.message || 'API Error');
+    }
+
+    if (response.data?.Success === false) {
+      throw new Error(response.data?.Message || 'Submission failed');
+    }
+
+    if (response.data?.Success === true) {
+      setSubmitSuccess(true);
+    } else {
+      throw new Error('Unexpected response format');
+    }
+  } catch (err) {
+    console.error('Error submitting application:', err);
+    setSubmitError(err.message || 'Failed to submit application. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
 };
-  // ... (keep all your render functions the same until renderQuestionInput) ...
 
   const renderQuestionInput = (question) => {
     if (question.QuestionId === 13) {
-      // Special handling for the image upload question
       return (
         <Stack spacing={2}>
           {showCamera ? (
@@ -749,7 +762,7 @@ responses.push({
               
               <Stack spacing={2} sx={{ mt: 2 }}>
                 {sortedQuestions
-                  .filter(q => q.DisplayOrder <= 7) // Filter for skin-related questions
+                  .filter(q => q.DisplayOrder <= 7)
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
                       <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
@@ -776,7 +789,7 @@ responses.push({
               
               <Stack spacing={2} sx={{ mt: 2 }}>
                 {sortedQuestions
-                  .filter(q => q.DisplayOrder > 7 && q.DisplayOrder <= 12) // Filter for lifestyle questions
+                  .filter(q => q.DisplayOrder > 7 && q.DisplayOrder <= 12)
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
                       <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
@@ -957,7 +970,6 @@ responses.push({
             </StyledMainCard>
           )}
 
-          {/* Navigation buttons */}
           <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
             <NavigationButton
               variant="outlined"
@@ -1013,6 +1025,12 @@ responses.push({
             </Alert>
           )}
 
+          {submitSuccess && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Application submitted successfully!
+            </Alert>
+          )}
+
           <StyledMainCard 
             title={
               <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
@@ -1059,7 +1077,6 @@ responses.push({
         </Stack>
       </Grid>
 
-      {/* Confirmation Dialog */}
       <Dialog
         open={openConfirmation}
         onClose={handleCloseConfirmation}
