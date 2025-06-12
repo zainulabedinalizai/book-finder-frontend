@@ -31,10 +31,10 @@ import {
 import { Edit, Save, Cancel } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
-import MainCard from '../Components/MainCard';
-import { questionAPI, patientAPI } from '../Api/api';
 import { useAuth } from '../Context/AuthContext';
-import { UploadEmployeeFiles } from '../Api/api';
+import MainCard from '../Components/MainCard';
+import { patientAPI, questionAPI, UploadEmployeeFiles } from '../Api/api';
+
 
 // ==============================|| STYLED COMPONENTS ||============================== //
 
@@ -90,6 +90,8 @@ const NavigationButton = styled(Button)(({ theme }) => ({
   fontWeight: 600,
   textTransform: 'none',
 }));
+
+// ==============================|| PATIENT ONBOARDING JOURNEY ||============================== //
 
 const PatientSurvey = () => {
   const { user } = useAuth();
@@ -191,7 +193,6 @@ const PatientSurvey = () => {
 
     fetchQuestions();
   }, []);
-
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
@@ -403,6 +404,7 @@ const handleSubmit = async () => {
       throw new Error('User not authenticated');
     }
 
+    // Prepare responses array
     const responses = [];
     
     // Process all answered questions
@@ -410,12 +412,11 @@ const handleSubmit = async () => {
       const question = questions.find(q => q.QuestionId === parseInt(questionId));
       
       if (question) {
-        // For image question (ID 13), handle differently
-        if (question.QuestionId === 13) {
+        // For image question (ID 13)
+        if (parseInt(questionId) === 13) {
           responses.push({
             QuestionId: 13,
             OptionId: [39, 40, 41].filter(id => {
-              // Only include options that have images uploaded
               if (id === 39 && imagePaths['Front View']) return true;
               if (id === 40 && imagePaths['Side View (Left)']) return true;
               if (id === 41 && imagePaths['Side View (Right)']) return true;
@@ -456,40 +457,29 @@ const handleSubmit = async () => {
       Responses: responses
     };
 
-    console.log('Submitting data:', submissionData); // Debug log
+    console.log('Submitting data:', submissionData); // For debugging
 
     // Call the patient service to save the application
     const response = await patientAPI.savePatientApplication(submissionData);
     
-    console.log('API Response:', response); // Debug log
-
-    if (!response) {
-      throw new Error('No response received from server');
-    }
-
-    if (response.error) {
-      throw new Error(response.error.message || 'API Error');
-    }
-
-    if (response.data?.Success === false) {
-      throw new Error(response.data?.Message || 'Submission failed');
-    }
-
-    if (response.data?.Success === true) {
+    if (response.success) {
       setSubmitSuccess(true);
+      // Optionally reset form or redirect
     } else {
-      throw new Error('Unexpected response format');
+      throw new Error(response.message || 'Failed to submit application');
     }
   } catch (err) {
     console.error('Error submitting application:', err);
-    setSubmitError(err.message || 'Failed to submit application. Please try again.');
+    setSubmitError(err.message || 'Failed to submit application');
   } finally {
     setIsSubmitting(false);
   }
 };
+  // ... (keep all your render functions the same until renderQuestionInput) ...
 
   const renderQuestionInput = (question) => {
     if (question.QuestionId === 13) {
+      // Special handling for the image upload question
       return (
         <Stack spacing={2}>
           {showCamera ? (
@@ -528,21 +518,21 @@ const handleSubmit = async () => {
               </Stack>
             </Stack>
           ) : (
-            <Stack spacing={2}>
-              {question.Options.map((option) => (
-                <Stack key={option.OptionId} spacing={1}>
-                  {capturedImages[option.OptionText] && (
-                    <img 
-                      src={capturedImages[option.OptionText]} 
-                      alt={`Captured ${option.OptionText}`} 
-                      style={{ 
-                        width: '100%', 
-                        maxHeight: '200px', 
-                        objectFit: 'contain',
-                        borderRadius: '12px',
-                        border: `1px solid ${alpha('#6a1b9a', 0.3)}`
-                      }} 
-                    />
+<Stack spacing={2}>
+  {question.Options.map((option) => (
+    <Stack key={option.OptionId} spacing={1}>
+      {capturedImages[option.OptionText] && (
+        <img 
+          src={capturedImages[option.OptionText]} 
+          alt={`Captured ${option.OptionText}`} 
+          style={{ 
+            width: '100%', 
+            maxHeight: '200px', 
+            objectFit: 'contain',
+            borderRadius: '12px',
+            border: `1px solid ${alpha('#6a1b9a', 0.3)}`
+          }} 
+        />
                   )}
                   <Stack direction="row" spacing={2}>
                     <Button 
@@ -615,17 +605,18 @@ const handleSubmit = async () => {
       case 'single_choice':
         return (
           <FormControl component="fieldset">
-            <RadioGroup
-              aria-label={question.QuestionText}
-              name={`radio-group-${question.QuestionId}`}
-              value={formData.answers[question.QuestionId] || ''}
-              onChange={(e) => {
-                handleAnswerChange(question.QuestionId, e.target.value);
-                if (e.target.value !== 'yes' && specifyTexts[question.QuestionId]) {
-                  handleSpecifyTextChange(question.QuestionId, '');
-                }
-              }}
-            >
+<RadioGroup
+  aria-label={question.QuestionText}
+  name={`radio-group-${question.QuestionId}`}
+  value={formData.answers[question.QuestionId] || ''}
+  onChange={(e) => {
+    handleAnswerChange(question.QuestionId, e.target.value);
+    if (e.target.value !== 'yes' && specifyTexts[question.QuestionId]) {
+      handleSpecifyTextChange(question.QuestionId, '');
+    }
+  }}
+>
+
               {question.Options.map((option) => (
                 <Box key={option.OptionId} sx={{ mb: 1 }}>
                   <FormControlLabel
@@ -762,7 +753,7 @@ const handleSubmit = async () => {
               
               <Stack spacing={2} sx={{ mt: 2 }}>
                 {sortedQuestions
-                  .filter(q => q.DisplayOrder <= 7)
+                  .filter(q => q.DisplayOrder <= 7) // Filter for skin-related questions
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
                       <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
@@ -789,7 +780,7 @@ const handleSubmit = async () => {
               
               <Stack spacing={2} sx={{ mt: 2 }}>
                 {sortedQuestions
-                  .filter(q => q.DisplayOrder > 7 && q.DisplayOrder <= 12)
+                  .filter(q => q.DisplayOrder > 7 && q.DisplayOrder <= 12) // Filter for lifestyle questions
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
                       <Typography variant="subtitle1" sx={{ color: '#6a1b9a', fontWeight: 500 }}>
@@ -855,22 +846,22 @@ const handleSubmit = async () => {
                     </Stack>
                   </Stack>
                 ) : (
-                  <Stack spacing={2}>
-                    {sortedQuestions
-                      .find(q => q.QuestionText.includes('upload clear photos'))?.Options.map((option) => (
-                        <Stack key={option.OptionId} spacing={1}>
-                          {capturedImages[option.OptionText] && (
-                            <img 
-                              src={capturedImages[option.OptionText]} 
-                              alt={`Captured ${option.OptionText}`} 
-                              style={{ 
-                                width: '100%', 
-                                maxHeight: '200px', 
-                                objectFit: 'contain',
-                                borderRadius: '12px',
-                                border: `1px solid ${alpha('#6a1b9a', 0.3)}`
-                              }} 
-                            />
+<Stack spacing={2}>
+  {sortedQuestions
+    .find(q => q.QuestionText.includes('upload clear photos'))?.Options.map((option) => (
+      <Stack key={option.OptionId} spacing={1}>
+        {capturedImages[option.OptionText] && (
+          <img 
+            src={capturedImages[option.OptionText]} 
+            alt={`Captured ${option.OptionText}`} 
+            style={{ 
+              width: '100%', 
+              maxHeight: '200px', 
+              objectFit: 'contain',
+              borderRadius: '12px',
+              border: `1px solid ${alpha('#6a1b9a', 0.3)}`
+            }} 
+          />
                           )}
                           <Stack direction="row" spacing={2}>
                             <Button 
@@ -970,6 +961,7 @@ const handleSubmit = async () => {
             </StyledMainCard>
           )}
 
+          {/* Navigation buttons */}
           <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
             <NavigationButton
               variant="outlined"
@@ -1025,12 +1017,6 @@ const handleSubmit = async () => {
             </Alert>
           )}
 
-          {submitSuccess && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              Application submitted successfully!
-            </Alert>
-          )}
-
           <StyledMainCard 
             title={
               <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
@@ -1077,6 +1063,7 @@ const handleSubmit = async () => {
         </Stack>
       </Grid>
 
+      {/* Confirmation Dialog */}
       <Dialog
         open={openConfirmation}
         onClose={handleCloseConfirmation}

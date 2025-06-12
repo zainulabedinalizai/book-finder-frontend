@@ -1,11 +1,11 @@
 import axios from 'axios';
 
 // SIMPLE URL SWITCH - just comment/uncomment the line you want to use
-const baseURL = 'https://localhost:7128/API';       // Local development
+// const baseURL = 'https://localhost:7128/API';       // Local development
 //const baseURL = 'https://210.56.11.158:441/api';  // Live production API
 // const baseURL = 'https://portal.medskls.com/api'; // Other environment
 // const baseURL = 'http://210.56.11.154:777/api';  // Live production API
-// const baseURL = 'https://portal.medskls.com:441/API';  // Live production API
+const baseURL = 'https://portal.medskls.com:441/API';  // Live production API
 
 const API = axios.create({
   baseURL: baseURL,  // Using the selected URL
@@ -175,23 +175,30 @@ export const questionAPI = {
 
 // Patient API Endpoints
 export const patientAPI = {
- savePatientApplication: async (submissionData) => {
+  savePatientApplication: async (submissionData) => {
     try {
-      const response = await patientAPI.savePatientApplication(submissionData);
+      const response = await API.post('/SavePatientApplication', submissionData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
       return {
-        success: response.data?.Success || false,
+        success: response.data?.Success || response.data?.success || false,
         data: response.data,
-        message: response.data?.Message || "Application saved successfully",
+        message: response.data?.Message || response.data?.message || "Application processed",
         count: response.data?.Count || 0
       };
     } catch (error) {
+      const errorMessage = error.response?.data?.Message || 
+                         error.response?.data?.message || 
+                         error.message || 
+                         "Failed to save application";
+      
       return {
         success: false,
-        message: error.response?.data?.Message || 
-               error.response?.data?.message || 
-               error.message || 
-               "Failed to save application",
-        isNetworkError: error.isNetworkError || false
+        message: errorMessage,
+        isNetworkError: !error.response
       };
     }
   },
