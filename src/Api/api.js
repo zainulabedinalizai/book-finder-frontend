@@ -66,16 +66,27 @@ export const authAPI = {
   }),
 
   login: (username, password) => {
-    const formData = new URLSearchParams();
-    formData.append('UserName', username);
-    formData.append('Password', password);
-    
-    return API.post('/GetUserLogin', formData.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-  }
+  const formData = new URLSearchParams();
+  formData.append('UserName', username);
+  formData.append('Password', password);
+
+  console.log("Request Data:", formData.toString());
+
+  return API.post('/GetUserLogin', formData.toString(), {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+  .then(response => {
+    console.log("Login Response:", response.data);
+    return response;
+  })
+  .catch(error => {
+    console.error("Login Error:", error);
+    throw error;
+  });
+}
+
 };
 
 export const submittedAnswersAPI = {
