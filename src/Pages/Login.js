@@ -44,16 +44,44 @@ const Login = () => {
 
     try {
       const result = await login(credentials);
+      console.log('Login response:', result); // Debugging log
+      
       if (result?.success) {
-        navigate('/dashboard');
+        // Check if data exists (now it's a direct object, not an array)
+        if (result.data) {
+          const userData = result.data;
+          
+          // Check if RoleId exists in the user data
+          if (userData.RoleId !== undefined) {
+            // Navigate based on user role ID
+            if (userData.RoleId === 1) { // Assuming 1 is for regular users
+              navigate('/PatientSurvey');
+            } else {
+              navigate('/dashboard');
+            }
+          } else {
+            console.error('RoleId not found in user data');
+            navigate('/dashboard'); // Default fallback
+          }
+        } else {
+          console.error('No user data in response');
+          navigate('/dashboard'); // Default fallback
+        }
+      } else {
+        throw new Error(result?.message || 'Login failed');
       }
     } catch (err) {
       console.error('Login error:', err);
+      error(err.message || 'Login failed. Please try again.');
     }
   };
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
+  };
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
   };
 
   return (
@@ -188,6 +216,7 @@ const Login = () => {
                     <IconButton
                       aria-label="toggle password visibility"
                       onClick={handleClickShowPassword}
+                      onMouseDown={handleMouseDownPassword}
                       edge="end"
                       size={isMobile ? "small" : "medium"}
                     >

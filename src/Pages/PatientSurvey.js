@@ -117,7 +117,7 @@ const PatientSurvey = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [currentCaptureLabel, setCurrentCaptureLabel] = useState('');
   const [specifyTexts, setSpecifyTexts] = useState({});
-  const totalSteps = 5;
+  const totalSteps = 4; // Changed from 5 to 4 since we removed Step 1
 
   const [formData, setFormData] = useState({
     personalInfo: {
@@ -475,7 +475,6 @@ const handleSubmit = async () => {
     setIsSubmitting(false);
   }
 };
-  // ... (keep all your render functions the same until renderQuestionInput) ...
 
   const renderQuestionInput = (question) => {
     if (question.QuestionId === 13) {
@@ -617,7 +616,7 @@ const handleSubmit = async () => {
   }}
 >
 
-              {question.Options.map((option) => (
+              {question.Options.map((option) => ( 
                 <Box key={option.OptionId} sx={{ mb: 1 }}>
                   <FormControlLabel
                     value={option.OptionId}
@@ -668,82 +667,7 @@ const handleSubmit = async () => {
             <StyledMainCard 
               title={
                 <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
-                  Step 1: Let's Get to Know You
-                </Typography>
-              }
-            >
-              <Typography variant="body1" gutterBottom sx={{ color: '#555' }}>
-                Before we talk about products or treatments, we start with your story. We ask for basic personal info to keep your account secure and allow our experts to follow up, if needed.
-              </Typography>
-              
-              <Stack spacing={2} sx={{ mt: 2 }}>
-                <StyledTextField 
-                  fullWidth 
-                  size="small" 
-                  label="Full Name" 
-                  variant="outlined" 
-                  value={formData.personalInfo.fullName}
-                  onChange={(e) => handlePersonalInfoChange('fullName', e.target.value)}
-                />
-                <StyledTextField 
-                  fullWidth 
-                  size="small" 
-                  type="date" 
-                  label="Date of Birth" 
-                  variant="outlined" 
-                  InputLabelProps={{ shrink: true }} 
-                  value={formData.personalInfo.dob}
-                  onChange={(e) => handlePersonalInfoChange('dob', e.target.value)}
-                />
-                <FormControl component="fieldset">
-                  <FormLabel component="legend" sx={{ color: '#6a1b9a', mb: 1 }}>Gender</FormLabel>
-                  <RadioGroup
-                    row
-                    aria-label="gender"
-                    name="gender"
-                    value={formData.personalInfo.gender}
-                    onChange={(e) => handlePersonalInfoChange('gender', e.target.value)}
-                  >
-                    <FormControlLabel value="female" control={<Radio size="small" />} label="Female" />
-                    <FormControlLabel value="male" control={<Radio size="small" />} label="Male" />
-                    <FormControlLabel value="other" control={<Radio size="small" />} label="Other" />
-                    <FormControlLabel value="prefer-not-to-say" control={<Radio size="small" />} label="Prefer not to say" />
-                  </RadioGroup>
-                </FormControl>
-                <StyledTextField 
-                  fullWidth 
-                  size="small" 
-                  label="Phone Number" 
-                  variant="outlined" 
-                  value={formData.personalInfo.phone}
-                  onChange={(e) => handlePersonalInfoChange('phone', e.target.value)}
-                />
-                <StyledTextField 
-                  fullWidth 
-                  size="small" 
-                  type="email" 
-                  label="Email Address" 
-                  variant="outlined" 
-                  value={formData.personalInfo.email}
-                  onChange={(e) => handlePersonalInfoChange('email', e.target.value)}
-                />
-                <StyledTextField 
-                  fullWidth 
-                  size="small" 
-                  label="Residential Address" 
-                  variant="outlined" 
-                  value={formData.personalInfo.address}
-                  onChange={(e) => handlePersonalInfoChange('address', e.target.value)}
-                />
-              </Stack>
-            </StyledMainCard>
-          )}
-
-          {currentStep === 2 && (
-            <StyledMainCard 
-              title={
-                <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
-                  Step 2: Tell Us About Your Skin
+                  Step 1: Tell Us About Your Skin
                 </Typography>
               }
             >
@@ -766,11 +690,11 @@ const handleSubmit = async () => {
             </StyledMainCard>
           )}
 
-          {currentStep === 3 && (
+          {currentStep === 2 && (
             <StyledMainCard 
               title={
                 <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
-                  Step 3: Your Lifestyle + Habits
+                  Step 2: Your Lifestyle + Habits
                 </Typography>
               }
             >
@@ -793,11 +717,11 @@ const handleSubmit = async () => {
             </StyledMainCard>
           )}
 
-          {currentStep === 4 && (
+          {currentStep === 3 && (
             <StyledMainCard 
               title={
                 <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
-                  Step 4: Ready for Your Treatment Plan
+                  Step 3: Ready for Your Treatment Plan
                 </Typography>
               }
             >
@@ -927,7 +851,7 @@ const handleSubmit = async () => {
             </StyledMainCard>
           )}
 
-          {currentStep === 5 && (
+          {currentStep === 4 && (
             <StyledMainCard 
               title={
                 <Typography variant="h5" sx={{ color: '#6a1b9a', fontWeight: 600 }}>
