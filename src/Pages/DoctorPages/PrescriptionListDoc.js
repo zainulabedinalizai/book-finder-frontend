@@ -85,6 +85,8 @@ const PrescriptionListDoc = () => {
   const fetchPatientAnswers = async (applicationId) => {
     try {
       setAnswersLoading(true);
+          console.log('Fetching answers for application ID:', applicationId); // Add this line
+
       const response = await submittedAnswersAPI.getByApplicationId(applicationId);
       
       if (response.data.success) {
@@ -105,6 +107,8 @@ const PrescriptionListDoc = () => {
   };
 
   const handleViewAnswers = (app) => {
+      console.log('Application data being viewed:', app); 
+
     setPatientAnswers([]);
     setSelectedApp(app);
     fetchPatientAnswers(app.application_id);
@@ -763,136 +767,143 @@ const PrescriptionListDoc = () => {
               borderRadius: 2,
               p: 0
             }}>
-              {Object.entries(groupedAnswers).map(([questionId, questionData]) => {
-                if (questionData.questionText.toLowerCase().includes('upload clear photos of your face')) {
-                  try {
-                    const images = JSON.parse(questionData.responses[0].TextResponse);
-                    return (
-                      <React.Fragment key={questionId}>
-                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                          <ListItemText
-                            primary={
-                              <Typography variant="subtitle1" fontWeight={600}>
-                                {questionData.questionText}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box sx={{ mt: 2 }}>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                  Patient submitted facial photos:
-                                </Typography>
-                                <Grid container spacing={2}>
-                                  <Grid item xs={12} md={4}>
-                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
-                                      <CardContent sx={{ p: 1 }}>
-                                        <Typography variant="body2" color="text.primary" gutterBottom>
-                                          Front View
-                                        </Typography>
-                                        <img 
-                                          src={images.FrontSide} 
-                                          alt="Front View" 
-                                          style={{ 
-                                            maxWidth: '100%', 
-                                            maxHeight: 200, 
-                                            borderRadius: 1,
-                                            objectFit: 'contain'
-                                          }}
-                                        />
-                                      </CardContent>
-                                    </Card>
-                                  </Grid>
-                                  <Grid item xs={12} md={4}>
-                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
-                                      <CardContent sx={{ p: 1 }}>
-                                        <Typography variant="body2" color="text.primary" gutterBottom>
-                                          Left Side View
-                                        </Typography>
-                                        <img 
-                                          src={images.LeftSide} 
-                                          alt="Left Side View" 
-                                          style={{ 
-                                            maxWidth: '100%', 
-                                            maxHeight: 200, 
-                                            borderRadius: 1,
-                                            objectFit: 'contain'
-                                          }}
-                                        />
-                                      </CardContent>
-                                    </Card>
-                                  </Grid>
-                                  <Grid item xs={12} md={4}>
-                                    <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
-                                      <CardContent sx={{ p: 1 }}>
-                                        <Typography variant="body2" color="text.primary" gutterBottom>
-                                          Right Side View
-                                        </Typography>
-                                        <img 
-                                          src={images.RightSide} 
-                                          alt="Right Side View" 
-                                          style={{ 
-                                            maxWidth: '100%', 
-                                            maxHeight: 200, 
-                                            borderRadius: 1,
-                                            objectFit: 'contain'
-                                          }}
-                                        />
-                                      </CardContent>
-                                    </Card>
-                                  </Grid>
-                                </Grid>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        <Divider component="li" />
-                      </React.Fragment>
-                    );
-                  } catch (e) {
-                    console.error('Error parsing face images:', e);
-                  }
-                }
+{Object.entries(groupedAnswers).map(([questionId, questionData]) => {
+  // Special handling for face images question
+  if (questionId === "13") {
+    const frontImage = questionData.responses.find(r => r.OptionId === 39)?.front_imagepath;
+    const leftImage = questionData.responses.find(r => r.OptionId === 40)?.left_imagepath;
+    const rightImage = questionData.responses.find(r => r.OptionId === 41)?.right_imagepath;
 
-                return (
-                  <React.Fragment key={questionId}>
-                    <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                      <ListItemText
-                        primary={
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {questionData.questionText}
+    return (
+      <React.Fragment key={questionId}>
+        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+          <ListItemText
+            primary={
+              <Typography variant="subtitle1" fontWeight={600}>
+                {questionData.questionText}
+              </Typography>
+            }
+            secondary={
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Patient submitted facial photos:
+                </Typography>
+                <Grid container spacing={2}>
+                  {frontImage && (
+                    <Grid item xs={12} md={4}>
+                      <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                        <CardContent sx={{ p: 1 }}>
+                          <Typography variant="body2" color="text.primary" gutterBottom>
+                            Front View
                           </Typography>
-                        }
-                        secondary={
-                          <>
-                            <Typography component="span" variant="body2" color="text.primary">
-                              {questionData.questionType === 'multiple_choice' ? 
-                                'Selected options:' : 'Selected option:'}
-                            </Typography>
-                            <Box component="ul" sx={{ 
-                              pl: 2, 
-                              mt: 0.5, 
-                              mb: 0,
-                              '& li': {
-                                py: 0.5
-                              }
-                            }}>
-                              {questionData.responses.map((response, idx) => (
-                                <li key={idx}>
-                                  <Typography variant="body2">
-                                    {response.OptionText}
-                                    {response.TextResponse && !response.TextResponse.startsWith('{') && 
-                                      ` - ${response.TextResponse}`}
-                                  </Typography>
-                                </li>
-                              ))}
-                            </Box>
-                          </>
-                        }
-                      />
-                    </ListItem>
-                    <Divider component="li" />
-                  </React.Fragment>
-                );
-              })}
+                          <img 
+                            src={frontImage} 
+                            alt="Front View" 
+                            style={{ 
+                              maxWidth: '100%', 
+                              maxHeight: 200, 
+                              borderRadius: 1,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+                  {leftImage && (
+                    <Grid item xs={12} md={4}>
+                      <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                        <CardContent sx={{ p: 1 }}>
+                          <Typography variant="body2" color="text.primary" gutterBottom>
+                            Left Side View
+                          </Typography>
+                          <img 
+                            src={leftImage} 
+                            alt="Left Side View" 
+                            style={{ 
+                              maxWidth: '100%', 
+                              maxHeight: 200, 
+                              borderRadius: 1,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+                  {rightImage && (
+                    <Grid item xs={12} md={4}>
+                      <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}` }}>
+                        <CardContent sx={{ p: 1 }}>
+                          <Typography variant="body2" color="text.primary" gutterBottom>
+                            Right Side View
+                          </Typography>
+                          <img 
+                            src={rightImage} 
+                            alt="Right Side View" 
+                            style={{ 
+                              maxWidth: '100%', 
+                              maxHeight: 200, 
+                              borderRadius: 1,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            }
+          />
+        </ListItem>
+        <Divider component="li" />
+      </React.Fragment>
+    );
+  }
+
+  // Regular question handling
+  return (
+    <React.Fragment key={questionId}>
+      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+        <ListItemText
+          primary={
+            <Typography variant="subtitle1" fontWeight={600}>
+              {questionData.questionText}
+            </Typography>
+          }
+          secondary={
+            <>
+              <Typography component="span" variant="body2" color="text.primary">
+                {questionData.questionType === 'multiple_choice' ? 
+                  'Selected options:' : 'Selected option:'}
+              </Typography>
+              <Box component="ul" sx={{ 
+                pl: 2, 
+                mt: 0.5, 
+                mb: 0,
+                '& li': {
+                  py: 0.5
+                }
+              }}>
+                {questionData.responses.map((response, idx) => (
+                  <li key={idx}>
+                    <Typography variant="body2">
+                      {response.OptionText}
+                      {response.TextResponse && !response.TextResponse.startsWith('{') && 
+                        ` - ${response.TextResponse}`}
+                    </Typography>
+                  </li>
+                ))}
+              </Box>
+            </>
+          }
+        />
+      </ListItem>
+      <Divider component="li" />
+    </React.Fragment>
+  );
+})}
             </List>
           )}
         </DialogContent>
