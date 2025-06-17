@@ -169,14 +169,26 @@ export const userAPI = {
 
 // Question API Endpoints
 export const questionAPI = {
-  getQuestionAndOptionList: () => {
+  getQuestionAndOptionList: async () => {
     const formData = new URLSearchParams();
 
-    return API.post("/GetQuestionAndOptionList", formData.toString(), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
+    try {
+      const response = await API.post(
+        "/GetQuestionAndOptionList",
+        formData.toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      console.log("RAW API RESPONSE DATA:", response.data);
+      return response;
+    } catch (error) {
+      console.error("API Error:", error);
+      throw error;
+    }
   },
 };
 
