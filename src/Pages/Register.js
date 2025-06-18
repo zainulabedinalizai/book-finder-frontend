@@ -24,6 +24,7 @@ import {
   Cake,
   Phone,
   Home,
+  Wc,
 } from "@mui/icons-material";
 import { useAuth } from "../Context/AuthContext";
 
@@ -297,6 +298,11 @@ const Register = () => {
                           value={userData.gender}
                           label="Gender"
                           onChange={handleChange}
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <Wc fontSize="small" />
+                            </InputAdornment>
+                          }
                         >
                           <MenuItem value="M">Male</MenuItem>
                           <MenuItem value="F">Female</MenuItem>
