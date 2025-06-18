@@ -196,7 +196,10 @@ export const questionAPI = {
 export const patientAPI = {
   savePatientApplication: async (submissionData) => {
     try {
-      const response = await patientAPI.savePatientApplication(submissionData);
+      const response = await axios.post(
+        `${baseURL}/SavePatientApplication`,
+        submissionData
+      );
       return {
         success: response.data?.Success || false,
         data: response.data,

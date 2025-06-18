@@ -228,18 +228,6 @@ const PatientSurvey = () => {
     (a, b) => a.DisplayOrder - b.DisplayOrder
   );
 
-  // Add this debug log
-  console.log("GROUPED QUESTIONS STRUCTURE:", {
-    groupedQuestions,
-    sortedQuestions,
-    questionCount: questions.length,
-    groupedQuestionCount: Object.keys(groupedQuestions).length,
-  });
-
-  useEffect(() => {
-    console.log("Component has mounted or state has changed");
-  }, [sortedQuestions, currentStep]);
-
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
@@ -673,12 +661,6 @@ const PatientSurvey = () => {
 
   const renderQuestionInput = useCallback(
     (question) => {
-      console.log(`Rendering question ${question.QuestionId}`, {
-        question,
-        formDataAnswers: formData.answers[question.QuestionId],
-        specifyTexts,
-      });
-
       if (question.QuestionId === 13) {
         // Special handling for the image upload question
         return (
