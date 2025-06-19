@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Container, Card, CardContent,
-  Button, Divider, Grid, Table, TableBody,
+  Button, Divider, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
   Paper, TextField, Select, MenuItem, InputLabel,
   FormControl, IconButton, Dialog, DialogTitle,
-  DialogContent, DialogActions
+  DialogContent, DialogActions,
+  Grid
 } from '@mui/material';
 import { Edit, Send, Save, Cancel, Add, Delete, Receipt } from '@mui/icons-material';
 
@@ -85,13 +86,6 @@ const SendInvoiceToPatient = () => {
               <Receipt fontSize="large" color="primary" sx={{ mr: 2 }} />
               <Typography variant="h4">Manage Patient Invoices</Typography>
             </Box>
-            <Button 
-              variant="contained" 
-              startIcon={<Add />}
-              onClick={() => setOpenDialog(true)}
-            >
-              Create New Invoice
-            </Button>
           </Box>
 
           <Typography variant="body1" paragraph>
@@ -237,53 +231,6 @@ const SendInvoiceToPatient = () => {
               </TableBody>
             </Table>
           </TableContainer>
-
-          <Divider sx={{ my: 3 }} />
-
-          <Grid container spacing={3} mt={2}>
-            <Grid item xs={12} md={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Invoice Summary
-                  </Typography>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography>Total Invoices:</Typography>
-                    <Typography><strong>{invoices.length}</strong></Typography>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography>Draft Invoices:</Typography>
-                    <Typography><strong>{invoices.filter(i => i.status === 'Draft').length}</strong></Typography>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography>Sent Invoices:</Typography>
-                    <Typography><strong>{invoices.filter(i => i.status === 'Sent').length}</strong></Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card variant="outlined">
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Financial Summary
-                  </Typography>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography>Total Amount:</Typography>
-                    <Typography><strong>${invoices.reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography>Pending Amount:</Typography>
-                    <Typography><strong>${invoices.filter(i => i.status !== 'Paid').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                  </Box>
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography>Paid Amount:</Typography>
-                    <Typography><strong>${invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0).toFixed(2)}</strong></Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
 
           {/* New Invoice Dialog */}
           <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
