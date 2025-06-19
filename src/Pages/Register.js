@@ -105,7 +105,7 @@ const Register = () => {
               position: "absolute",
               top: 0,
               left: 0,
-              width: isMobile ? "100%" : "30%",
+              width: isMobile ? 0 : "30%",
               height: isMobile ? "120px" : "100%",
               background: "linear-gradient(45deg, #1976d2, #2196f3)",
               zIndex: 0,
@@ -118,7 +118,7 @@ const Register = () => {
           <Box
             sx={{
               flex: isMobile ? 0 : 0.6, // Reduced from 0.8 to 0.6
-              p: isMobile ? 2 : 3,
+              p: isMobile ? 5 : 3,
               color: isMobile ? theme.palette.primary.main : "white",
               display: "flex",
               flexDirection: "column",

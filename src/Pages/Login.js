@@ -93,11 +93,11 @@ const Login = () => {
     >
       <Fade in={true} timeout={500}>
         <Paper
-          elevation={isMobile ? 0 : 4}
+          elevation={isMobile ? 1 : 4}
           sx={{
             display: "flex",
             flexDirection: isMobile ? "column" : "row",
-            p: isMobile ? 1 : 3,
+            p: isMobile ? 5 : 3,
             borderRadius: 3,
             width: "fit-content",
             maxWidth: isMobile ? "95vw" : "100%",

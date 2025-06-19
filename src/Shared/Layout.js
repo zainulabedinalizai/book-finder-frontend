@@ -22,7 +22,7 @@ import {
   Collapse,
   Badge,
 } from "@mui/material";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -117,6 +117,7 @@ const Layout = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [notificationCount] = useState(3);
   const hideDrawer = ["/login", "/register"].includes(location.pathname);
@@ -607,7 +608,12 @@ const Layout = ({ children }) => {
           <List sx={{ py: 1 }}>
             <Tooltip title="Logout" placement="right" arrow>
               <ListItem disablePadding>
-                <ListItemButton onClick={logout}>
+                <ListItemButton
+                  onClick={() => {
+                    logout(); // Clear auth state
+                    navigate("/login"); // Redirect to login
+                  }}
+                >
                   <ListItemIcon sx={{ color: theme.palette.text.secondary }}>
                     <ExitToAppIcon />
                   </ListItemIcon>
@@ -672,30 +678,6 @@ const Layout = ({ children }) => {
               Medskls
             </GradientText>
           </Box>
-          {isAuthenticated && (
-            <>
-              <IconButton color="inherit" sx={{ mr: 1 }}>
-                <Badge
-                  badgeContent={notificationCount}
-                  color="error"
-                  overlap="circular"
-                >
-                  <NotificationsIcon fontSize="small" />
-                </Badge>
-              </IconButton>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  mr: 2,
-                  fontWeight: 500,
-                  color: theme.palette.text.secondary,
-                  fontSize: "0.875rem",
-                }}
-              >
-                {user?.RoleName || "Role"}
-              </Typography>
-            </>
-          )}
         </Toolbar>
       </AppBar>
 
@@ -755,18 +737,7 @@ const Layout = ({ children }) => {
         {/* Only add vertical spacing if AppBar is shown */}
         {!hideDrawer && <Toolbar />}
 
-        <Box
-          sx={{
-            maxWidth: 1700,
-            mx: "auto",
-            my: hideDrawer ? 0 : 2, // No vertical margin for login/register
-            p: hideDrawer ? 0 : 2,
-            borderRadius: 2,
-            backgroundColor: theme.palette.background.paper,
-            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-            border: `1px solid ${theme.palette.divider}`,
-          }}
-        >
+        <Box sx={{ maxWidth: 1700, mx: "auto", my: 2, px: 2 }}>
           <Outlet />
           {children}
         </Box>
