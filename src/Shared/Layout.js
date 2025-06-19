@@ -236,15 +236,17 @@ const Layout = ({ children }) => {
 
     const sections = [];
 
-    // Always show Dashboard
-    sections.push({
-      key: "dashboard",
-      title: "Dashboard",
-      icon: <DashboardIcon />,
-      items: [
-        { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-      ],
-    });
+    // Only show Dashboard if not a basic user (RoleId !== 1)
+    if (roleId !== 1) {
+      sections.push({
+        key: "dashboard",
+        title: "Dashboard",
+        icon: <DashboardIcon />,
+        items: [
+          { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+        ],
+      });
+    }
 
     // Role-specific sections
     switch (roleId) {

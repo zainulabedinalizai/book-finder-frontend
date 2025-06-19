@@ -7,32 +7,39 @@ import {
 import Layout from "./Shared/Layout";
 import { AuthProvider } from "./Context/AuthContext";
 import { BookProvider } from "./Context/BookContext";
+
 import Login from "./Pages/Login";
+import Register from "./Pages/Register";
 import Dashboard from "./Pages/Dashboard";
 import BookSearch from "./Pages/BookSearch";
 import BookDetails from "./Pages/BookDetails";
 import AddFavoriteForm from "./Pages/AddFavoriteForm";
-import Register from "./Pages/Register";
 import PatientSurvey from "./Pages/PatientSurvey";
+
 import AddUser from "./Pages/AdminDashPages/AddUser";
 import PersonalProfile from "./Pages/AdminDashPages/PersonalProfile";
 import ChangePassword from "./Pages/AdminDashPages/ChangePassword";
 import UserRoles from "./Pages/AdminDashPages/UserRoles";
 import UserLogin from "./Pages/AdminDashPages/UserLogin";
-import MyRequests from "./Pages/PatientPages/MyRequests";
-import PersonalProfileDoc from "./Pages/DoctorPages/PersonalProfileDoc";
+
 import PersonalProfilePatient from "./Pages/PatientPages/PersonalProfilePatient";
-import PersonalProfilePharma from "./Pages/PharmacitsPages/PersonalProfilePharma";
-import PersonalProfileSaTeam from "./Pages/SalesTeamPages/PersonalProfileSaTeam";
-import PatientApplicationDoc from "./Pages/DoctorPages/PatientApplicationDoct";
-import PatientApplicationPharma from "./Pages/PharmacitsPages/PatientApplicationPharma";
-import PatientApplicationSales from "./Pages/SalesTeamPages/PatientApplicationSales";
 import AppStatsPatient from "./Pages/PatientPages/AppStatsPatient";
-import PrescriptionListDoc from "./Pages/DoctorPages/PrescriptionListDoc";
-import AddInvoicePharma from "./Pages/PharmacitsPages/AddInvoicePharma";
-import AddInvoiceSales from "./Pages/SalesTeamPages/AttachInvoiceSales";
 import PatientInvoice from "./Pages/PatientPages/PatientInvoice";
+
+import PersonalProfileDoc from "./Pages/DoctorPages/PersonalProfileDoc";
+import PatientApplicationDoc from "./Pages/DoctorPages/PatientApplicationDoct";
+import PrescriptionListDoc from "./Pages/DoctorPages/PrescriptionListDoc";
+
+import PersonalProfilePharma from "./Pages/PharmacitsPages/PersonalProfilePharma";
+import PatientApplicationPharma from "./Pages/PharmacitsPages/PatientApplicationPharma";
+import AddInvoicePharma from "./Pages/PharmacitsPages/AddInvoicePharma";
+
+import PersonalProfileSaTeam from "./Pages/SalesTeamPages/PersonalProfileSaTeam";
+import PatientApplicationSales from "./Pages/SalesTeamPages/PatientApplicationSales";
+import AddInvoiceSales from "./Pages/SalesTeamPages/AttachInvoiceSales";
 import SendInvoiceToPatient from "./Pages/SalesTeamPages/SendInvoiceToPatient";
+
+import PrivateRoute from "./Components/PrivateRoute";
 
 const App = () => {
   return (
@@ -43,76 +50,175 @@ const App = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/" element={<Navigate to="/login" />} />
+
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute deniedRoles={[1]}>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
+
               <Route path="/search" element={<BookSearch />} />
               <Route path="/PatientSurvey" element={<PatientSurvey />} />
-              <Route path="/" element={<Navigate to="/login" />} />
               <Route path="/books/:id" element={<BookDetails />} />
               <Route path="/add-favorite" element={<AddFavoriteForm />} />
 
-              {/* Admin Routes */}
-              <Route path="/AddUser" element={<AddUser />} />
-              <Route path="/PersonalProfile" element={<PersonalProfile />} />
-              <Route path="/ChangePassword" element={<ChangePassword />} />
-              <Route path="/UserRoles" element={<UserRoles />} />
-              <Route path="/UserLogin" element={<UserLogin />} />
+              {/* Admin Routes - RoleId: 2 */}
+              <Route
+                path="/AddUser"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <AddUser />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/PersonalProfile"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <PersonalProfile />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/ChangePassword"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <ChangePassword />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/UserRoles"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <UserRoles />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/UserLogin"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <UserLogin />
+                  </PrivateRoute>
+                }
+              />
 
-              {/* Patient Routes */}
+              {/* Patient Routes - RoleId: 1 */}
               <Route
                 path="/PersonalProfilePatient"
-                element={<PersonalProfilePatient />}
+                element={
+                  <PrivateRoute allowedRoles={[1]}>
+                    <PersonalProfilePatient />
+                  </PrivateRoute>
+                }
               />
-              <Route path="/AppStatsPatient" element={<AppStatsPatient />} />
-              <Route path="/PatientInvoice" element={<PatientInvoice />} />
+              <Route
+                path="/AppStatsPatient"
+                element={
+                  <PrivateRoute allowedRoles={[1]}>
+                    <AppStatsPatient />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/PatientInvoice"
+                element={
+                  <PrivateRoute allowedRoles={[1]}>
+                    <PatientInvoice />
+                  </PrivateRoute>
+                }
+              />
 
-              {/* <Route path="/patient/status" element={<PatientStatus />} />
-              <Route path="/patient/invoice-notifications" element={<PatientInvoiceNotifications />} />
-              <Route path="/patient/download-invoice" element={<PatientDownloadInvoice />} />
-              <Route path="/patient/email-notifications" element={<PatientEmailNotifications />} /> */}
-
-              {/* Doctor Routes */}
+              {/* Doctor Routes - RoleId: 19 */}
               <Route
                 path="/PersonalProfileDoc"
-                element={<PersonalProfileDoc />}
+                element={
+                  <PrivateRoute allowedRoles={[19]}>
+                    <PersonalProfileDoc />
+                  </PrivateRoute>
+                }
               />
               <Route
                 path="/PatientApplicationDoc"
-                element={<PatientApplicationDoc />}
+                element={
+                  <PrivateRoute allowedRoles={[19]}>
+                    <PatientApplicationDoc />
+                  </PrivateRoute>
+                }
               />
               <Route
                 path="/PrescriptionListDoc"
-                element={<PrescriptionListDoc />}
+                element={
+                  <PrivateRoute allowedRoles={[19]}>
+                    <PrescriptionListDoc />
+                  </PrivateRoute>
+                }
               />
-              {/* <Route path="/doctor/send-pharmacy" element={<DoctorSendPharmacy />} />  */}
 
-              {/* Pharmacist Routes */}
+              {/* Pharmacist Routes - RoleId: 24 */}
               <Route
                 path="/PersonalProfilePharma"
-                element={<PersonalProfilePharma />}
+                element={
+                  <PrivateRoute allowedRoles={[24]}>
+                    <PersonalProfilePharma />
+                  </PrivateRoute>
+                }
               />
               <Route
                 path="/PatientApplicationPharma"
-                element={<PatientApplicationPharma />}
+                element={
+                  <PrivateRoute allowedRoles={[24]}>
+                    <PatientApplicationPharma />
+                  </PrivateRoute>
+                }
               />
-              <Route path="/AddInvoicePharma" element={<AddInvoicePharma />} />
-              {/* <Route path="/pharmacist/send-sales" element={<PharmacistSendSales />} />   */}
+              <Route
+                path="/AddInvoicePharma"
+                element={
+                  <PrivateRoute allowedRoles={[24]}>
+                    <AddInvoicePharma />
+                  </PrivateRoute>
+                }
+              />
 
-              {/* Sales Team Routes */}
+              {/* Sales Team Routes - RoleId: 27 (Assuming) */}
               <Route
                 path="/PersonalProfileSaTeam"
-                element={<PersonalProfileSaTeam />}
+                element={
+                  <PrivateRoute allowedRoles={[27]}>
+                    <PersonalProfileSaTeam />
+                  </PrivateRoute>
+                }
               />
               <Route
                 path="/PatientApplicationSales"
-                element={<PatientApplicationSales />}
+                element={
+                  <PrivateRoute allowedRoles={[27]}>
+                    <PatientApplicationSales />
+                  </PrivateRoute>
+                }
               />
-              <Route path="/AttachInvoiceSales" element={<AddInvoiceSales />} />
+              <Route
+                path="/AttachInvoiceSales"
+                element={
+                  <PrivateRoute allowedRoles={[27]}>
+                    <AddInvoiceSales />
+                  </PrivateRoute>
+                }
+              />
               <Route
                 path="/SendInvoiceToPatient"
-                element={<SendInvoiceToPatient />}
+                element={
+                  <PrivateRoute allowedRoles={[27]}>
+                    <SendInvoiceToPatient />
+                  </PrivateRoute>
+                }
               />
-
-              {/* <Route path="/sales/send-invoice" element={<SalesSendInvoice />} />   */}
             </Routes>
           </Layout>
         </BookProvider>

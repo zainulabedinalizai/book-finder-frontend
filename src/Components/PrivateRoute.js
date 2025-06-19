@@ -1,69 +1,34 @@
-// ... other imports
-import { Navigate, Route, Router, Routes } from 'react-router-dom';
-import PersonalProfilePatient from '../Pages/PatientPages/PersonalProfilePatient';
-import PrivateRoute from './Components/PrivateRoute';
-import AddUser from '../Pages/AdminDashPages/AddUser';
-import Register from '../Pages/Register';
-import Login from '../Pages/Login';
-import { BookProvider } from '../Context/BookContext';
-import { AuthProvider } from '../Context/AuthContext';
-import Layout from '../Shared/Layout';
-import PersonalProfileDoc from '../Pages/DoctorPages/PersonalProfileDoc';
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../Context/AuthContext";
 
-const App = () => {
-  return (
-    <Router>
-      <AuthProvider>
-        <BookProvider>
-          <Layout>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              {/* <Route path="/unauthorized" element={<Unauthorized />} /> */}
-              
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              
-              {/* Public Routes */}
-              {/* <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/search" element={<BookSearch />} />
-              <Route path="/books/:id" element={<BookDetails />} /> */}
-              
-              {/* Admin Routes */}
-              <Route 
-                path="/AddUser" 
-                element={
-                  <PrivateRoute allowedRoles={[2]}>
-                    <AddUser />
-                  </PrivateRoute>
-                } 
-              />
-              
-              {/* Patient Routes */}
-              <Route 
-                path="/PersonalProfilePatient" 
-                element={
-                  <PrivateRoute allowedRoles={[1]}>
-                    <PersonalProfilePatient />
-                  </PrivateRoute>
-                } 
-              />
-              
-              {/* Doctor Routes */}
-              <Route 
-                path="/PersonalProfileDoc" 
-                element={
-                  <PrivateRoute allowedRoles={[19]}>
-                    <PersonalProfileDoc />
-                  </PrivateRoute>
-                } 
-              />
-              
-              {/* Add other protected routes similarly */}
-              
-            </Routes>
-          </Layout>
-        </BookProvider>
-      </AuthProvider>
-    </Router>
-  );
+const roleRedirectMap = {
+  1: "/PersonalProfilePatient",
+  2: "/PersonalProfile",
+  19: "/PersonalProfileDoc",
+  24: "/PersonalProfilePharma",
+  27: "/PersonalProfileSaTeam",
 };
+
+const PrivateRoute = ({ children, allowedRoles = [], deniedRoles = [] }) => {
+  const { user, isAuthenticated, role } = useAuth(); // ✅ destructure from custom hook
+
+  // User not logged in
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // User role is explicitly denied
+  if (deniedRoles.includes(role)) {
+    return <Navigate to={roleRedirectMap[role] || "/login"} replace />;
+  }
+
+  // Allowed roles: if not specified, allow all except denied
+  if (allowedRoles.length === 0 || allowedRoles.includes(role)) {
+    return children;
+  }
+
+  // Not in allowed list
+  return <Navigate to={roleRedirectMap[role] || "/login"} replace />;
+};
+
+export default PrivateRoute;
