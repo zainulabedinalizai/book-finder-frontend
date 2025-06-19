@@ -1,32 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Box, Typography, Container, Card, CardContent,
-  Button, Divider, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow,
-  Paper, useMediaQuery, useTheme,
-  Stack, Chip, CircularProgress, Alert,
-  Snackbar, TextField,
-  TablePagination, Dialog, DialogTitle, DialogContent
-} from '@mui/material';
-import { Download, PictureAsPdf, Receipt, Search, Refresh, Payment } from '@mui/icons-material';
-import { patientAPI } from '../../Api/api';
-import { useAuth } from '../../Context/AuthContext';
-import PaymentPatient from './PaymentPatient';
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  useMediaQuery,
+  useTheme,
+  Stack,
+  Chip,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  TextField,
+  TablePagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from "@mui/material";
+import {
+  Download,
+  PictureAsPdf,
+  Receipt,
+  Search,
+  Refresh,
+  Payment,
+} from "@mui/icons-material";
+import { patientAPI } from "../../Api/api";
+import { useAuth } from "../../Context/AuthContext";
+import PaymentPatient from "./PaymentPatient";
 
 const PatientInvoice = () => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const { user } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success",
   });
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -39,24 +65,26 @@ const PatientInvoice = () => {
 
       setLoading(true);
       setError(null);
-      
-      const response = await patientAPI.getPatientApplication({ UserID: user.UserId });
-      
+
+      const response = await patientAPI.getPatientApplication({
+        UserID: user.UserId,
+      });
+
       if (response.data.success) {
         const completedApplications = response.data.data.filter(
-          app => app.status === 'Completed'
+          (app) => app.status === "Completed"
         );
         setInvoices(completedApplications || []);
       } else {
         throw new Error(response.data.message || "Failed to fetch invoices");
       }
     } catch (err) {
-      console.error('Error fetching invoices:', err);
-      setError(err.message || 'Failed to fetch invoices. Please try again.');
+      console.error("Error fetching invoices:", err);
+      setError(err.message || "Failed to fetch invoices. Please try again.");
       setSnackbar({
         open: true,
-        message: err.message || 'Failed to fetch invoices',
-        severity: 'error'
+        message: err.message || "Failed to fetch invoices",
+        severity: "error",
       });
     } finally {
       setLoading(false);
@@ -78,19 +106,21 @@ const PatientInvoice = () => {
     setPage(0);
   };
 
-  const filteredInvoices = invoices.filter(invoice => {
+  const filteredInvoices = invoices.filter((invoice) => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      (invoice.application_title?.toLowerCase().includes(searchLower)) ||
-      (invoice.SubmittedDate?.toLowerCase().includes(searchLower)) ||
-      (invoice.status?.toLowerCase().includes(searchLower))
+      invoice.application_title?.toLowerCase().includes(searchLower) ||
+      invoice.SubmittedDate?.toLowerCase().includes(searchLower) ||
+      invoice.status?.toLowerCase().includes(searchLower)
     );
   });
 
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, filteredInvoices.length - page * rowsPerPage);
+  const emptyRows =
+    rowsPerPage -
+    Math.min(rowsPerPage, filteredInvoices.length - page * rowsPerPage);
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   const handleDownload = (invoiceId) => {
@@ -112,10 +142,21 @@ const PatientInvoice = () => {
     <Container maxWidth="lg" sx={{ p: isSmallScreen ? 1 : 3 }}>
       <Card>
         <CardContent>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} mb={2}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            spacing={1}
+            mb={2}
+          >
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Receipt fontSize={isSmallScreen ? "medium" : "large"} color="primary" />
-              <Typography variant={isSmallScreen ? "h5" : "h4"}>Completed Medical Applications</Typography>
+              <Receipt
+                fontSize={isSmallScreen ? "medium" : "large"}
+                color="primary"
+              />
+              <Typography variant={isSmallScreen ? "h5" : "h4"}>
+                Completed Medical Applications
+              </Typography>
             </Stack>
             <Button
               variant="contained"
@@ -143,15 +184,17 @@ const PatientInvoice = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
-                startAdornment: <Search sx={{ color: 'action.active', mr: 1 }} />,
-                size: 'medium'
+                startAdornment: (
+                  <Search sx={{ color: "action.active", mr: 1 }} />
+                ),
+                size: "small",
               }}
               sx={{
                 maxWidth: 400,
-                '& .MuiOutlinedInput-root': {
+                "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  backgroundColor: 'background.paper'
-                }
+                  backgroundColor: "background.paper",
+                },
               }}
             />
           </Box>
@@ -183,10 +226,16 @@ const PatientInvoice = () => {
                       <Typography variant="subtitle2" fontWeight="medium">
                         {invoice.application_title}
                       </Typography>
-                      <Typography variant="body2">{invoice.SubmittedDate}</Typography>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Chip 
-                          label={invoice.status} 
+                      <Typography variant="body2">
+                        {invoice.SubmittedDate}
+                      </Typography>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Chip
+                          label={invoice.status}
                           size="small"
                           color="success"
                         />
@@ -223,9 +272,9 @@ const PatientInvoice = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 size="small"
                 sx={{
-                  '& .MuiTablePagination-toolbar': {
-                    justifyContent: 'center'
-                  }
+                  "& .MuiTablePagination-toolbar": {
+                    justifyContent: "center",
+                  },
                 }}
               />
             </Stack>
@@ -234,40 +283,51 @@ const PatientInvoice = () => {
             <>
               <TableContainer component={Paper}>
                 <Table>
-                  <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
+                  <TableHead sx={{ backgroundColor: "#f5f5f5" }}>
                     <TableRow>
-                      <TableCell><strong>Application Title</strong></TableCell>
-                      <TableCell><strong>Submitted Date</strong></TableCell>
-                      <TableCell><strong>Status</strong></TableCell>
-                      <TableCell><strong>Actions</strong></TableCell>
+                      <TableCell>
+                        <strong>Application Title</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Submitted Date</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Status</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Actions</strong>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {filteredInvoices
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage
+                      )
                       .map((invoice, index) => (
                         <TableRow key={index}>
                           <TableCell>{invoice.application_title}</TableCell>
                           <TableCell>{invoice.SubmittedDate}</TableCell>
                           <TableCell>
-                            <Chip 
-                              label={invoice.status} 
+                            <Chip
+                              label={invoice.status}
                               color="success"
                               size="small"
                             />
                           </TableCell>
                           <TableCell>
                             <Stack direction="row" spacing={1}>
-                              <Button 
-                                variant="outlined" 
+                              <Button
+                                variant="outlined"
                                 startIcon={<Download />}
                                 onClick={() => handleDownload(index)}
                                 size="small"
                               >
                                 Download PDF
                               </Button>
-                              <Button 
-                                variant="contained" 
+                              <Button
+                                variant="contained"
                                 color="primary"
                                 startIcon={<Payment />}
                                 onClick={() => handlePayNow(invoice)}
@@ -296,9 +356,9 @@ const PatientInvoice = () => {
                 onPageChange={handleChangePage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 sx={{
-                  '& .MuiTablePagination-toolbar': {
-                    justifyContent: 'flex-end'
-                  }
+                  "& .MuiTablePagination-toolbar": {
+                    justifyContent: "flex-end",
+                  },
                 }}
               />
             </>
@@ -314,12 +374,7 @@ const PatientInvoice = () => {
         fullWidth
       >
         <DialogContent>
-          { (
-            <PaymentPatient
-             
-              onClose={handleClosePaymentDialog} 
-            />
-          )}
+          {<PaymentPatient onClose={handleClosePaymentDialog} />}
         </DialogContent>
       </Dialog>
 
@@ -327,12 +382,12 @@ const PatientInvoice = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>

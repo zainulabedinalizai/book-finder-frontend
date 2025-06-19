@@ -1,12 +1,25 @@
 // PersonalProfileDesign.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Box, Typography, Container, Card, CardContent,
-  TextField, Button, Avatar, FormControl, InputLabel,
-  Select, MenuItem, Divider, Grid, CircularProgress, Alert
-} from '@mui/material';
-import { Edit, Save, Cancel } from '@mui/icons-material';
-import { userAPI } from '../../Api/api';
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Avatar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Divider,
+  Grid,
+  CircularProgress,
+  Alert,
+} from "@mui/material";
+import { Edit, Save, Cancel } from "@mui/icons-material";
+import { userAPI } from "../../Api/api";
 
 const PersonalProfileSaTeam = () => {
   const [editMode, setEditMode] = useState(false);
@@ -18,35 +31,35 @@ const PersonalProfileSaTeam = () => {
   const [previewImage, setPreviewImage] = useState(null);
 
   const [formData, setFormData] = useState({
-    UserID: '',
-    Username: '',
-    FullName: '',
-    Email: '',
-    DateOfBirth: '',
-    Phone: '',
-    Gender: '',
-    ResidentialAddress: '',
-    RoleName: '',
+    UserID: "",
+    Username: "",
+    FullName: "",
+    Email: "",
+    DateOfBirth: "",
+    Phone: "",
+    Gender: "",
+    ResidentialAddress: "",
+    RoleName: "",
     AccountStatus: 0,
-    ProfilePath: ''
+    ProfilePath: "",
   });
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
 
     if (user) {
       setFormData({
-        UserID: user.UserID || '',
-        Username: user.Username || '',
-        FullName: user.FullName || '',
-        Email: user.Email || '',
-        DateOfBirth: user.DateOfBirth?.split('T')[0] || '',
-        Phone: user.Phone || '',
-        Gender: user.Gender || 'M',
-        ResidentialAddress: user.ResidentialAddress || '',
-        RoleName: user.RoleName || 'User',
+        UserID: user.UserID || "",
+        Username: user.Username || "",
+        FullName: user.FullName || "",
+        Email: user.Email || "",
+        DateOfBirth: user.DateOfBirth?.split("T")[0] || "",
+        Phone: user.Phone || "",
+        Gender: user.Gender || "M",
+        ResidentialAddress: user.ResidentialAddress || "",
+        RoleName: user.RoleName || "User",
         AccountStatus: user.AccountStatus || 0,
-        ProfilePath: user.ProfilePicture || ''
+        ProfilePath: user.ProfilePicture || "",
       });
 
       if (user.ProfilePicture) {
@@ -57,13 +70,13 @@ const PersonalProfileSaTeam = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     // Clear error when field is edited
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: undefined
+        [name]: undefined,
       }));
     }
   };
@@ -74,40 +87,40 @@ const PersonalProfileSaTeam = () => {
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setPreviewImage(previewUrl);
-      
+
       // Update user data with the file
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        ProfilePath: file
+        ProfilePath: file,
       }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!formData.Email.trim()) errors.Email = 'Email is required';
-    if (!formData.FullName.trim()) errors.FullName = 'Full name is required';
-    if (!formData.DateOfBirth) errors.DateOfBirth = 'Date of birth is required';
-    if (!formData.Gender) errors.Gender = 'Gender is required';
-    if (!formData.Phone.trim()) errors.Phone = 'Phone number is required';
-    
+
+    if (!formData.Email.trim()) errors.Email = "Email is required";
+    if (!formData.FullName.trim()) errors.FullName = "Full name is required";
+    if (!formData.DateOfBirth) errors.DateOfBirth = "Date of birth is required";
+    if (!formData.Gender) errors.Gender = "Gender is required";
+    if (!formData.Phone.trim()) errors.Phone = "Phone number is required";
+
     // Email validation
     if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
-      errors.Email = 'Please enter a valid email address';
+      errors.Email = "Please enter a valid email address";
     }
-    
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSave = async () => {
     if (!validateForm()) return;
-    
+
     try {
       setSubmitting(true);
       setError(null);
-      
+
       // Prepare the profile data
       const profileData = {
         UserID: formData.UserID,
@@ -117,14 +130,14 @@ const PersonalProfileSaTeam = () => {
         Gender: formData.Gender,
         Mobile: formData.Phone.trim(),
         PostalAddress: formData.ResidentialAddress.trim(),
-        ImagePath: formData.ProfilePath
+        ImagePath: formData.ProfilePath,
       };
-      
+
       const response = await userAPI.updateUserProfile(profileData);
-      
+
       if (response.data) {
         // Update local storage with new data
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(localStorage.getItem("user"));
         const updatedUser = {
           ...user,
           Email: formData.Email,
@@ -133,10 +146,10 @@ const PersonalProfileSaTeam = () => {
           Gender: formData.Gender,
           Phone: formData.Phone,
           ResidentialAddress: formData.ResidentialAddress,
-          ProfilePicture: previewImage || user.ProfilePicture
+          ProfilePicture: previewImage || user.ProfilePicture,
         };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+
         setSuccess(true);
         setTimeout(() => {
           setSuccess(false);
@@ -144,27 +157,31 @@ const PersonalProfileSaTeam = () => {
         }, 1500);
       }
     } catch (err) {
-      console.error('Error updating profile:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to update profile. Please try again.');
+      console.error("Error updating profile:", err);
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update profile. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleCancel = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
     setFormData({
-      UserID: user.UserID || '',
-      Username: user.Username || '',
-      FullName: user.FullName || '',
-      Email: user.Email || '',
-      DateOfBirth: user.DateOfBirth?.split('T')[0] || '',
-      Phone: user.Phone || '',
-      Gender: user.Gender || 'M',
-      ResidentialAddress: user.ResidentialAddress || '',
-      RoleName: user.RoleName || 'User',
+      UserID: user.UserID || "",
+      Username: user.Username || "",
+      FullName: user.FullName || "",
+      Email: user.Email || "",
+      DateOfBirth: user.DateOfBirth?.split("T")[0] || "",
+      Phone: user.Phone || "",
+      Gender: user.Gender || "M",
+      ResidentialAddress: user.ResidentialAddress || "",
+      RoleName: user.RoleName || "User",
       AccountStatus: user.AccountStatus || 0,
-      ProfilePath: user.ProfilePicture || ''
+      ProfilePath: user.ProfilePicture || "",
     });
     setPreviewImage(user.ProfilePicture || null);
     setEditMode(false);
@@ -176,30 +193,60 @@ const PersonalProfileSaTeam = () => {
     <Container maxWidth="md">
       <Card>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={3}
+          >
             <Typography variant="h4">My Profile</Typography>
             {editMode ? (
               <Box>
-                <Button variant="contained" color="success" startIcon={<Save />} onClick={handleSave} disabled={submitting}>
-                  {submitting ? <CircularProgress size={24} /> : 'Save'}
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Save />}
+                  onClick={handleSave}
+                  disabled={submitting}
+                >
+                  {submitting ? <CircularProgress size={24} /> : "Save"}
                 </Button>
-                <Button variant="outlined" color="error" startIcon={<Cancel />} onClick={handleCancel} disabled={submitting} sx={{ ml: 1 }}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<Cancel />}
+                  onClick={handleCancel}
+                  disabled={submitting}
+                  sx={{ ml: 1 }}
+                >
                   Cancel
                 </Button>
               </Box>
             ) : (
-              <Button variant="contained" startIcon={<Edit />} onClick={() => setEditMode(true)}>
+              <Button
+                variant="contained"
+                startIcon={<Edit />}
+                onClick={() => setEditMode(true)}
+              >
                 Edit Profile
               </Button>
             )}
           </Box>
 
-          {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Profile updated successfully!
+            </Alert>
+          )}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
           <Box display="flex" alignItems="center" mb={4}>
-            <Avatar 
-              sx={{ width: 100, height: 100, mr: 3 }} 
+            <Avatar
+              sx={{ width: 100, height: 100, mr: 3 }}
               src={previewImage || formData.ProfilePath}
             >
               {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
@@ -226,11 +273,12 @@ const PersonalProfileSaTeam = () => {
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <TextField 
-                fullWidth 
-                label="Username" 
-                value={formData.Username} 
-                disabled 
+              <TextField
+                fullWidth
+                label="Username"
+                value={formData.Username}
+                disabled
+                size="small"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -243,6 +291,7 @@ const PersonalProfileSaTeam = () => {
                 disabled={!editMode}
                 error={!!formErrors.FullName}
                 helperText={formErrors.FullName}
+                size="small"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -255,6 +304,7 @@ const PersonalProfileSaTeam = () => {
                 disabled={!editMode}
                 error={!!formErrors.Email}
                 helperText={formErrors.Email}
+                size="small"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -269,6 +319,7 @@ const PersonalProfileSaTeam = () => {
                 disabled={!editMode}
                 error={!!formErrors.DateOfBirth}
                 helperText={formErrors.DateOfBirth}
+                size="small"
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -281,16 +332,22 @@ const PersonalProfileSaTeam = () => {
                 disabled={!editMode}
                 error={!!formErrors.Phone}
                 helperText={formErrors.Phone}
+                size="small"
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={!editMode} error={!!formErrors.Gender}>
+              <FormControl
+                fullWidth
+                disabled={!editMode}
+                error={!!formErrors.Gender}
+              >
                 <InputLabel>Gender</InputLabel>
                 <Select
                   name="Gender"
                   value={formData.Gender}
                   onChange={handleInputChange}
                   label="Gender"
+                  size="small"
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
@@ -313,6 +370,7 @@ const PersonalProfileSaTeam = () => {
                 value={formData.ResidentialAddress}
                 onChange={handleInputChange}
                 disabled={!editMode}
+                size="small"
               />
             </Grid>
           </Grid>
@@ -320,8 +378,13 @@ const PersonalProfileSaTeam = () => {
           <Divider sx={{ my: 3 }} />
 
           <Box display="flex" justifyContent="space-between">
-            <Typography><strong>Account Status:</strong> {formData.AccountStatus === 1 ? 'Active' : 'Inactive'}</Typography>
-            <Typography><strong>Role:</strong> {formData.RoleName}</Typography>
+            <Typography>
+              <strong>Account Status:</strong>{" "}
+              {formData.AccountStatus === 1 ? "Active" : "Inactive"}
+            </Typography>
+            <Typography>
+              <strong>Role:</strong> {formData.RoleName}
+            </Typography>
           </Box>
         </CardContent>
       </Card>
@@ -329,4 +392,4 @@ const PersonalProfileSaTeam = () => {
   );
 };
 
-export default PersonalProfileSaTeam ;
+export default PersonalProfileSaTeam;

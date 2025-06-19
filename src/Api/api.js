@@ -134,9 +134,9 @@ export const userAPI = {
     });
   },
 
-  updateUserStatus: (userId, statusId) => {
+  updateUserStatus: (UserID, statusId) => {
     const formData = new URLSearchParams();
-    formData.append("UserID", userId);
+    formData.append("UserID", UserID);
     formData.append("StatusID", statusId);
 
     return API.post("/UpdateUserStatus", formData.toString(), {
@@ -146,19 +146,8 @@ export const userAPI = {
     });
   },
 
-  updateUserProfile: (profileData) => {
-    const formData = new FormData();
-    formData.append("UserID", profileData.UserID);
-    formData.append("Email", profileData.Email);
-    formData.append("FullName", profileData.FullName);
-    formData.append("DOB", profileData.DOB);
-    formData.append("Gender", profileData.Gender);
-    formData.append("Mobile", profileData.Mobile);
-    formData.append("PostalAddress", profileData.PostalAddress);
-    if (profileData.ImagePath) {
-      formData.append("ImagePath", profileData.ImagePath);
-    }
-
+  updateUserProfile: (formData) => {
+    // Don't recreate FormData here - use what's passed in
     return API.post("/UpdateUserProfile", formData, {
       headers: {
         "Content-Type": "multipart/form-data",

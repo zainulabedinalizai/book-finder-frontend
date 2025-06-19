@@ -378,6 +378,7 @@ const PersonalProfileDesign = () => {
                 value={formData.Gender}
                 onChange={handleInputChange}
                 label="Gender"
+                size="small"
               >
                 <MenuItem value="M">Male</MenuItem>
                 <MenuItem value="F">Female</MenuItem>
