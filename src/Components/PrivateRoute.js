@@ -10,24 +10,29 @@ const roleRedirectMap = {
 };
 
 const PrivateRoute = ({ children, allowedRoles = [], deniedRoles = [] }) => {
-  const { user, isAuthenticated, role } = useAuth(); // ✅ destructure from custom hook
+  const { user, isAuthenticated, role } = useAuth();
 
-  // User not logged in
+  // Not logged in
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // User role is explicitly denied
+  // ✅ Admin can access everything
+  if (role === 2) {
+    return children;
+  }
+
+  // Denied role
   if (deniedRoles.includes(role)) {
     return <Navigate to={roleRedirectMap[role] || "/login"} replace />;
   }
 
-  // Allowed roles: if not specified, allow all except denied
+  // If no allowedRoles are defined, or role is allowed
   if (allowedRoles.length === 0 || allowedRoles.includes(role)) {
     return children;
   }
 
-  // Not in allowed list
+  // Not allowed
   return <Navigate to={roleRedirectMap[role] || "/login"} replace />;
 };
 
