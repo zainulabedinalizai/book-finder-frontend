@@ -125,6 +125,12 @@ const AppStatsPatient = () => {
         return "success";
       case "rejected":
         return "error";
+      case "reviewedbydoctor":
+        return "primary";
+      case "forwardedtosales":
+        return "info";
+      case "completed":
+        return "success";
       default:
         return "default";
     }
@@ -133,11 +139,64 @@ const AppStatsPatient = () => {
   const getStatusIcon = (status) => {
     switch (status?.toLowerCase()) {
       case "approved":
+      case "completed":
         return <CheckCircleIcon fontSize="small" />;
       case "rejected":
         return <CancelIcon fontSize="small" />;
       default:
         return null;
+    }
+  };
+
+  const getStatusChipStyles = (status, theme) => {
+    const statusLower = status?.toLowerCase();
+
+    const baseStyles = {
+      fontWeight: 500,
+      borderRadius: 1,
+      variant: "outlined",
+      backgroundColor: theme.palette.common.white,
+    };
+
+    switch (statusLower) {
+      case "pending":
+        return {
+          ...baseStyles,
+          variant: "outlined",
+          borderColor: theme.palette.warning.main,
+          color: theme.palette.warning.main,
+        };
+      case "approved":
+      case "completed":
+        return {
+          ...baseStyles,
+          variant: "outlined",
+          borderColor: theme.palette.success.main,
+          color: theme.palette.success.main,
+        };
+      case "rejected":
+        return {
+          ...baseStyles,
+          variant: "outlined",
+          borderColor: theme.palette.error.main,
+          color: theme.palette.error.main,
+        };
+      case "reviewedbydoctor":
+        return {
+          ...baseStyles,
+          variant: "outlined",
+          borderColor: theme.palette.primary.main,
+          color: theme.palette.primary.main,
+        };
+      case "forwardedtosales":
+        return {
+          ...baseStyles,
+          variant: "outlined",
+          borderColor: theme.palette.info.main,
+          color: theme.palette.info.main,
+        };
+      default:
+        return baseStyles;
     }
   };
 
@@ -313,14 +372,11 @@ const AppStatsPatient = () => {
                       {app.SubmittedDate}
                     </Typography>
                     <Chip
+                      variant="outlined"
                       label={app.status}
-                      color={getStatusColor(app.status)}
-                      size="small"
+                      sx={getStatusChipStyles(app.status, theme)}
                       icon={getStatusIcon(app.status)}
-                      sx={{
-                        fontWeight: 500,
-                        textTransform: "capitalize",
-                      }}
+                      size="small"
                     />
                   </Stack>
                 </Paper>
@@ -400,12 +456,35 @@ const AppStatsPatient = () => {
                       <TableCell align="center">
                         <Chip
                           label={app.status}
-                          color={getStatusColor(app.status)}
-                          icon={getStatusIcon(app.status)}
+                          variant="outlined"
                           sx={{
                             fontWeight: 500,
-                            textTransform: "capitalize",
-                            minWidth: 100,
+                            borderRadius: 1,
+                            ...(app.status === "Pending" && {
+                              borderColor: theme.palette.warning.main,
+                              color: theme.palette.warning.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status === "ReviewedByDoctor" && {
+                              borderColor: theme.palette.primary.main,
+                              color: theme.palette.primary.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status === "ForwardedToSales" && {
+                              borderColor: theme.palette.info.main,
+                              color: theme.palette.info.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status === "RejectedBySales" && {
+                              borderColor: theme.palette.error.main,
+                              color: theme.palette.error.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status === "Completed" && {
+                              borderColor: theme.palette.success.main,
+                              color: theme.palette.success.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
                           }}
                         />
                       </TableCell>
