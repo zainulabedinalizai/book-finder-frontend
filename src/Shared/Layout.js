@@ -48,6 +48,7 @@ const drawerWidth = 240;
 const collapsedWidth = 72;
 
 const DrawerHeader = styled("div")(({ theme }) => ({
+  backgroundColor: "#f0f8ff",
   display: "flex",
   alignItems: "center",
   padding: theme.spacing(0, 1),
@@ -424,6 +425,7 @@ const Layout = ({ children }) => {
         flexDirection: "column",
         height: "100%",
         background: theme.palette.background.paper,
+        backgroundColor: "#f0f8ff",
       }}
     >
       <DrawerHeader>
@@ -443,6 +445,7 @@ const Layout = ({ children }) => {
             alignItems: "center",
             gap: 1.5,
             borderBottom: `1px solid ${theme.palette.divider}`,
+            backgroundColor: "#f0f8ff",
           }}
         >
           <Avatar
@@ -659,7 +662,7 @@ const Layout = ({ children }) => {
             duration: theme.transitions.duration.leavingScreen,
           }),
           boxShadow: "none",
-          backgroundColor: theme.palette.background.paper,
+          backgroundColor: "#f0f8ff",
           color: theme.palette.text.primary,
           borderBottom: `1px solid ${theme.palette.divider}`,
         }}

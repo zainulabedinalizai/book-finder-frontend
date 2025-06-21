@@ -133,7 +133,7 @@ const PrescriptionListDoc = () => {
   const fetchPatientAnswers = async (applicationId) => {
     try {
       setAnswersLoading(true);
-      console.log("Fetching answers for application ID:", applicationId); // Add this line
+      console.log("Fetching answers for application ID:", applicationId);
 
       const response = await submittedAnswersAPI.getByApplicationId(
         applicationId
@@ -348,91 +348,86 @@ const PrescriptionListDoc = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      {/* Updated Header Section */}
       <Box
         sx={{
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
           mb: 4,
-          gap: 2,
+          p: 2,
+          backgroundColor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 1,
         }}
       >
-        <MedicalServices
-          sx={{
-            fontSize: 48,
-            color: theme.palette.primary.main,
-          }}
-        />
         <Box>
           <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: theme.palette.text.primary,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
             }}
           >
+            <MedicalServices fontSize="large" />
             Prescription Review
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
             Review and approve patient medication requests
           </Typography>
         </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Refresh />}
+          onClick={fetchApplications}
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: "none",
+            fontWeight: 600,
+          }}
+        >
+          Refresh
+        </Button>
       </Box>
 
       <Card elevation={3} sx={{ mb: 4 }}>
         <CardContent>
           <Box
             sx={{
+              p: 2,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 3,
+              backgroundColor: "background.default",
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search applications..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <Search sx={{ color: "action.active", mr: 1 }} />
+                ),
+                size: "small",
               }}
-            >
-              <Assignment color="primary" />
-              Pending Applications
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Search applications..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search color="action" />
-                    </InputAdornment>
-                  ),
-                  sx: { borderRadius: 2 },
-                }}
-                sx={{ width: 300 }}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Refresh />}
-                onClick={fetchApplications}
-                disabled={loading}
-                sx={{
+              sx={{
+                maxWidth: 400,
+                "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  px: 3,
-                  textTransform: "none",
-                  fontWeight: 600,
-                }}
-              >
-                Refresh
-              </Button>
-            </Box>
+                  backgroundColor: "background.paper",
+                },
+              }}
+            />
           </Box>
 
           {loading ? (
@@ -566,13 +561,13 @@ const PrescriptionListDoc = () => {
                           >
                             <Tooltip title="View patient answers">
                               <IconButton
+                                color="primary"
                                 onClick={() => handleViewAnswers(app)}
                                 sx={{
-                                  color: theme.palette.info.main,
-                                  backgroundColor: theme.palette.info.white,
+                                  backgroundColor: "action.hover",
                                   "&:hover": {
-                                    backgroundColor: theme.palette.info.main,
-                                    color: theme.palette.common.white,
+                                    backgroundColor: "primary.light",
+                                    color: "common.white",
                                   },
                                 }}
                               >
@@ -584,7 +579,7 @@ const PrescriptionListDoc = () => {
                                 onClick={() => openActionDialog(app, "approve")}
                                 sx={{
                                   color: theme.palette.success.main,
-                                  backgroundColor: theme.palette.success.white,
+                                  backgroundColor: "action.hover",
                                   "&:hover": {
                                     backgroundColor: theme.palette.success.main,
                                     color: theme.palette.common.white,
@@ -599,7 +594,7 @@ const PrescriptionListDoc = () => {
                                 onClick={() => openActionDialog(app, "reject")}
                                 sx={{
                                   color: theme.palette.error.main,
-                                  backgroundColor: theme.palette.error.white,
+                                  backgroundColor: "action.hover",
                                   "&:hover": {
                                     backgroundColor: theme.palette.error.main,
                                     color: theme.palette.common.white,
@@ -657,8 +652,8 @@ const PrescriptionListDoc = () => {
           sx={{
             backgroundColor:
               actionType === "approve"
-                ? theme.palette.info.main
-                : theme.palette.info.main,
+                ? theme.palette.success.main
+                : theme.palette.error.main,
             color: theme.palette.getContrastText(
               actionType === "approve"
                 ? theme.palette.info.main
