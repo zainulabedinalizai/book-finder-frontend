@@ -16,6 +16,8 @@ import {
   Tooltip,
   CircularProgress,
   Alert,
+  useTheme,
+  styled,
   Avatar,
   Grid,
   Chip,
@@ -47,6 +49,7 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   CheckCircle as CheckCircleIcon,
+  CheckCircleOutline,
 } from "@mui/icons-material";
 import { useAuth } from "../../Context/AuthContext";
 import { authService, userService } from "../../Context/authService";
@@ -81,7 +84,20 @@ const roleColors = {
   24: { bg: "#e8eaf6", text: "#3949ab" }, // Pharmacist - indigo
 };
 
+const StatusChip = styled(Chip)(({ theme, status }) => ({
+  fontWeight: 600,
+  border: `1px solid ${
+    status === 1 ? theme.palette.success.main : theme.palette.error.main
+  }`,
+  backgroundColor: "transparent",
+  color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+  "& .MuiChip-icon": {
+    color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+  },
+}));
+
 const AddUser = () => {
+  const theme = useTheme();
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -371,30 +387,44 @@ const AddUser = () => {
           <Box
             sx={{
               display: "flex",
+              justifyContent: "space-between",
               alignItems: "center",
-              p: 4,
-              backgroundColor: "primary.main",
-              color: "common.white",
+              p: 2,
+              backgroundColor: "background.paper",
+              boxShadow: 1,
             }}
           >
-            <Avatar
+            <Typography
+              variant="h4"
               sx={{
-                width: 80,
-                height: 80,
-                mr: 3,
-                backgroundColor: "primary.dark",
+                fontWeight: 700,
+                color: "primary.main",
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              <PersonIcon sx={{ fontSize: 40 }} />
-            </Avatar>
-            <Box>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                User Management
-              </Typography>
-              <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
-                Manage system users and their permissions
-              </Typography>
-            </Box>
+              User Management
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add />}
+              sx={{
+                ml: 2,
+                px: 3,
+                fontWeight: 600,
+                borderRadius: 2,
+                textTransform: "none",
+                boxShadow: 1,
+                "&:hover": {
+                  boxShadow: 3,
+                },
+              }}
+              onClick={handleAddUser}
+            >
+              Add User
+            </Button>
           </Box>
 
           <Divider sx={{ my: 0 }} />
@@ -489,7 +519,11 @@ const AddUser = () => {
               backgroundColor: "grey.100",
             }}
           >
-            <Typography variant="h5" fontWeight={600}>
+            <Typography
+              variant="h5"
+              fontWeight={600}
+              sx={{ color: "primary.main" }}
+            >
               User List
             </Typography>
             <Box>
@@ -504,30 +538,20 @@ const AddUser = () => {
                   <Refresh />
                 </IconButton>
               </Tooltip>
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Add />}
-                sx={{
-                  ml: 2,
-                  px: 3,
-                  fontWeight: 600,
-                  borderRadius: 2,
-                }}
-                onClick={handleAddUser}
-              >
-                Add User
-              </Button>
             </Box>
           </Box>
 
           <Box sx={{ p: 3 }}>
             <TextField
-              fullWidth
               variant="outlined"
               placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              sx={{
+                mb: 3,
+                width: "35%", // Takes 70% of parent width
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -536,7 +560,6 @@ const AddUser = () => {
                 ),
                 sx: { borderRadius: 2 },
               }}
-              sx={{ mb: 3 }}
             />
 
             {loading && users.length === 0 ? (
@@ -581,16 +604,13 @@ const AddUser = () => {
                 </Button>
               </Alert>
             ) : (
-              <TableContainer
-                component={Paper}
-                elevation={0}
-                sx={{ borderRadius: 2 }}
-              >
+              <TableContainer component={Paper} elevation={0}>
                 <Table>
                   <TableHead
                     sx={{
-                      backgroundColor: "grey.100",
+                      backgroundColor: "primary.light",
                       "& .MuiTableCell-root": {
+                        color: "white",
                         fontWeight: 700,
                         fontSize: "0.95rem",
                       },
@@ -615,9 +635,19 @@ const AddUser = () => {
                         <TableRow
                           key={user.UserId}
                           hover
-                          sx={{ "&:last-child td": { borderBottom: 0 } }}
+                          sx={{
+                            "&:last-child td, &:last-child th": { border: 0 },
+                            "&:hover": {
+                              backgroundColor: "action.hover",
+                            },
+                          }}
                         >
-                          <TableCell>
+                          {/* User Cell */}
+                          <TableCell
+                            sx={{
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
                             <Box sx={{ display: "flex", alignItems: "center" }}>
                               <Avatar
                                 sx={{
@@ -635,12 +665,24 @@ const AddUser = () => {
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell>
+
+                          {/* Username Cell */}
+                          <TableCell
+                            sx={{
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
                             <Typography variant="body2">
                               {user.Username}
                             </Typography>
                           </TableCell>
-                          <TableCell>
+
+                          {/* Email Cell */}
+                          <TableCell
+                            sx={{
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
                             <Box sx={{ display: "flex", alignItems: "center" }}>
                               <EmailIcon color="action" sx={{ mr: 1 }} />
                               <Typography variant="body2">
@@ -648,7 +690,13 @@ const AddUser = () => {
                               </Typography>
                             </Box>
                           </TableCell>
-                          <TableCell>
+
+                          {/* Role Cell */}
+                          <TableCell
+                            sx={{
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
                             <Chip
                               label={user.RoleName}
                               sx={{
@@ -661,16 +709,19 @@ const AddUser = () => {
                               }}
                             />
                           </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={user.AccountStatus}
-                              color={
-                                user.AccountStatus === "Active"
-                                  ? "success"
-                                  : "error"
+
+                          {/* Status Cell */}
+                          <TableCell
+                            sx={{
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
+                            <StatusChip
+                              status={user.AccountStatus}
+                              label={
+                                user.AccountStatus === 1 ? "Active" : "Inactive"
                               }
                               variant="outlined"
-                              sx={{ fontWeight: 600 }}
                             />
                           </TableCell>
 

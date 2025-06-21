@@ -291,17 +291,18 @@ const UserRoles = () => {
                   <TableCell align="center">
                     <Tooltip title="Edit Role">
                       <IconButton
+                        color="primary"
                         size="small"
                         onClick={() => handleEditClick(role)}
                         sx={{
-                          color: "primary.main",
+                          backgroundColor: "action.hover",
                           "&:hover": {
                             backgroundColor: "primary.light",
                             color: "common.white",
                           },
                         }}
                       >
-                        <EditIcon />
+                        <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>

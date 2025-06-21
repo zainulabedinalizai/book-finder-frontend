@@ -138,10 +138,12 @@ const Login = () => {
           >
             <Typography
               variant={isMobile ? "h5" : "h4"}
+              alignItems="flex-start"
               gutterBottom
               sx={{
                 fontWeight: 700,
                 mb: 1,
+                mr: 2,
                 ...(isMobile ? {} : { color: "white" }),
               }}
             >

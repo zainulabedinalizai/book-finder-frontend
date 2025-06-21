@@ -23,8 +23,6 @@ import {
   MenuItem,
   Snackbar,
   Button,
-  useTheme,
-  styled,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -38,7 +36,12 @@ import {
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  CheckCircleOutline,
+  CancelOutlined,
 } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
+
 import { userAPI } from "../../Api/api";
 
 // Styled components
@@ -54,9 +57,14 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 
 const StatusChip = styled(Chip)(({ theme, status }) => ({
   fontWeight: 600,
-  backgroundColor:
-    status === 1 ? theme.palette.success.light : theme.palette.error.light,
-  color: status === 1 ? theme.palette.success.dark : theme.palette.error.dark,
+  border: `1px solid ${
+    status === 1 ? theme.palette.success.main : theme.palette.error.main
+  }`,
+  backgroundColor: "transparent",
+  color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+  "& .MuiChip-icon": {
+    color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+  },
 }));
 
 const ActionButton = styled(IconButton)(({ theme }) => ({
@@ -80,17 +88,6 @@ const PrimaryButton = styled(Button)(({ theme }) => ({
 }));
 
 // Role colors configuration
-const roleColors = {
-  1: { bg: "#e3f2fd", text: "#1565c0" }, // User - blue
-  2: { bg: "#fce4ec", text: "#ad1457" }, // Admin - pink
-  18: { bg: "#e8f5e9", text: "#2e7d32" }, // Inventory Manager - green
-  19: { bg: "#fff3e0", text: "#e65100" }, // Physician - orange
-  20: { bg: "#f3e5f5", text: "#7b1fa2" }, // Nurse - purple
-  21: { bg: "#e0f7fa", text: "#00838f" }, // Lab Tech - cyan
-  22: { bg: "#fff8e1", text: "#ff8f00" }, // Front Desk - amber
-  23: { bg: "#f1f8e9", text: "#558b2f" }, // Billing - light green
-  24: { bg: "#e8eaf6", text: "#3949ab" }, // Pharmacist - indigo
-};
 
 const UserLogin = () => {
   const theme = useTheme();
@@ -107,6 +104,18 @@ const UserLogin = () => {
   });
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+
+  const roleColors = {
+    1: { bg: "#e3f2fd", text: "#1565c0" }, // User - blue
+    2: { bg: "#fce4ec", text: "#ad1457" }, // Admin - pink
+    18: { bg: "#e8f5e9", text: "#2e7d32" }, // Inventory Manager - green
+    19: { bg: "#fff3e0", text: "#e65100" }, // Physician - orange
+    20: { bg: "#f3e5f5", text: "#7b1fa2" }, // Nurse - purple
+    21: { bg: "#e0f7fa", text: "#00838f" }, // Lab Tech - cyan
+    22: { bg: "#fff8e1", text: "#ff8f00" }, // Front Desk - amber
+    23: { bg: "#f1f8e9", text: "#558b2f" }, // Billing - light green
+    24: { bg: "#e8eaf6", text: "#3949ab" }, // Pharmacist - indigo
+  };
 
   // Fetch users from API
   const fetchUsers = async () => {
@@ -276,7 +285,7 @@ const UserLogin = () => {
               variant="h6"
               sx={{
                 fontWeight: 600,
-                color: theme.palette.text.primary,
+                color: "primary.main",
               }}
             >
               User Accounts
@@ -301,6 +310,7 @@ const UserLogin = () => {
             placeholder="Search users by name, email, or role..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
             InputProps={{
               startAdornment: (
                 <Search
@@ -318,6 +328,7 @@ const UserLogin = () => {
             sx={{
               mb: 2,
               maxWidth: 500,
+              width: "35%",
             }}
           />
         </Box>
@@ -418,8 +429,9 @@ const UserLogin = () => {
                             label={user.RoleName}
                             sx={{
                               backgroundColor:
-                                roleColors[user.RoleID]?.bg || "#f5f5f5",
-                              color: roleColors[user.RoleID]?.text || "#616161",
+                                roleColors[user.RoleID]?.bg || "#c7e4fb",
+                              color:
+                                roleColors[user.RoleID]?.text || "primary.main",
                               fontWeight: 600,
                               minWidth: 100,
                             }}
@@ -431,6 +443,7 @@ const UserLogin = () => {
                             label={
                               user.AccountStatus === 1 ? "Active" : "Inactive"
                             }
+                            variant="outlined"
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -450,17 +463,15 @@ const UserLogin = () => {
                                   width: 32, // Fixed width
                                   height: 32, // Fixed height to match width
                                   backgroundColor: "action.hover",
+                                  color: "primary.main",
                                   borderRadius: "50%", // Ensures perfect circle
                                   "&:hover": {
                                     backgroundColor: "primary.main",
                                     color: "common.white",
                                   },
-                                  "& .MuiSvgIcon-root": {
-                                    fontSize: "1rem", // Adjust icon size if needed
-                                  },
                                 }}
                               >
-                                <EditIcon fontSize="inherit" />{" "}
+                                <EditIcon fontSize="small" />{" "}
                                 {/* Use inherit to respect parent sizing */}
                               </IconButton>
                             </Tooltip>
