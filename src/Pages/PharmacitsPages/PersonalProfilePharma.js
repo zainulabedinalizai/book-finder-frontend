@@ -1,9 +1,7 @@
-// PersonalProfileDesign.jsx
 import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  Container,
   Card,
   CardContent,
   TextField,
@@ -17,13 +15,20 @@ import {
   Grid,
   CircularProgress,
   Alert,
+  useMediaQuery,
+  useTheme,
+  CardHeader,
+  IconButton,
+  Chip,
 } from "@mui/material";
-import { Edit, Save, Cancel } from "@mui/icons-material";
+import { Edit, Save, Cancel, CameraAlt } from "@mui/icons-material";
 import { userAPI } from "../../Api/api";
 
 const PersonalProfilePharma = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
@@ -72,7 +77,6 @@ const PersonalProfilePharma = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear error when field is edited
     if (formErrors[name]) {
       setFormErrors((prev) => ({
         ...prev,
@@ -84,11 +88,8 @@ const PersonalProfilePharma = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setPreviewImage(previewUrl);
-
-      // Update user data with the file
       setFormData((prev) => ({
         ...prev,
         ProfilePath: file,
@@ -105,7 +106,6 @@ const PersonalProfilePharma = () => {
     if (!formData.Gender) errors.Gender = "Gender is required";
     if (!formData.Phone.trim()) errors.Phone = "Phone number is required";
 
-    // Email validation
     if (formData.Email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.Email)) {
       errors.Email = "Please enter a valid email address";
     }
@@ -121,7 +121,6 @@ const PersonalProfilePharma = () => {
       setSubmitting(true);
       setError(null);
 
-      // Prepare the profile data
       const profileData = {
         UserID: formData.UserID,
         Email: formData.Email.trim(),
@@ -136,7 +135,6 @@ const PersonalProfilePharma = () => {
       const response = await userAPI.updateUserProfile(profileData);
 
       if (response.data) {
-        // Update local storage with new data
         const user = JSON.parse(localStorage.getItem("user"));
         const updatedUser = {
           ...user,
@@ -190,26 +188,46 @@ const PersonalProfilePharma = () => {
   };
 
   return (
-    <Container maxWidth="md">
-      <Card>
-        <CardContent>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={3}
-          >
-            <Typography variant="h4">My Profile</Typography>
-            {editMode ? (
-              <Box>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        p: 2,
+      }}
+    >
+      <Card
+        sx={{
+          width: "100%",
+          maxWidth: 1200,
+          borderRadius: 4,
+          boxShadow: theme.shadows[10],
+          overflow: "hidden",
+        }}
+      >
+        <CardHeader
+          title={
+            <Typography variant="h4" fontWeight="bold" color="primary">
+              Pharmacist Profile
+            </Typography>
+          }
+          action={
+            editMode ? (
+              <Box display="flex" gap={1}>
                 <Button
                   variant="contained"
                   color="success"
                   startIcon={<Save />}
                   onClick={handleSave}
                   disabled={submitting}
+                  size={isMobile ? "small" : "medium"}
                 >
-                  {submitting ? <CircularProgress size={24} /> : "Save"}
+                  {submitting ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
                 <Button
                   variant="outlined"
@@ -217,7 +235,7 @@ const PersonalProfilePharma = () => {
                   startIcon={<Cancel />}
                   onClick={handleCancel}
                   disabled={submitting}
-                  sx={{ ml: 1 }}
+                  size={isMobile ? "small" : "medium"}
                 >
                   Cancel
                 </Button>
@@ -227,49 +245,129 @@ const PersonalProfilePharma = () => {
                 variant="contained"
                 startIcon={<Edit />}
                 onClick={() => setEditMode(true)}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  backgroundColor: theme.palette.primary.main,
+                  "&:hover": {
+                    backgroundColor: theme.palette.primary.dark,
+                  },
+                }}
               >
                 Edit Profile
               </Button>
-            )}
-          </Box>
+            )
+          }
+          sx={{
+            color: theme.palette.primary.contrastText,
+            py: 2,
+            px: 4,
+          }}
+        />
 
+        <CardContent sx={{ p: isMobile ? 2 : 4 }}>
           {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+            <Alert
+              severity="success"
+              sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}
+            >
               Profile updated successfully!
             </Alert>
           )}
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}
+            >
               {error}
             </Alert>
           )}
 
-          <Box display="flex" alignItems="center" mb={4}>
-            <Avatar
-              sx={{ width: 100, height: 100, mr: 3 }}
-              src={previewImage || formData.ProfilePath}
+          <Box
+            display="flex"
+            flexDirection={isMobile ? "column" : "row"}
+            alignItems="center"
+            gap={4}
+            mb={4}
+          >
+            <Box
+              position="relative"
+              sx={{
+                width: isMobile ? 120 : 160,
+                height: isMobile ? 120 : 160,
+              }}
             >
-              {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
-            </Avatar>
-            {editMode && (
-              <Button variant="contained" component="label">
-                Change Photo
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleFileChange}
+              <Avatar
+                src={previewImage || formData.ProfilePath}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  fontSize: isMobile ? 48 : 64,
+                  border: `4px solid ${theme.palette.primary.main}`,
+                }}
+              >
+                {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
+              </Avatar>
+              {editMode && (
+                <IconButton
+                  component="label"
+                  sx={{
+                    position: "absolute",
+                    bottom: 8,
+                    right: 8,
+                    backgroundColor: theme.palette.background.paper,
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.main,
+                      color: theme.palette.common.white,
+                    },
+                  }}
+                >
+                  <CameraAlt />
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </IconButton>
+              )}
+            </Box>
+
+            <Box textAlign={isMobile ? "center" : "left"}>
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                gutterBottom
+                sx={{
+                  background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {formData.FullName}
+              </Typography>
+              <Chip
+                label={`@${formData.Username}`}
+                variant="outlined"
+                color="primary"
+                sx={{ mb: 1 }}
+              />
+              <Box
+                display="flex"
+                gap={2}
+                flexWrap="wrap"
+                justifyContent={isMobile ? "center" : "flex-start"}
+              >
+                <Chip label={formData.RoleName} color="primary" size="small" />
+                <Chip
+                  label={formData.AccountStatus === 1 ? "Active" : "Inactive"}
+                  color={formData.AccountStatus === 1 ? "success" : "error"}
+                  size="small"
                 />
-              </Button>
-            )}
-            <Box sx={{ ml: 3 }}>
-              <Typography variant="h5">{formData.FullName}</Typography>
-              <Typography variant="subtitle1">@{formData.Username}</Typography>
-              <Typography variant="body2">{formData.RoleName}</Typography>
+              </Box>
             </Box>
           </Box>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
 
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
@@ -279,6 +377,8 @@ const PersonalProfilePharma = () => {
                 value={formData.Username}
                 disabled
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -292,6 +392,8 @@ const PersonalProfilePharma = () => {
                 error={!!formErrors.FullName}
                 helperText={formErrors.FullName}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -305,6 +407,8 @@ const PersonalProfilePharma = () => {
                 error={!!formErrors.Email}
                 helperText={formErrors.Email}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -320,6 +424,8 @@ const PersonalProfilePharma = () => {
                 error={!!formErrors.DateOfBirth}
                 helperText={formErrors.DateOfBirth}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -333,6 +439,8 @@ const PersonalProfilePharma = () => {
                 error={!!formErrors.Phone}
                 helperText={formErrors.Phone}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -341,14 +449,15 @@ const PersonalProfilePharma = () => {
                 disabled={!editMode}
                 error={!!formErrors.Gender}
                 size="small"
+                sx={{ mb: 2 }}
               >
-                <InputLabel size="small">Gender</InputLabel>
+                <InputLabel>Gender</InputLabel>
                 <Select
                   name="Gender"
                   value={formData.Gender}
                   onChange={handleInputChange}
                   label="Gender"
-                  size="small"
+                  variant="outlined"
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
@@ -372,24 +481,34 @@ const PersonalProfilePharma = () => {
                 onChange={handleInputChange}
                 disabled={!editMode}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
 
-          <Box display="flex" justifyContent="space-between">
-            <Typography>
-              <strong>Account Status:</strong>{" "}
-              {formData.AccountStatus === 1 ? "Active" : "Inactive"}
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            sx={{
+              backgroundColor: theme.palette.action.hover,
+              p: 2,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="body1">
+              <strong>Member Since:</strong> {new Date().toLocaleDateString()}
             </Typography>
-            <Typography>
-              <strong>Role:</strong> {formData.RoleName}
+            <Typography variant="body1">
+              <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
             </Typography>
           </Box>
         </CardContent>
       </Card>
-    </Container>
+    </Box>
   );
 };
 

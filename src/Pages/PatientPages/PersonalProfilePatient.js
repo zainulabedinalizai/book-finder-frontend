@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  Container,
   Card,
   CardContent,
   TextField,
@@ -18,19 +17,20 @@ import {
   Alert,
   useMediaQuery,
   useTheme,
-  Stack,
+  CardHeader,
+  IconButton,
+  Chip,
 } from "@mui/material";
-import { Edit, Save, Cancel } from "@mui/icons-material";
+import { Edit, Save, Cancel, CameraAlt } from "@mui/icons-material";
 import { userAPI } from "../../Api/api";
 import { useAuth } from "../../Context/AuthContext";
 
 const PersonalProfilePatient = () => {
   const { user: authUser } = useAuth();
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
@@ -90,7 +90,6 @@ const PersonalProfilePatient = () => {
     if (file) {
       const previewUrl = URL.createObjectURL(file);
       setPreviewImage(previewUrl);
-
       setFormData((prev) => ({
         ...prev,
         ProfilePath: file,
@@ -122,14 +121,13 @@ const PersonalProfilePatient = () => {
       setSubmitting(true);
       setError(null);
 
-      // Use UserID from context instead of formData
       const userId = authUser?.UserId;
       if (!userId) {
         throw new Error("User ID not found");
       }
 
       const profileData = {
-        UserID: userId, // Use the UserID from context
+        UserID: userId,
         Email: formData.Email.trim(),
         FullName: formData.FullName.trim(),
         DOB: formData.DateOfBirth,
@@ -152,11 +150,6 @@ const PersonalProfilePatient = () => {
         formDataToSend.append("ImagePath", profileData.ImagePath);
       } else if (profileData.ImagePath) {
         formDataToSend.append("ImagePath", profileData.ImagePath);
-      }
-
-      console.log("FormData contents:");
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
       }
 
       const response = await userAPI.updateUserProfile(formDataToSend);
@@ -215,30 +208,46 @@ const PersonalProfilePatient = () => {
   };
 
   return (
-    <Container maxWidth="md" sx={{ p: isSmallScreen ? 1 : 3 }}>
-      <Card>
-        <CardContent>
-          <Stack
-            direction={isSmallScreen ? "column" : "row"}
-            justifyContent="space-between"
-            alignItems={isSmallScreen ? "flex-start" : "center"}
-            spacing={1}
-            mb={3}
-          >
-            <Typography variant={isSmallScreen ? "h5" : "h4"}>
-              My Profile
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        p: 2,
+      }}
+    >
+      <Card
+        sx={{
+          width: "100%",
+          maxWidth: 1200,
+          borderRadius: 4,
+          boxShadow: theme.shadows[10],
+          overflow: "hidden",
+        }}
+      >
+        <CardHeader
+          title={
+            <Typography variant="h4" fontWeight="bold" color="primary">
+              Patient Profile
             </Typography>
-            {editMode ? (
-              <Stack direction="row" spacing={1}>
+          }
+          action={
+            editMode ? (
+              <Box display="flex" gap={1}>
                 <Button
                   variant="contained"
                   color="success"
                   startIcon={<Save />}
                   onClick={handleSave}
                   disabled={submitting}
-                  size={isSmallScreen ? "small" : "medium"}
+                  size={isMobile ? "small" : "medium"}
                 >
-                  {submitting ? <CircularProgress size={24} /> : "Save"}
+                  {submitting ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Save Changes"
+                  )}
                 </Button>
                 <Button
                   variant="outlined"
@@ -246,84 +255,141 @@ const PersonalProfilePatient = () => {
                   startIcon={<Cancel />}
                   onClick={handleCancel}
                   disabled={submitting}
-                  size={isSmallScreen ? "small" : "medium"}
+                  size={isMobile ? "small" : "medium"}
                 >
                   Cancel
                 </Button>
-              </Stack>
+              </Box>
             ) : (
               <Button
                 variant="contained"
                 startIcon={<Edit />}
                 onClick={() => setEditMode(true)}
-                size={isSmallScreen ? "small" : "medium"}
+                size={isMobile ? "small" : "medium"}
+                sx={{
+                  backgroundColor: theme.palette.primary.main,
+                  "&:hover": {
+                    backgroundColor: theme.palette.primary.dark,
+                  },
+                }}
               >
                 Edit Profile
               </Button>
-            )}
-          </Stack>
+            )
+          }
+          sx={{
+            color: theme.palette.primary.contrastText,
+            py: 2,
+            px: 4,
+          }}
+        />
 
+        <CardContent sx={{ p: isMobile ? 2 : 4 }}>
           {success && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+            <Alert
+              severity="success"
+              sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}
+            >
               Profile updated successfully!
             </Alert>
           )}
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: 2, boxShadow: 1 }}
+            >
               {error}
             </Alert>
           )}
 
-          <Stack
-            direction={isSmallScreen ? "column" : "row"}
-            alignItems={isSmallScreen ? "center" : "flex-start"}
-            spacing={2}
+          <Box
+            display="flex"
+            flexDirection={isMobile ? "column" : "row"}
+            alignItems="center"
+            gap={4}
             mb={4}
           >
-            <Avatar
-              sx={{
-                width: isSmallScreen ? 80 : 100,
-                height: isSmallScreen ? 80 : 100,
-              }}
-              src={previewImage || formData.ProfilePath}
-            >
-              {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
-            </Avatar>
             <Box
+              position="relative"
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: isSmallScreen ? "center" : "flex-start",
-                textAlign: isSmallScreen ? "center" : "left",
+                width: isMobile ? 120 : 160,
+                height: isMobile ? 120 : 160,
               }}
             >
-              <Typography variant={isSmallScreen ? "h6" : "h5"}>
-                {formData.FullName}
-              </Typography>
-              <Typography variant="subtitle1">@{formData.Username}</Typography>
-              <Typography variant="body2">{formData.RoleName}</Typography>
+              <Avatar
+                src={previewImage || formData.ProfilePath}
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  fontSize: isMobile ? 48 : 64,
+                  border: `4px solid ${theme.palette.primary.main}`,
+                }}
+              >
+                {formData.FullName?.charAt(0) || formData.Username.charAt(0)}
+              </Avatar>
               {editMode && (
-                <Button
-                  variant="contained"
+                <IconButton
                   component="label"
-                  size={isSmallScreen ? "small" : "medium"}
-                  sx={{ mt: 1 }}
+                  sx={{
+                    position: "absolute",
+                    bottom: 8,
+                    right: 8,
+                    backgroundColor: theme.palette.background.paper,
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.main,
+                      color: theme.palette.common.white,
+                    },
+                  }}
                 >
-                  Change Photo
+                  <CameraAlt />
                   <input
                     type="file"
                     hidden
                     accept="image/*"
                     onChange={handleFileChange}
                   />
-                </Button>
+                </IconButton>
               )}
             </Box>
-          </Stack>
 
-          <Divider sx={{ my: 3 }} />
+            <Box textAlign={isMobile ? "center" : "left"}>
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                gutterBottom
+                sx={{
+                  background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {formData.FullName}
+              </Typography>
+              <Chip
+                label={`@${formData.Username}`}
+                variant="outlined"
+                color="primary"
+                sx={{ mb: 1 }}
+              />
+              <Box
+                display="flex"
+                gap={2}
+                flexWrap="wrap"
+                justifyContent={isMobile ? "center" : "flex-start"}
+              >
+                <Chip label={formData.RoleName} color="primary" size="small" />
+                <Chip
+                  label={formData.AccountStatus === 1 ? "Active" : "Inactive"}
+                  color={formData.AccountStatus === 1 ? "success" : "error"}
+                  size="small"
+                />
+              </Box>
+            </Box>
+          </Box>
 
-          <Grid container spacing={isSmallScreen ? 1 : 3}>
+          <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
+
+          <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -331,6 +397,8 @@ const PersonalProfilePatient = () => {
                 value={formData.Username}
                 disabled
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -344,6 +412,8 @@ const PersonalProfilePatient = () => {
                 error={!!formErrors.FullName}
                 helperText={formErrors.FullName}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -357,6 +427,8 @@ const PersonalProfilePatient = () => {
                 error={!!formErrors.Email}
                 helperText={formErrors.Email}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -372,6 +444,8 @@ const PersonalProfilePatient = () => {
                 error={!!formErrors.DateOfBirth}
                 helperText={formErrors.DateOfBirth}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -385,6 +459,8 @@ const PersonalProfilePatient = () => {
                 error={!!formErrors.Phone}
                 helperText={formErrors.Phone}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
@@ -392,14 +468,16 @@ const PersonalProfilePatient = () => {
                 fullWidth
                 disabled={!editMode}
                 error={!!formErrors.Gender}
+                size="small"
+                sx={{ mb: 2 }}
               >
-                <InputLabel size="small">Gender</InputLabel>
+                <InputLabel>Gender</InputLabel>
                 <Select
                   name="Gender"
                   value={formData.Gender}
                   onChange={handleInputChange}
                   label="Gender"
-                  size="small"
+                  variant="outlined"
                 >
                   <MenuItem value="M">Male</MenuItem>
                   <MenuItem value="F">Female</MenuItem>
@@ -418,33 +496,39 @@ const PersonalProfilePatient = () => {
                 label="Address"
                 name="ResidentialAddress"
                 multiline
-                rows={isSmallScreen ? 2 : 3}
+                rows={3}
                 value={formData.ResidentialAddress}
                 onChange={handleInputChange}
                 disabled={!editMode}
                 size="small"
+                variant="outlined"
+                sx={{ mb: 2 }}
               />
             </Grid>
           </Grid>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: 3, borderColor: theme.palette.divider }} />
 
-          <Stack
-            direction={isSmallScreen ? "column" : "row"}
+          <Box
+            display="flex"
             justifyContent="space-between"
-            spacing={1}
+            alignItems="center"
+            sx={{
+              backgroundColor: theme.palette.action.hover,
+              p: 2,
+              borderRadius: 2,
+            }}
           >
-            <Typography variant="body2">
-              <strong>Account Status:</strong>{" "}
-              {formData.AccountStatus === 1 ? "Active" : "Inactive"}
+            <Typography variant="body1">
+              <strong>Member Since:</strong> {new Date().toLocaleDateString()}
             </Typography>
-            <Typography variant="body2">
-              <strong>Role:</strong> {formData.RoleName}
+            <Typography variant="body1">
+              <strong>Last Updated:</strong> {new Date().toLocaleDateString()}
             </Typography>
-          </Stack>
+          </Box>
         </CardContent>
       </Card>
-    </Container>
+    </Box>
   );
 };
 

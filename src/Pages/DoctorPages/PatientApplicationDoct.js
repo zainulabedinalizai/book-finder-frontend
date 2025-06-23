@@ -19,6 +19,7 @@ import {
   Chip,
   Snackbar,
   Button,
+  useTheme,
 } from "@mui/material";
 import {
   Search,
@@ -53,6 +54,7 @@ const STATUS_MAPPING = {
 
 const PatientApplicationDoc = () => {
   const { user } = useAuth();
+  const theme = useTheme();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -177,29 +179,18 @@ const PatientApplicationDoc = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "warning";
-      case "approved by doctor":
-        return "success";
-      case "rejected by pharmacist":
-        return "error";
-      case "sent to sales":
-        return "info";
+  const getStatusColor = (statusId) => {
+    switch (statusId) {
+      case 1:
+        return "warning"; // Pending
+      case 3:
+        return "primary"; // Approved by Doctor
+      case 4:
+        return "error"; // Rejected by Pharmacist
+      case 5:
+        return "info"; // Sent to Sales
       default:
         return "default";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved by doctor":
-        return <CheckCircleIcon fontSize="small" />;
-      case "rejected by pharmacist":
-        return <CancelIcon fontSize="small" />;
-      default:
-        return null;
     }
   };
 
@@ -348,8 +339,7 @@ const PatientApplicationDoc = () => {
                 }}
               >
                 <TableRow>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Title</TableCell>
+                  <TableCell>Application</TableCell>
                   <TableCell>Submitted Date</TableCell>
                   <TableCell align="center">Status</TableCell>
                 </TableRow>
@@ -364,49 +354,70 @@ const PatientApplicationDoc = () => {
                       sx={{ "&:last-child td": { borderBottom: 0 } }}
                     >
                       <TableCell>
-                        <Chip
-                          label={app.application_id}
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell>
                         <Box
                           sx={{
                             display: "flex",
                             alignItems: "center",
-                            gap: 1.5,
+                            gap: 2,
                           }}
                         >
                           <Avatar
                             sx={{
                               bgcolor: "primary.main",
-                              width: 32,
-                              height: 32,
+                              width: 40,
+                              height: 40,
                             }}
                           >
                             {app.application_title?.charAt(0) || "A"}
                           </Avatar>
-                          <Typography fontWeight={500}>
-                            {app.application_title}
-                          </Typography>
+                          <Box>
+                            <Typography fontWeight={600}>
+                              {app.application_title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              ID: {app.application_id}
+                            </Typography>
+                          </Box>
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2">
                           {app.SubmittedDate}
                         </Typography>
                       </TableCell>
                       <TableCell align="center">
                         <Chip
                           label={app.status}
-                          color={getStatusColor(app.status)}
-                          icon={getStatusIcon(app.status)}
+                          color={getStatusColor(app.status_id)}
+                          variant="outlined"
                           sx={{
                             fontWeight: 500,
-                            textTransform: "capitalize",
-                            minWidth: 180,
+                            borderRadius: 1,
+                            // Explicit styling for each status
+                            ...(app.status_id === 1 && {
+                              // Pending
+                              borderColor: theme.palette.warning.main,
+                              color: theme.palette.warning.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status_id === 3 && {
+                              // Approved by Doctor
+                              borderColor: theme.palette.primary.main,
+                              color: theme.palette.primary.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status_id === 4 && {
+                              // Rejected by Pharmacist
+                              borderColor: theme.palette.error.main,
+                              color: theme.palette.error.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status_id === 5 && {
+                              // Sent to Sales
+                              borderColor: theme.palette.info.main,
+                              color: theme.palette.info.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
                           }}
                         />
                       </TableCell>
@@ -414,7 +425,7 @@ const PatientApplicationDoc = () => {
                   ))}
                 {emptyRows > 0 && (
                   <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={4} />
+                    <TableCell colSpan={3} />
                   </TableRow>
                 )}
               </TableBody>
