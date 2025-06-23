@@ -1,6 +1,7 @@
 {
   "name": "book-finder-frontend",
   "version": "0.1.0",
+  "proxy": "https://portal.medskls.com:441",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",

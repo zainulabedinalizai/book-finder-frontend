@@ -87,6 +87,30 @@ const PrescriptionListDoc = () => {
   const [patientAnswers, setPatientAnswers] = useState([]);
   const [answersLoading, setAnswersLoading] = useState(false);
 
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      console.error("No image path provided");
+      return "";
+    }
+
+    // Handle cases where imagePath might already be a full URL
+    if (imagePath.startsWith("http")) {
+      return imagePath;
+    }
+
+    // The API returns paths like "/Assets/PatientImages/..."
+    // The correct base URL is "https://portal.medskls.com"
+    const baseUrl = "https://portal.medskls.com/API";
+
+    // Combine them, ensuring no double slashes
+    const fullUrl = `${baseUrl}${
+      imagePath.startsWith("/") ? "" : "/"
+    }${imagePath}`;
+
+    console.log("Constructed image URL:", fullUrl);
+    return fullUrl;
+  };
+
   const DOCTOR_STATUS = {
     APPROVE: 2,
     REJECT: 4,
@@ -895,7 +919,6 @@ const PrescriptionListDoc = () => {
             >
               {Object.entries(groupedAnswers).map(
                 ([questionId, questionData]) => {
-                  // Special handling for face images question
                   if (questionId === "13") {
                     const frontImage = questionData.responses.find(
                       (r) => r.OptionId === 39
@@ -906,6 +929,13 @@ const PrescriptionListDoc = () => {
                     const rightImage = questionData.responses.find(
                       (r) => r.OptionId === 41
                     )?.right_imagepath;
+
+                    console.log("Raw image paths from API:", {
+                      // Debug log
+                      frontImage,
+                      leftImage,
+                      rightImage,
+                    });
 
                     return (
                       <React.Fragment key={questionId}>
@@ -943,13 +973,22 @@ const PrescriptionListDoc = () => {
                                             Front View
                                           </Typography>
                                           <img
-                                            src={frontImage}
+                                            src={getImageUrl(frontImage)}
                                             alt="Front View"
                                             style={{
                                               maxWidth: "100%",
                                               maxHeight: 200,
                                               borderRadius: 1,
                                               objectFit: "contain",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              console.error(
+                                                "Failed to load front image:",
+                                                frontImage
+                                              );
                                             }}
                                           />
                                         </CardContent>
@@ -973,13 +1012,21 @@ const PrescriptionListDoc = () => {
                                             Left Side View
                                           </Typography>
                                           <img
-                                            src={leftImage}
+                                            src={getImageUrl(leftImage)}
                                             alt="Left Side View"
                                             style={{
                                               maxWidth: "100%",
                                               maxHeight: 200,
                                               borderRadius: 1,
                                               objectFit: "contain",
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src = "";
+                                              console.error(
+                                                "Failed to load left image:",
+                                                leftImage
+                                              );
                                             }}
                                           />
                                         </CardContent>
@@ -1003,13 +1050,21 @@ const PrescriptionListDoc = () => {
                                             Right Side View
                                           </Typography>
                                           <img
-                                            src={rightImage}
+                                            src={getImageUrl(rightImage)}
                                             alt="Right Side View"
                                             style={{
                                               maxWidth: "100%",
                                               maxHeight: 200,
                                               borderRadius: 1,
                                               objectFit: "contain",
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src = "";
+                                              console.error(
+                                                "Failed to load right image:",
+                                                rightImage
+                                              );
                                             }}
                                           />
                                         </CardContent>
