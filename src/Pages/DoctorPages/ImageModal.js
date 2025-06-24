@@ -21,22 +21,6 @@ export const ImageModal = ({
   totalImages,
   loading = false,
 }) => {
-  if (loading) {
-    return (
-      <Dialog open={!!imageUrl} onClose={onClose}>
-        <DialogContent>
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="200px"
-          >
-            <CircularProgress />
-          </Box>
-        </DialogContent>
-      </Dialog>
-    );
-  }
   return (
     <Dialog
       open={!!imageUrl}
