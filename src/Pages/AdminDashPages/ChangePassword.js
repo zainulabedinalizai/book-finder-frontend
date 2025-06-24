@@ -356,9 +356,19 @@ const ChangePassword = () => {
                         >
                           <PersonIcon fontSize="small" />
                         </Avatar>
-                        <Typography fontWeight={500}>
-                          {user.FullName}
-                        </Typography>
+
+                        <Box>
+                          <Typography fontWeight={500}>
+                            {user.FullName}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block" }}
+                          >
+                            ID: {user.UserId}
+                          </Typography>
+                        </Box>
                       </Box>
                     </TableCell>
 

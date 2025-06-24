@@ -412,7 +412,7 @@ const AppStatsPatient = () => {
                 }}
               >
                 <TableRow>
-                  <TableCell>Application Title</TableCell>
+                  <TableCell>Applicant Title</TableCell>
                   <TableCell>Submitted Date</TableCell>
                   <TableCell align="center">Status</TableCell>
                 </TableRow>

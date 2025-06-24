@@ -38,6 +38,7 @@ import {
   Cancel as CancelIcon,
   CheckCircleOutline,
   CancelOutlined,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { styled } from "@mui/material/styles";
@@ -371,7 +372,6 @@ const UserLogin = () => {
                   }}
                 >
                   <TableRow>
-                    <TableCell>User</TableCell>
                     <TableCell>Username</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Role</TableCell>
@@ -393,36 +393,35 @@ const UserLogin = () => {
                           },
                         }}
                       >
-                        <TableCell>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1.5,
-                            }}
-                          >
-                            <Avatar
-                              sx={{
-                                width: 32,
-                                height: 32,
-                                bgcolor: theme.palette.primary.main,
-                                color: theme.palette.primary.contrastText,
-                              }}
+                        <TableCell
+                          sx={{
+                            borderBottom: `1px solid ${theme.palette.divider}`,
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="body1"
+                              fontWeight={500}
+                              fontSize="1rem"
                             >
-                              {user.FullName?.charAt(0) || "U"}
-                            </Avatar>
-                            <Typography fontWeight={500}>
-                              {user.FullName}
+                              {user.Username}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: "block" }}
+                            >
+                              ID: {user.UserId}
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
-                            {user.Username}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">{user.Email}</Typography>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <EmailIcon color="action" sx={{ mr: 1 }} />
+                            <Typography variant="body2">
+                              {user.Email}
+                            </Typography>
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Chip
