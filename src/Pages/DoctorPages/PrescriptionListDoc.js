@@ -612,7 +612,7 @@ const PrescriptionListDoc = () => {
                           >
                             <DateRange color="action" fontSize="small" />
                             <Typography variant="body2">
-                              {new Date(app.SubmittedDate).toLocaleDateString()}
+                              {app.SubmittedDate}
                             </Typography>
                           </Box>
                         </TableCell>

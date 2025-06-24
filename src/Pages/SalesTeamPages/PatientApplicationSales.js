@@ -23,7 +23,7 @@ import {
   CardContent,
   useTheme,
 } from "@mui/material";
-import { Search, Refresh, Add } from "@mui/icons-material";
+import { Search, Refresh, Add, DateRange } from "@mui/icons-material";
 import { patientAPI } from "../../Api/api";
 import { useAuth } from "../../Context/AuthContext";
 
@@ -359,9 +359,18 @@ const PatientApplicationSales = () => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
-                            {app.SubmittedDate}
-                          </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <DateRange color="action" fontSize="small" />
+                            <Typography variant="body2">
+                              {app.SubmittedDate}
+                            </Typography>
+                          </Box>
                         </TableCell>
                         <TableCell>
                           <Chip

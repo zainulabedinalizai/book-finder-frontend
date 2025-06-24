@@ -31,6 +31,7 @@ import {
   MedicalServices as PharmacistIcon,
   ShoppingCart as SalesIcon,
   Person as PatientIcon,
+  DateRange,
 } from "@mui/icons-material";
 import { patientAPI } from "../../Api/api";
 import { useAuth } from "../../Context/AuthContext";
@@ -381,9 +382,18 @@ const PatientApplicationDoc = () => {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2">
-                          {app.SubmittedDate}
-                        </Typography>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <DateRange color="action" fontSize="small" />
+                          <Typography variant="body2">
+                            {app.SubmittedDate}
+                          </Typography>
+                        </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Chip

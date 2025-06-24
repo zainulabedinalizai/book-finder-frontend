@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -29,7 +29,7 @@ import {
   CardContent,
   Stack,
   useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Search,
   Refresh,
@@ -39,11 +39,12 @@ import {
   Cancel,
   HelpOutline,
   Visibility,
-} from '@mui/icons-material';
-import { useAuth } from '../../Context/AuthContext';
-import { patientAPI } from '../../Api/api';
-import { UploadEmployeeFiles } from '../../Api/api';
-import ViewDoctorFeedback from './ViewDoctorFeedback';
+  DateRange,
+} from "@mui/icons-material";
+import { useAuth } from "../../Context/AuthContext";
+import { patientAPI } from "../../Api/api";
+import { UploadEmployeeFiles } from "../../Api/api";
+import ViewDoctorFeedback from "./ViewDoctorFeedback";
 
 const ROLES = {
   ADMIN: 2,
@@ -61,20 +62,20 @@ const AddInvoicePharma = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success',
+    message: "",
+    severity: "success",
   });
   const [selectedApp, setSelectedApp] = useState(null);
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState("");
   const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [fileName, setFileName] = useState("");
   const [filePath, setFilePath] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
-  const [actionType, setActionType] = useState('approve');
+  const [actionType, setActionType] = useState("approve");
   const [viewFeedbackDialogOpen, setViewFeedbackDialogOpen] = useState(false);
 
   const PHARMACIST_STATUS = {
@@ -85,7 +86,7 @@ const AddInvoicePharma = () => {
   const fetchApplications = async () => {
     try {
       if (!user?.UserId || !user?.RoleId) {
-        throw new Error('User information not available');
+        throw new Error("User information not available");
       }
 
       setLoading(true);
@@ -96,26 +97,26 @@ const AddInvoicePharma = () => {
         UserID: user.UserId,
       });
 
-      console.log('API Response:', response);
+      console.log("API Response:", response);
 
       if (response.data.success) {
         setApplications(response.data.data);
-      } else if (response.data.statusCode === '8004') {
+      } else if (response.data.statusCode === "8004") {
         setApplications([]);
       } else {
         throw new Error(
-          response.data.message || 'Failed to fetch applications'
+          response.data.message || "Failed to fetch applications"
         );
       }
     } catch (err) {
-      console.error('Error fetching applications:', err);
+      console.error("Error fetching applications:", err);
       setError(
-        err.message || 'Failed to fetch applications. Please try again.'
+        err.message || "Failed to fetch applications. Please try again."
       );
       setSnackbar({
         open: true,
-        message: err.message || 'Failed to fetch applications',
-        severity: 'error',
+        message: err.message || "Failed to fetch applications",
+        severity: "error",
       });
     } finally {
       setLoading(false);
@@ -129,11 +130,11 @@ const AddInvoicePharma = () => {
         setStatusOptions(response.data.data);
       }
     } catch (err) {
-      console.error('Error fetching status options:', err);
+      console.error("Error fetching status options:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to load status options',
-        severity: 'error',
+        message: "Failed to load status options",
+        severity: "error",
       });
     }
   };
@@ -144,7 +145,7 @@ const AddInvoicePharma = () => {
 
       const reader = new FileReader();
       reader.onload = async (e) => {
-        const base64String = e.target.result.split(',')[1];
+        const base64String = e.target.result.split(",")[1];
         const fileData = {
           Image: `${file.name}|${base64String}`,
           fileName: file.name,
@@ -152,9 +153,9 @@ const AddInvoicePharma = () => {
         };
 
         const params = {
-          SubjectName: 'PharmacyInvoices',
+          SubjectName: "PharmacyInvoices",
           AssignmentTitle: `Invoice_${selectedApp?.application_id}`,
-          Path: 'Assets/PharmacyInvoices/',
+          Path: "Assets/PharmacyInvoices/",
           Assignments: JSON.stringify([fileData]),
         };
 
@@ -164,20 +165,20 @@ const AddInvoicePharma = () => {
           setFileName(file.name);
           setSnackbar({
             open: true,
-            message: 'File uploaded successfully!',
-            severity: 'success',
+            message: "File uploaded successfully!",
+            severity: "success",
           });
         } else {
-          throw new Error(response.message || 'Failed to upload file');
+          throw new Error(response.message || "Failed to upload file");
         }
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      console.error('Error uploading file:', err);
+      console.error("Error uploading file:", err);
       setSnackbar({
         open: true,
-        message: 'Failed to upload file. Please try again.',
-        severity: 'error',
+        message: "Failed to upload file. Please try again.",
+        severity: "error",
       });
     }
   };
@@ -185,21 +186,21 @@ const AddInvoicePharma = () => {
   const handleStatusUpdate = async () => {
     try {
       if (!selectedApp) {
-        throw new Error('No application selected');
+        throw new Error("No application selected");
       }
 
-      if (actionType === 'reject' && !feedback) {
-        throw new Error('Rejection reason is required');
+      if (actionType === "reject" && !feedback) {
+        throw new Error("Rejection reason is required");
       }
 
-      if (actionType === 'approve' && !filePath) {
-        throw new Error('Invoice file is required for approval');
+      if (actionType === "approve" && !filePath) {
+        throw new Error("Invoice file is required for approval");
       }
 
       setLoading(true);
 
       const statusId =
-        actionType === 'approve'
+        actionType === "approve"
           ? PHARMACIST_STATUS.APPROVE
           : PHARMACIST_STATUS.REJECT;
 
@@ -216,8 +217,8 @@ const AddInvoicePharma = () => {
       if (response.data.success) {
         setSnackbar({
           open: true,
-          message: 'Application status updated successfully',
-          severity: 'success',
+          message: "Application status updated successfully",
+          severity: "success",
         });
         const updatedApplications = applications.map((app) =>
           app.application_id === selectedApp.application_id
@@ -227,22 +228,22 @@ const AddInvoicePharma = () => {
         setApplications(updatedApplications);
       } else {
         throw new Error(
-          response.data.message || 'Failed to update application'
+          response.data.message || "Failed to update application"
         );
       }
     } catch (err) {
       setSnackbar({
         open: true,
-        message: err.message || 'Failed to update application',
-        severity: 'error',
+        message: err.message || "Failed to update application",
+        severity: "error",
       });
     } finally {
       setLoading(false);
       setDialogOpen(false);
       setSelectedApp(null);
-      setFeedback('');
+      setFeedback("");
       setFile(null);
-      setFileName('');
+      setFileName("");
       setFilePath(null);
     }
   };
@@ -262,11 +263,11 @@ const AddInvoicePharma = () => {
   };
 
   const STATUS_MAPPINGS = {
-    1: { name: 'Pending', color: 'warning' },
-    2: { name: 'ReviewedByDoctor', color: 'primary' },
-    5: { name: 'ForwardedToSales', color: 'info' },
-    6: { name: 'RejectedByPharmacist', color: 'error' },
-    7: { name: 'Completed', color: 'success' },
+    1: { name: "Pending", color: "warning" },
+    2: { name: "ReviewedByDoctor", color: "primary" },
+    5: { name: "ForwardedToSales", color: "info" },
+    6: { name: "RejectedByPharmacist", color: "error" },
+    7: { name: "Completed", color: "success" },
   };
 
   const getStatusName = (statusId) => {
@@ -274,7 +275,7 @@ const AddInvoicePharma = () => {
   };
 
   const getStatusColor = (statusId) => {
-    return STATUS_MAPPINGS[statusId]?.color || 'default';
+    return STATUS_MAPPINGS[statusId]?.color || "default";
   };
 
   useEffect(() => {
@@ -302,12 +303,12 @@ const AddInvoicePharma = () => {
     <Box sx={{ p: 3 }}>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           mb: 4,
           p: 2,
-          backgroundColor: 'background.paper',
+          backgroundColor: "background.paper",
           borderRadius: 2,
           boxShadow: 1,
         }}
@@ -317,9 +318,9 @@ const AddInvoicePharma = () => {
             variant="h4"
             sx={{
               fontWeight: 700,
-              color: 'primary.main',
-              display: 'flex',
-              alignItems: 'center',
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
               gap: 1,
             }}
           >
@@ -340,7 +341,7 @@ const AddInvoicePharma = () => {
             borderRadius: 2,
             px: 3,
             py: 1,
-            textTransform: 'none',
+            textTransform: "none",
             fontWeight: 600,
           }}
         >
@@ -353,10 +354,10 @@ const AddInvoicePharma = () => {
           <Box
             sx={{
               p: 2,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: 'background.default',
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "background.default",
             }}
           >
             <TextField
@@ -367,15 +368,15 @@ const AddInvoicePharma = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
                 startAdornment: (
-                  <Search sx={{ color: 'action.active', mr: 1 }} />
+                  <Search sx={{ color: "action.active", mr: 1 }} />
                 ),
-                size: 'small',
+                size: "small",
               }}
               sx={{
                 maxWidth: 400,
-                '& .MuiOutlinedInput-root': {
+                "& .MuiOutlinedInput-root": {
                   borderRadius: 2,
-                  backgroundColor: 'background.paper',
+                  backgroundColor: "background.paper",
                 },
               }}
             />
@@ -384,9 +385,9 @@ const AddInvoicePharma = () => {
           {loading ? (
             <Box
               sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
                 minHeight: 200,
               }}
             >
@@ -399,14 +400,14 @@ const AddInvoicePharma = () => {
           ) : applications.length === 0 ? (
             <Box
               sx={{
-                textAlign: 'center',
+                textAlign: "center",
                 p: 4,
                 backgroundColor: theme.palette.background.default,
                 borderRadius: 2,
               }}
             >
               <HelpOutline
-                sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }}
+                sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
               />
               <Typography variant="h6" color="text.secondary">
                 No applications requiring processing
@@ -421,7 +422,7 @@ const AddInvoicePharma = () => {
                 <TableHead
                   sx={{
                     backgroundColor: theme.palette.primary.light,
-                    '& .MuiTableCell-root': {
+                    "& .MuiTableCell-root": {
                       color: theme.palette.common.white,
                       fontWeight: 600,
                     },
@@ -442,7 +443,7 @@ const AddInvoicePharma = () => {
                         key={app.application_id}
                         hover
                         sx={{
-                          '&:hover': {
+                          "&:hover": {
                             backgroundColor: theme.palette.action.hover,
                           },
                         }}
@@ -450,8 +451,8 @@ const AddInvoicePharma = () => {
                         <TableCell>
                           <Box
                             sx={{
-                              display: 'flex',
-                              alignItems: 'center',
+                              display: "flex",
+                              alignItems: "center",
                               gap: 2,
                             }}
                           >
@@ -462,12 +463,12 @@ const AddInvoicePharma = () => {
                                 height: 40,
                               }}
                             >
-                              {app.application_title?.charAt(0) || 'P'}
+                              {app.application_title?.charAt(0) || "P"}
                             </Avatar>
                             <Box>
                               <Typography fontWeight={600}>
                                 {app.application_title ||
-                                  'Untitled Application'}
+                                  "Untitled Application"}
                               </Typography>
                               <Typography
                                 variant="body2"
@@ -481,14 +482,23 @@ const AddInvoicePharma = () => {
                         <TableCell>
                           <Box
                             sx={{
-                              display: 'flex',
-                              alignItems: 'center',
+                              display: "flex",
+                              alignItems: "center",
                               gap: 1,
                             }}
                           >
-                            <Typography variant="body2">
-                              {new Date(app.SubmittedDate).toLocaleDateString()}
-                            </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              <DateRange color="action" fontSize="small" />
+                              <Typography variant="body2">
+                                {app.SubmittedDate}
+                              </Typography>
+                            </Box>
                           </Box>
                         </TableCell>
                         <TableCell>
@@ -541,8 +551,8 @@ const AddInvoicePharma = () => {
                                 }}
                                 sx={{
                                   color: theme.palette.info.main,
-                                  backgroundColor: 'action.hover',
-                                  '&:hover': {
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
                                     backgroundColor: theme.palette.info.main,
                                     color: theme.palette.common.white,
                                   },
@@ -553,11 +563,11 @@ const AddInvoicePharma = () => {
                             </Tooltip>
                             <Tooltip title="Approve application">
                               <IconButton
-                                onClick={() => openActionDialog(app, 'approve')}
+                                onClick={() => openActionDialog(app, "approve")}
                                 sx={{
                                   color: theme.palette.success.main,
-                                  backgroundColor: 'action.hover',
-                                  '&:hover': {
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
                                     backgroundColor: theme.palette.success.main,
                                     color: theme.palette.common.white,
                                   },
@@ -568,11 +578,11 @@ const AddInvoicePharma = () => {
                             </Tooltip>
                             <Tooltip title="Reject application">
                               <IconButton
-                                onClick={() => openActionDialog(app, 'reject')}
+                                onClick={() => openActionDialog(app, "reject")}
                                 sx={{
                                   color: theme.palette.error.main,
-                                  backgroundColor: 'action.hover',
-                                  '&:hover': {
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
                                     backgroundColor: theme.palette.error.main,
                                     color: theme.palette.common.white,
                                   },
@@ -620,30 +630,30 @@ const AddInvoicePharma = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            overflow: 'visible',
+            overflow: "visible",
           },
         }}
       >
         <DialogTitle
           sx={{
             backgroundColor:
-              actionType === 'approve'
+              actionType === "approve"
                 ? theme.palette.success.main
                 : theme.palette.error.main,
             color: theme.palette.common.white,
             fontWeight: 600,
             py: 2,
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 2,
           }}
         >
-          {actionType === 'approve' ? (
+          {actionType === "approve" ? (
             <CheckCircle fontSize="large" />
           ) : (
             <Cancel fontSize="large" />
           )}
-          {actionType === 'approve' ? 'Approve Invoice' : 'Reject Application'}
+          {actionType === "approve" ? "Approve Invoice" : "Reject Application"}
         </DialogTitle>
         <DialogContent sx={{ py: 3 }}>
           <Box sx={{ mb: 3 }}>
@@ -663,7 +673,7 @@ const AddInvoicePharma = () => {
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="body1">
-                  <strong>Submitted:</strong>{' '}
+                  <strong>Submitted:</strong>{" "}
                   {selectedApp?.SubmittedDate &&
                     new Date(selectedApp.SubmittedDate).toLocaleDateString()}
                 </Typography>
@@ -695,14 +705,14 @@ const AddInvoicePharma = () => {
             fullWidth
             variant="outlined"
             label={
-              actionType === 'approve' ? 'Pharmacy Notes' : 'Rejection Reason'
+              actionType === "approve" ? "Pharmacy Notes" : "Rejection Reason"
             }
             name="feedback"
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             multiline
             rows={4}
-            required={actionType === 'reject'}
+            required={actionType === "reject"}
             sx={{ mb: 3 }}
             InputProps={{
               sx: {
@@ -712,7 +722,7 @@ const AddInvoicePharma = () => {
             }}
           />
 
-          {actionType === 'approve' && (
+          {actionType === "approve" && (
             <Box
               sx={{
                 border: `1px dashed ${theme.palette.divider}`,
@@ -725,7 +735,7 @@ const AddInvoicePharma = () => {
                 type="file"
                 id="file-upload"
                 onChange={handleFileChange}
-                style={{ display: 'none' }}
+                style={{ display: "none" }}
                 accept=".pdf,.jpg,.png,.jpeg"
               />
               <label htmlFor="file-upload">
@@ -735,7 +745,7 @@ const AddInvoicePharma = () => {
                   startIcon={<AttachFile />}
                   sx={{
                     borderRadius: 2,
-                    textTransform: 'none',
+                    textTransform: "none",
                     mr: 2,
                   }}
                 >
@@ -775,33 +785,33 @@ const AddInvoicePharma = () => {
             sx={{
               borderRadius: 2,
               px: 3,
-              textTransform: 'none',
+              textTransform: "none",
             }}
           >
             Cancel
           </Button>
           <Button
             onClick={handleStatusUpdate}
-            color={actionType === 'approve' ? 'success' : 'error'}
+            color={actionType === "approve" ? "success" : "error"}
             variant="contained"
             disabled={
               loading ||
-              (actionType === 'reject' && !feedback) ||
-              (actionType === 'approve' && !filePath)
+              (actionType === "reject" && !feedback) ||
+              (actionType === "approve" && !filePath)
             }
             sx={{
               borderRadius: 2,
               px: 3,
-              textTransform: 'none',
+              textTransform: "none",
               minWidth: 120,
             }}
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" />
-            ) : actionType === 'approve' ? (
-              'Approve'
+            ) : actionType === "approve" ? (
+              "Approve"
             ) : (
-              'Reject'
+              "Reject"
             )}
           </Button>
         </DialogActions>
@@ -817,16 +827,16 @@ const AddInvoicePharma = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           severity={snackbar.severity}
           sx={{
-            width: '100%',
+            width: "100%",
             borderRadius: 2,
             boxShadow: 3,
-            alignItems: 'center',
+            alignItems: "center",
           }}
           iconMapping={{
             success: <CheckCircle fontSize="large" />,
