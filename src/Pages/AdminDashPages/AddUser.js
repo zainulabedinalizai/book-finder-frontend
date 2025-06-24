@@ -87,12 +87,16 @@ const roleColors = {
 const StatusChip = styled(Chip)(({ theme, status }) => ({
   fontWeight: 600,
   border: `1px solid ${
-    status === 1 ? theme.palette.success.main : theme.palette.error.main
+    status === "Active" ? theme.palette.success.main : theme.palette.error.main
   }`,
   backgroundColor: "transparent",
-  color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+  color:
+    status === "Active" ? theme.palette.success.main : theme.palette.error.main,
   "& .MuiChip-icon": {
-    color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
+    color:
+      status === "Active"
+        ? theme.palette.success.main
+        : theme.palette.error.main,
   },
 }));
 
@@ -617,7 +621,6 @@ const AddUser = () => {
                     }}
                   >
                     <TableRow>
-                      <TableCell>User</TableCell>
                       <TableCell>Username</TableCell>
                       <TableCell>Email</TableCell>
                       <TableCell>Role</TableCell>
@@ -642,39 +645,28 @@ const AddUser = () => {
                             },
                           }}
                         >
-                          {/* User Cell */}
+                          {/* Username Cell - Now includes User ID */}
                           <TableCell
                             sx={{
                               borderBottom: `1px solid ${theme.palette.divider}`,
                             }}
                           >
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              <Avatar
-                                sx={{
-                                  mr: 2,
-                                  width: 36,
-                                  height: 36,
-                                  bgcolor: "primary.main",
-                                  color: "primary.contrastText",
-                                }}
+                            <Box>
+                              <Typography
+                                variant="body1"
+                                fontWeight={500}
+                                fontSize="1rem"
                               >
-                                {user.FullName?.charAt(0) || "U"}
-                              </Avatar>
-                              <Typography fontWeight={500}>
-                                {user.FullName}
+                                {user.Username}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block" }}
+                              >
+                                ID: {user.UserId}
                               </Typography>
                             </Box>
-                          </TableCell>
-
-                          {/* Username Cell */}
-                          <TableCell
-                            sx={{
-                              borderBottom: `1px solid ${theme.palette.divider}`,
-                            }}
-                          >
-                            <Typography variant="body2">
-                              {user.Username}
-                            </Typography>
                           </TableCell>
 
                           {/* Email Cell */}
@@ -710,21 +702,18 @@ const AddUser = () => {
                             />
                           </TableCell>
 
-                          {/* Status Cell */}
+                          {/* Status Cell - Updated to use AccountStatus */}
                           <TableCell
                             sx={{
                               borderBottom: `1px solid ${theme.palette.divider}`,
                             }}
                           >
                             <StatusChip
-                              status={user.AccountStatus}
-                              label={
-                                user.AccountStatus === 1 ? "Active" : "Inactive"
-                              }
+                              status={user.AccountStatus} // Fixed the typo here
+                              label={user.AccountStatus}
                               variant="outlined"
                             />
                           </TableCell>
-
                           <TableCell>
                             <Box sx={{ display: "flex", gap: 1 }}>
                               {editingPasswordId === user.UserId ? (
@@ -778,24 +767,6 @@ const AddUser = () => {
                                       <Edit fontSize="small" />
                                     </IconButton>
                                   </Tooltip>
-
-                                  <Tooltip title="Delete">
-                                    <IconButton
-                                      color="error"
-                                      onClick={() =>
-                                        handleDeleteUser(user.UserId)
-                                      }
-                                      sx={{
-                                        backgroundColor: "action.hover",
-                                        "&:hover": {
-                                          backgroundColor: "error.light",
-                                          color: "common.white",
-                                        },
-                                      }}
-                                    >
-                                      <Delete fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
                                 </>
                               )}
                             </Box>
@@ -804,7 +775,7 @@ const AddUser = () => {
                       ))}
                     {emptyRows > 0 && (
                       <TableRow style={{ height: 53 * emptyRows }}>
-                        <TableCell colSpan={7} />
+                        <TableCell colSpan={5} />
                       </TableRow>
                     )}
                   </TableBody>

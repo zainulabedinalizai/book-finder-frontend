@@ -246,7 +246,6 @@ const UserRoles = () => {
               }}
             >
               <TableRow>
-                <TableCell>Role ID</TableCell>
                 <TableCell>Role Name</TableCell>
                 <TableCell>Description</TableCell>
                 <TableCell align="center">Actions</TableCell>
@@ -260,14 +259,6 @@ const UserRoles = () => {
                   sx={{ "&:last-child td": { borderBottom: 0 } }}
                 >
                   <TableCell>
-                    <Chip
-                      label={role.RoleId}
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
                     <Box
                       sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
                     >
@@ -280,7 +271,18 @@ const UserRoles = () => {
                       >
                         {role.RoleName.charAt(0)}
                       </Avatar>
-                      <Typography fontWeight={500}>{role.RoleName}</Typography>
+                      <Box>
+                        <Typography fontWeight={500}>
+                          {role.RoleName}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block" }}
+                        >
+                          ID: {role.RoleId}
+                        </Typography>
+                      </Box>
                     </Box>
                   </TableCell>
                   <TableCell>

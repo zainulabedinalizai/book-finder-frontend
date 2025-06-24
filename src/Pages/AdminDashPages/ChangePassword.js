@@ -36,35 +36,21 @@ import {
   Cancel as CancelIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
-
 import { useTheme } from "@mui/material/styles";
-import { styled } from "@mui/material/styles";
 
 const ChangePassword = () => {
   const theme = useTheme();
   const { user } = useAuth();
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [globalError, setGlobalError] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editPassword, setEditPassword] = useState("");
   const [success, setSuccess] = useState(false);
   const [showPasswords, setShowPasswords] = useState({});
   const [decryptedPasswords, setDecryptedPasswords] = useState({});
   const [decrypting, setDecrypting] = useState({});
-
-  const StatusChip = styled(Chip)(({ theme, status }) => ({
-    fontWeight: 600,
-    border: `1px solid ${
-      status === 1 ? theme.palette.success.main : theme.palette.error.main
-    }`,
-    backgroundColor: "transparent",
-    color: status === 1 ? theme.palette.success.main : theme.palette.error.main,
-    "& .MuiChip-icon": {
-      color:
-        status === 1 ? theme.palette.success.main : theme.palette.error.main,
-    },
-  }));
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     const fetchAllUsers = async () => {
@@ -80,11 +66,11 @@ const ChangePassword = () => {
           });
           setShowPasswords(initialVisibility);
         } else {
-          setError(response.data?.message || "Failed to fetch users");
+          setGlobalError(response.data?.message || "Failed to fetch users");
         }
       } catch (err) {
         console.error("Error fetching users:", err);
-        setError(err.message || "Failed to fetch users");
+        setGlobalError(err.message || "Failed to fetch users");
       } finally {
         setLoading(false);
       }
@@ -113,11 +99,17 @@ const ChangePassword = () => {
           [userId]: response.data.data || "Decryption failed",
         }));
       } else {
-        setError(response.data?.message || "Failed to decrypt password");
+        setFieldErrors((prev) => ({
+          ...prev,
+          [userId]: response.data?.message || "Failed to decrypt password",
+        }));
       }
     } catch (err) {
       console.error("Error decrypting password:", err);
-      setError(err.message || "Failed to decrypt password");
+      setFieldErrors((prev) => ({
+        ...prev,
+        [userId]: err.message || "Failed to decrypt password",
+      }));
     } finally {
       setDecrypting((prev) => ({ ...prev, [userId]: false }));
     }
@@ -126,7 +118,7 @@ const ChangePassword = () => {
   const startEditing = (userId) => {
     setEditingId(userId);
     setEditPassword("");
-    setError(null);
+    setFieldErrors((prev) => ({ ...prev, [userId]: null }));
     setSuccess(false);
   };
 
@@ -135,24 +127,41 @@ const ChangePassword = () => {
     setEditPassword("");
   };
 
-  const handlePasswordChange = (e) => {
-    setEditPassword(e.target.value);
+  const handlePasswordChange = (e, userId) => {
+    const value = e.target.value;
+    setEditPassword(value);
+
+    // Validate immediately
+    if (value.length > 0 && value.length < 6) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        [userId]: "Password must be at least 6 characters",
+      }));
+    } else {
+      setFieldErrors((prev) => ({ ...prev, [userId]: null }));
+    }
   };
 
   const savePassword = async (userId) => {
     if (!editPassword) {
-      setError("Password cannot be empty");
+      setFieldErrors((prev) => ({
+        ...prev,
+        [userId]: "Password cannot be empty",
+      }));
       return;
     }
 
     if (editPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+      setFieldErrors((prev) => ({
+        ...prev,
+        [userId]: "Password must be at least 6 characters",
+      }));
       return;
     }
 
     try {
       setLoading(true);
-      setError(null);
+      setFieldErrors((prev) => ({ ...prev, [userId]: null }));
 
       const response = await userAPI.updatePassword(userId, editPassword);
 
@@ -160,25 +169,34 @@ const ChangePassword = () => {
         response.data?.success ||
         response.data?.data?.[0]?.Mesg === "Updated"
       ) {
-        setAllUsers((prevUsers) =>
-          prevUsers.map((u) =>
-            u.UserId === userId ? { ...u, PasswordHash: "••••••••" } : u
-          )
-        );
+        // Re-fetch the entire user list to get the updated encrypted hash
+        const userListResponse = await userAPI.getUserList(-1);
+        if (userListResponse.data?.success) {
+          setAllUsers(userListResponse.data.data || []);
+
+          // Also reset password visibility and decrypted state for this user
+          setDecryptedPasswords((prev) => ({ ...prev, [userId]: undefined }));
+          setShowPasswords((prev) => ({ ...prev, [userId]: false }));
+        }
+
         setEditingId(null);
         setEditPassword("");
         setSuccess(true);
-        setDecryptedPasswords((prev) => ({ ...prev, [userId]: undefined }));
       } else {
-        setError(response.data?.message || "Failed to update password");
+        setFieldErrors((prev) => ({
+          ...prev,
+          [userId]: response.data?.message || "Failed to update password",
+        }));
       }
     } catch (err) {
       console.error("Error updating password:", err);
-      setError(
-        err.response?.data?.message ||
+      setFieldErrors((prev) => ({
+        ...prev,
+        [userId]:
+          err.response?.data?.message ||
           err.message ||
-          "Failed to update password"
-      );
+          "Failed to update password",
+      }));
     } finally {
       setLoading(false);
     }
@@ -202,7 +220,7 @@ const ChangePassword = () => {
     );
   }
 
-  if (error) {
+  if (globalError) {
     return (
       <Container maxWidth="md">
         <Alert
@@ -214,7 +232,7 @@ const ChangePassword = () => {
           }}
           icon={<CancelIcon fontSize="inherit" />}
         >
-          <Typography variant="h6">{error}</Typography>
+          <Typography variant="h6">{globalError}</Typography>
           <Button
             variant="contained"
             color="error"
@@ -259,7 +277,6 @@ const ChangePassword = () => {
         }}
       >
         <CardContent sx={{ p: 0 }}>
-          {/* Updated Header */}
           <Box
             sx={{
               display: "flex",
@@ -357,22 +374,28 @@ const ChangePassword = () => {
                     </TableCell>
                     <TableCell>
                       {editingId === user.UserId ? (
-                        <TextField
-                          type="password"
-                          value={editPassword}
-                          onChange={handlePasswordChange}
-                          size="small"
-                          fullWidth
-                          placeholder="Enter new password"
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <KeyIcon color="action" />
-                              </InputAdornment>
-                            ),
-                            sx: { borderRadius: 2 },
-                          }}
-                        />
+                        <Box>
+                          <TextField
+                            type="password"
+                            value={editPassword}
+                            onChange={(e) =>
+                              handlePasswordChange(e, user.UserId)
+                            }
+                            size="small"
+                            fullWidth
+                            placeholder="Enter new password"
+                            error={Boolean(fieldErrors[user.UserId])}
+                            helperText={fieldErrors[user.UserId]}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <KeyIcon color="action" />
+                                </InputAdornment>
+                              ),
+                              sx: { borderRadius: 2 },
+                            }}
+                          />
+                        </Box>
                       ) : (
                         <Box sx={{ display: "flex", alignItems: "center" }}>
                           {showPasswords[user.UserId] ? (
@@ -472,14 +495,20 @@ const ChangePassword = () => {
                             color="primary"
                             onClick={() => savePassword(user.UserId)}
                             disabled={loading}
-                            startIcon={<SaveIcon />}
+                            startIcon={
+                              loading ? (
+                                <CircularProgress size={16} />
+                              ) : (
+                                <SaveIcon />
+                              )
+                            }
                             sx={{
                               borderRadius: 2,
                               textTransform: "none",
                               px: 2,
                             }}
                           >
-                            Save
+                            {loading ? "Saving..." : "Save"}
                           </Button>
                           <Button
                             size="small"
@@ -528,6 +557,7 @@ const ChangePassword = () => {
                 boxShadow: 1,
               }}
               icon={<CheckCircleIcon fontSize="inherit" />}
+              onClose={() => setSuccess(false)}
             >
               Password updated successfully!
             </Alert>
