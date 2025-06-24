@@ -98,43 +98,52 @@ const AttachInvoiceSale = () => {
     return STATUS_MAPPINGS[statusId]?.color || "default";
   };
 
-  const fetchApplications = async () => {
-    try {
-      if (!user?.UserId || !user?.RoleId) {
-        throw new Error("User information not available");
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const response = await patientAPI.getRoleWiseApplication({
-        RoleID: user.RoleId,
-        UserID: user.UserId,
-      });
-
-      if (response.data.success) {
-        setApplications(response.data.data);
-      } else if (response.data.statusCode === "8004") {
-        setApplications([]);
-      } else {
-        throw new Error(
-          response.data.message || "Failed to fetch applications"
-        );
-      }
-    } catch (err) {
-      console.error("Error fetching applications:", err);
-      setError(
-        err.message || "Failed to fetch applications. Please try again."
-      );
-      setSnackbar({
-        open: true,
-        message: err.message || "Failed to fetch applications",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
+const fetchApplications = async () => {
+  try {
+    if (!user?.UserId || !user?.RoleId) {
+      throw new Error("User information not available");
     }
-  };
+
+    setLoading(true);
+    setError(null);
+
+    console.log("Fetching applications with params:", {
+      RoleID: user.RoleId,
+      UserID: user.UserId
+    });
+
+    const response = await patientAPI.getRoleWiseApplication({
+      RoleID: user.RoleId,
+      UserID: user.UserId,
+    });
+
+    console.log("Raw API response:", response);
+    
+    if (response.data.success) {
+      console.log("Applications data received:", response.data.data);
+      setApplications(response.data.data);
+    } else if (response.data.statusCode === "8004") {
+      console.log("No applications found");
+      setApplications([]);
+    } else {
+      throw new Error(
+        response.data.message || "Failed to fetch applications"
+      );
+    }
+  } catch (err) {
+    console.error("Error fetching applications:", err);
+    setError(
+      err.message || "Failed to fetch applications. Please try again."
+    );
+    setSnackbar({
+      open: true,
+      message: err.message || "Failed to fetch applications",
+      severity: "error",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const fetchStatusOptions = async () => {
     try {
