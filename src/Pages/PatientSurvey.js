@@ -2,16 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Box,
   Typography,
-  Container,
-  Card,
-  CardContent,
   TextField,
   Button,
-  Avatar,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Divider,
   Grid,
   Checkbox,
@@ -26,17 +18,16 @@ import {
   DialogActions,
   RadioGroup,
   Radio,
-  FormLabel,
+  FormControl,
+  Snackbar,
 } from "@mui/material";
-import { Edit, Save, Cancel } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import { alpha } from "@mui/material/styles";
 import { useAuth } from "../Context/AuthContext";
 import { patientAPI, questionAPI, UploadEmployeeFiles } from "../Api/api";
 import MainCard from "../Components/MainCard";
 
-// ==============================|| STYLED COMPONENTS ||============================== //
-
+// Styled Components
 const ColorButton = styled(Button)(({ theme }) => ({
   background: "linear-gradient(45deg, #FF8E53 30%, #FE6B8B 90%)",
   border: 0,
@@ -70,9 +61,6 @@ const MultilineSpecifyField = styled(TextField)(({ theme }) => ({
       padding: "10px 12px",
       minHeight: "48px",
       resize: "vertical",
-      fontFamily: "'Roboto','Helvetica','Arial',sans-serif",
-      fontSize: "0.875rem",
-      transition: "all 0.2s ease-in-out",
     },
     "& fieldset": {
       borderColor: alpha(theme.palette.primary.main, 0.3),
@@ -87,51 +75,7 @@ const MultilineSpecifyField = styled(TextField)(({ theme }) => ({
   },
   marginTop: 6,
   marginLeft: 32,
-  width: "calc(100% - 64px)", // Less wide, clean indent
-}));
-
-const SpecifyTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 8,
-    height: 36,
-    fontSize: "0.8125rem",
-    "& input": {
-      padding: "8px 12px",
-    },
-    "& fieldset": {
-      borderColor: alpha(theme.palette.primary.main, 0.3),
-    },
-    "&:hover fieldset": {
-      borderColor: alpha(theme.palette.primary.main, 0.6),
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: theme.palette.primary.main,
-      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-    },
-  },
-  "& .MuiInputLabel-root": {
-    transform: "translate(14px, 10px) scale(1)",
-    fontSize: "0.8125rem",
-    "&.MuiInputLabel-shrink": {
-      transform: "translate(14px, -6px) scale(0.75)",
-    },
-  },
-}));
-
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  "& .MuiOutlinedInput-root": {
-    borderRadius: 12,
-    "& fieldset": {
-      borderColor: alpha(theme.palette.primary.main, 0.3),
-    },
-    "&:hover fieldset": {
-      borderColor: alpha(theme.palette.primary.main, 0.6),
-    },
-    "&.Mui-focused fieldset": {
-      borderColor: theme.palette.primary.main,
-      boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-    },
-  },
+  width: "calc(100% - 64px)",
 }));
 
 const StyledCheckbox = styled(Checkbox)(({ theme }) => ({
@@ -147,8 +91,6 @@ const NavigationButton = styled(Button)(({ theme }) => ({
   fontWeight: 600,
   textTransform: "none",
 }));
-
-// ==============================|| PATIENT ONBOARDING JOURNEY ||============================== //
 
 const PatientSurvey = () => {
   const { user } = useAuth();
@@ -174,6 +116,9 @@ const PatientSurvey = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [currentCaptureLabel, setCurrentCaptureLabel] = useState("");
   const [specifyTexts, setSpecifyTexts] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
   const totalSteps = 5;
 
   const [formData, setFormData] = useState({
@@ -191,9 +136,7 @@ const PatientSurvey = () => {
 
   // Group questions by QuestionId
   const groupedQuestions = questions.reduce((acc, question) => {
-    // Skip if we've already processed this QuestionId
     if (acc[question.QuestionId]) {
-      // Only add the option if it doesn't exist
       const optionExists = acc[question.QuestionId].Options.some(
         (opt) => opt.OptionId === question.OptionId
       );
@@ -207,7 +150,6 @@ const PatientSurvey = () => {
       return acc;
     }
 
-    // New question entry
     acc[question.QuestionId] = {
       QuestionId: question.QuestionId,
       QuestionText: question.QuestionText,
@@ -247,7 +189,6 @@ const PatientSurvey = () => {
               initialAnswers[q.QuestionId] = "";
             }
 
-            // Initialize specify texts for options that need it
             if (
               q.OptionText.includes("(please specify)") ||
               q.OptionText.includes("(please list)")
@@ -281,9 +222,144 @@ const PatientSurvey = () => {
     fetchQuestions();
   }, []);
 
+  const validateCurrentStep = () => {
+    const errors = {};
+    let isValid = true;
+
+    let currentStepQuestions = [];
+    if (currentStep === 1) {
+      currentStepQuestions = sortedQuestions.filter(
+        (q) => q.DisplayOrder <= 7 && q.QuestionId !== 13
+      );
+    } else if (currentStep === 2) {
+      currentStepQuestions = sortedQuestions.filter(
+        (q) => q.DisplayOrder > 7 && q.DisplayOrder <= 12 && q.QuestionId !== 13
+      );
+    } else if (currentStep === 3) {
+      currentStepQuestions = sortedQuestions.filter(
+        (q) =>
+          q.QuestionId === 13 ||
+          q.QuestionText.toLowerCase().includes("consent") ||
+          q.QuestionText.toLowerCase().includes("agree")
+      );
+    }
+
+    currentStepQuestions.forEach((question) => {
+      if (
+        question.QuestionText.toLowerCase().includes("consent") ||
+        question.QuestionText.toLowerCase().includes("agree")
+      ) {
+        return;
+      }
+
+      if (question.QuestionId === 13) {
+        if (
+          !imagePaths["Front View"] ||
+          !imagePaths["Side View (Left)"] ||
+          !imagePaths["Side View (Right)"]
+        ) {
+          errors[question.QuestionId] = "Please upload all required images";
+          isValid = false;
+        }
+        return;
+      }
+
+      const answer = formData.answers[question.QuestionId];
+      if (
+        (!answer ||
+          (Array.isArray(answer) && answer.length === 0) ||
+          answer === "") &&
+        question.QuestionType !== "consent"
+      ) {
+        errors[question.QuestionId] = "This question is required";
+        isValid = false;
+      }
+
+      if (
+        question.QuestionType === "multiple_choice" &&
+        Array.isArray(answer)
+      ) {
+        answer.forEach((optionId) => {
+          const option = question.Options.find(
+            (opt) => opt.OptionId === optionId
+          );
+          if (
+            option &&
+            (option.OptionText.includes("(please specify)") ||
+              option.OptionText.includes("(please list)")) &&
+            !specifyTexts[`${question.QuestionId}_${optionId}`]?.trim()
+          ) {
+            errors[`${question.QuestionId}_${optionId}`] =
+              "Please provide details";
+            isValid = false;
+          }
+        });
+      } else if (
+        question.QuestionType === "single_choice" &&
+        typeof answer === "number"
+      ) {
+        const option = question.Options.find((opt) => opt.OptionId === answer);
+        if (
+          option &&
+          (option.OptionText.includes("(please specify)") ||
+            option.OptionText.includes("(please list)")) &&
+          !specifyTexts[question.QuestionId]?.trim()
+        ) {
+          errors[question.QuestionId] = "Please provide details";
+          isValid = false;
+        }
+      }
+    });
+
+    if (currentStep === 3) {
+      const consentQuestions = sortedQuestions.filter(
+        (q) =>
+          q.QuestionText.toLowerCase().includes("consent") ||
+          q.QuestionText.toLowerCase().includes("agree")
+      );
+
+      consentQuestions.forEach((question) => {
+        if (!formData.consents[question.QuestionId]) {
+          errors[question.QuestionId] = "You must agree to continue";
+          isValid = false;
+        }
+      });
+    }
+
+    setValidationErrors(errors);
+
+    if (!isValid) {
+      scrollToFirstError();
+    }
+
+    return isValid;
+  };
+
+  const scrollToFirstError = () => {
+    const firstErrorKey = Object.keys(validationErrors)[0];
+    if (firstErrorKey) {
+      const element = document.getElementById(`question-${firstErrorKey}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.style.boxShadow = "0 0 0 2px rgba(244, 67, 54, 0.5)";
+        setTimeout(() => {
+          element.style.boxShadow = "none";
+        }, 2000);
+      }
+    }
+  };
+
   const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+    if (validateCurrentStep()) {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+        setValidationErrors({});
+      }
+    } else {
+      setSnackbarMessage(
+        "Please complete all required fields before proceeding"
+      );
+      setOpenSnackbar(true);
     }
   };
 
@@ -324,8 +400,6 @@ const PatientSurvey = () => {
             ...prev,
             [label]: response.data[0],
           }));
-        } else {
-          throw new Error(response.message || "Failed to upload image");
         }
       };
       reader.readAsDataURL(file);
@@ -392,21 +466,15 @@ const PatientSurvey = () => {
             ...prev,
             [currentCaptureLabel]: response.data[0],
           }));
-        } else {
-          throw new Error(
-            response.message || "Failed to upload captured image"
-          );
         }
       } catch (err) {
         console.error("Error uploading captured image:", err);
         setError("Failed to save captured image. Please try again.");
       }
 
-      // Stop camera
       const stream = videoRef.current.srcObject;
       const tracks = stream.getTracks();
       tracks.forEach((track) => track.stop());
-
       setShowCamera(false);
     }
   };
@@ -420,22 +488,12 @@ const PatientSurvey = () => {
     setShowCamera(false);
   };
 
-  const handlePersonalInfoChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      personalInfo: {
-        ...prev.personalInfo,
-        [field]: value,
-      },
-    }));
-  };
-
   const handleAnswerChange = (questionId, value) => {
     setFormData((prev) => ({
       ...prev,
       answers: {
         ...prev.answers,
-        [questionId]: Number(value), // Convert to number
+        [questionId]: Number(value),
       },
     }));
   };
@@ -473,17 +531,36 @@ const PatientSurvey = () => {
 
   const handleSpecifyTextChange = useCallback((key, value) => {
     setSpecifyTexts((prev) => {
-      // Check if this is a single choice question (key is just questionId)
       if (/^\d+$/.test(key)) {
         return { ...prev, [key]: value };
       }
-      // For multiple choice (key is questionId_optionId)
       return { ...prev, [key]: value };
     });
   }, []);
 
   const handleSubmitConfirmation = () => {
-    setOpenConfirmation(true);
+    let allValid = true;
+    const originalStep = currentStep;
+
+    setCurrentStep(1);
+    allValid = validateCurrentStep() && allValid;
+
+    setCurrentStep(2);
+    allValid = validateCurrentStep() && allValid;
+
+    setCurrentStep(3);
+    allValid = validateCurrentStep() && allValid;
+
+    setCurrentStep(originalStep);
+
+    if (allValid) {
+      setOpenConfirmation(true);
+    } else {
+      setSnackbarMessage(
+        "Please complete all required questions before submitting"
+      );
+      setOpenSnackbar(true);
+    }
   };
 
   const handleCloseConfirmation = () => {
@@ -498,40 +575,18 @@ const PatientSurvey = () => {
 
     try {
       const userId = user?.UserId || parseInt(localStorage.getItem("userId"));
-      if (!userId) {
-        throw new Error("User not authenticated");
-      }
-
-      // Safety check - ensure questions are loaded
-      if (!questions || questions.length === 0) {
+      if (!userId) throw new Error("User not authenticated");
+      if (!questions || questions.length === 0)
         throw new Error("Questions not loaded yet");
-      }
 
-      // Prepare responses array
       const responses = [];
 
-      console.group("Form Submission Data");
-      console.log("Questions:", questions); // Log questions to verify they're loaded
-      console.log("Form Answers:", formData.answers);
-      console.log("Specify Texts:", specifyTexts);
-      console.log("Image Paths:", imagePaths);
-
-      // Process all answered questions
       Object.entries(formData.answers).forEach(([questionId, answer]) => {
         const question = groupedQuestions[questionId];
+        if (!question) return;
 
-        if (!question) {
-          console.warn(`Question with ID ${questionId} not found`);
-          return; // Skip if question not found
-        }
-
-        console.group(`Processing Question ID: ${questionId}`);
-        console.log("Question Text:", question.QuestionText);
-        console.log("Answer:", answer);
-
-        // For image question (ID 13)
         if (parseInt(questionId) === 13) {
-          const imageResponse = {
+          responses.push({
             QuestionId: 13,
             OptionId: [39, 40, 41]
               .filter((id) => {
@@ -545,14 +600,8 @@ const PatientSurvey = () => {
             FrontSide: imagePaths["Front View"] || null,
             LeftSide: imagePaths["Side View (Left)"] || null,
             RightSide: imagePaths["Side View (Right)"] || null,
-          };
-          responses.push(imageResponse);
-          console.log("Image Response:", imageResponse);
-        }
-        // For multiple choice questions
-        else if (Array.isArray(answer) && answer.length > 0) {
-          console.log("Processing as Multiple Choice");
-
+          });
+        } else if (Array.isArray(answer) && answer.length > 0) {
           const textResponses = answer.map((optionId) => {
             const key = `${questionId}_${optionId}`;
             const option =
@@ -561,19 +610,13 @@ const PatientSurvey = () => {
               option.OptionText?.includes("(please specify)") ||
               option.OptionText?.includes("(please list)");
 
-            console.log(`Option ${optionId}:`, {
-              text: option.OptionText,
-              needsSpecify,
-              specifyText: needsSpecify ? specifyTexts[key] || null : null,
-            });
-
             return {
               optionId,
               text: needsSpecify ? specifyTexts[key] || null : null,
             };
           });
 
-          const response = {
+          responses.push({
             QuestionId: parseInt(questionId),
             OptionId: answer.join(","),
             TextResponse: textResponses
@@ -583,26 +626,15 @@ const PatientSurvey = () => {
             FrontSide: null,
             LeftSide: null,
             RightSide: null,
-          };
-          responses.push(response);
-          console.log("Multiple Choice Response:", response);
-        }
-        // For single choice questions
-        else if (answer) {
-          console.log("Processing as Single Choice");
+          });
+        } else if (answer) {
           const option =
             question.Options?.find((opt) => opt.OptionId === answer) || {};
           const needsSpecify =
             option.OptionText?.includes("(please specify)") ||
             option.OptionText?.includes("(please list)");
 
-          console.log(`Selected Option ${answer}:`, {
-            text: option.OptionText,
-            needsSpecify,
-            specifyText: needsSpecify ? specifyTexts[questionId] || null : null,
-          });
-
-          const response = {
+          responses.push({
             QuestionId: parseInt(questionId),
             OptionId: answer.toString(),
             TextResponse: needsSpecify
@@ -611,290 +643,347 @@ const PatientSurvey = () => {
             FrontSide: null,
             LeftSide: null,
             RightSide: null,
-          };
-          responses.push(response);
-          console.log("Single Choice Response:", response);
+          });
         }
-        console.groupEnd();
       });
 
-      // Filter out any undefined responses
-      const validResponses = responses.filter((res) => res !== undefined);
-
-      // Prepare the final submission payload
       const submissionData = {
         UserId: userId,
-        Responses: validResponses.filter(
+        Responses: responses.filter(
           (res) => res.OptionId && res.OptionId.length > 0
         ),
       };
 
-      console.log("Final Submission Payload:", submissionData);
-      console.groupEnd();
-
-      console.log(
-        "%cFinal API Payload Structure",
-        "color: #4CAF50; font-weight: bold"
-      );
-      console.log(JSON.stringify(submissionData, null, 2));
-
       const response = await patientAPI.savePatientApplication(submissionData);
 
-      if (response.success && response.count > 0) {
+      if (response.data && response.data.success) {
+        // Check response.data.success
         setSubmitSuccess(true);
-      } else if (response.success && response.count === 0) {
-        // API says it saved, but nothing inserted (e.g. missing answers)
-        throw new Error("No responses were saved. Please check the form.");
+        setSubmitError(null);
       } else {
-        // Proper error from API
-        throw new Error(response.message || "Failed to submit application");
+        throw new Error(
+          response.data?.message || "Failed to submit application"
+        );
       }
     } catch (err) {
       console.error("Submission error:", err);
       setSubmitError(err.message || "Failed to submit application");
+      setSubmitSuccess(false);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ... (keep all your render functions the same until renderQuestionInput) ...
-
   const renderQuestionInput = useCallback(
     (question) => {
-      if (question.QuestionId === 13) {
-        // Special handling for the image upload question
-        return (
-          <Stack spacing={2}>
-            {showCamera ? (
-              <Stack spacing={2}>
-                <Typography variant="body2" sx={{ color: "#6a1b9a" }}>
-                  Capturing: {currentCaptureLabel}
-                </Typography>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  style={{ width: "100%", borderRadius: "12px" }}
-                />
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="contained"
-                    onClick={handleCapturePhoto}
-                    sx={{
-                      backgroundColor: "#6a1b9a",
-                      "&:hover": { backgroundColor: "#7b1fa2" },
-                    }}
-                  >
-                    Capture Photo
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    onClick={handleCancelCamera}
-                    sx={{
-                      color: "#6a1b9a",
-                      borderColor: "#6a1b9a",
-                      "&:hover": { borderColor: "#6a1b9a" },
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </Stack>
-              </Stack>
-            ) : (
-              <Stack spacing={2}>
-                {question.Options.map((option) => (
-                  <Stack key={option.OptionId} spacing={1}>
-                    {capturedImages[option.OptionText] && (
-                      <img
-                        src={capturedImages[option.OptionText]}
-                        alt={`Captured ${option.OptionText}`}
-                        style={{
-                          width: "100%",
-                          maxHeight: "200px",
-                          objectFit: "contain",
-                          borderRadius: "12px",
-                          border: `1px solid ${alpha("#6a1b9a", 0.3)}`,
-                        }}
-                      />
-                    )}
-                    <Stack direction="row" spacing={2}>
-                      <Button
-                        fullWidth
-                        size="small"
-                        variant="outlined"
-                        component="label"
-                        sx={{
-                          borderColor: alpha("#6a1b9a", 0.3),
-                          color: "#6a1b9a",
-                          "&:hover": {
-                            borderColor: "#6a1b9a",
-                            backgroundColor: alpha("#6a1b9a", 0.04),
-                          },
-                        }}
-                      >
-                        Upload {option.OptionText}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          hidden
-                          onChange={(e) =>
-                            handleFileUpload(e, option.OptionText)
-                          }
-                        />
-                      </Button>
-                      <Button
-                        fullWidth
-                        size="small"
-                        variant="outlined"
-                        onClick={() => handleStartCamera(option.OptionText)}
-                        sx={{
-                          borderColor: alpha("#6a1b9a", 0.3),
-                          color: "#6a1b9a",
-                          "&:hover": {
-                            borderColor: "#6a1b9a",
-                            backgroundColor: alpha("#6a1b9a", 0.04),
-                          },
-                        }}
-                      >
-                        Capture {option.OptionText}
-                      </Button>
-                    </Stack>
-                  </Stack>
-                ))}
-              </Stack>
-            )}
-          </Stack>
-        );
-      }
-
       const needsSpecifyField = (optionText) => {
         return /\(please (specify|list)\)/i.test(optionText);
       };
 
+      if (question.QuestionId === 13) {
+        return (
+          <Box
+            id={`question-${question.QuestionId}`}
+            sx={{
+              border: validationErrors[question.QuestionId]
+                ? "1px solid #f44336"
+                : "none",
+              borderRadius: "8px",
+              padding: validationErrors[question.QuestionId] ? "16px" : "0",
+              backgroundColor: validationErrors[question.QuestionId]
+                ? "rgba(244, 67, 54, 0.04)"
+                : "transparent",
+            }}
+          >
+            {validationErrors[question.QuestionId] && (
+              <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                {validationErrors[question.QuestionId]}
+              </Typography>
+            )}
+            <Stack spacing={2}>
+              {showCamera ? (
+                <Stack spacing={2}>
+                  <Typography variant="body2" sx={{ color: "#6a1b9a" }}>
+                    Capturing: {currentCaptureLabel}
+                  </Typography>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    style={{ width: "100%", borderRadius: "12px" }}
+                  />
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="contained"
+                      onClick={handleCapturePhoto}
+                      sx={{
+                        backgroundColor: "#6a1b9a",
+                        "&:hover": { backgroundColor: "#7b1fa2" },
+                      }}
+                    >
+                      Capture Photo
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={handleCancelCamera}
+                      sx={{
+                        color: "#6a1b9a",
+                        borderColor: "#6a1b9a",
+                        "&:hover": { borderColor: "#6a1b9a" },
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </Stack>
+                </Stack>
+              ) : (
+                <Stack spacing={2}>
+                  {question.Options.map((option) => (
+                    <Stack key={option.OptionId} spacing={1}>
+                      {capturedImages[option.OptionText] && (
+                        <img
+                          src={capturedImages[option.OptionText]}
+                          alt={`Captured ${option.OptionText}`}
+                          style={{
+                            width: "100%",
+                            maxHeight: "200px",
+                            objectFit: "contain",
+                            borderRadius: "12px",
+                            border: `1px solid ${alpha("#6a1b9a", 0.3)}`,
+                          }}
+                        />
+                      )}
+                      <Stack direction="row" spacing={2}>
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          component="label"
+                          sx={{
+                            borderColor: alpha("#6a1b9a", 0.3),
+                            color: "#6a1b9a",
+                            "&:hover": {
+                              borderColor: "#6a1b9a",
+                              backgroundColor: alpha("#6a1b9a", 0.04),
+                            },
+                          }}
+                        >
+                          Upload {option.OptionText}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            hidden
+                            onChange={(e) =>
+                              handleFileUpload(e, option.OptionText)
+                            }
+                          />
+                        </Button>
+                        <Button
+                          fullWidth
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleStartCamera(option.OptionText)}
+                          sx={{
+                            borderColor: alpha("#6a1b9a", 0.3),
+                            color: "#6a1b9a",
+                            "&:hover": {
+                              borderColor: "#6a1b9a",
+                              backgroundColor: alpha("#6a1b9a", 0.04),
+                            },
+                          }}
+                        >
+                          Capture {option.OptionText}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Box>
+        );
+      }
+
       switch (question.QuestionType) {
         case "multiple_choice":
           return (
-            <Grid container spacing={1}>
-              {question.Options.map((option) => {
-                const isSelected = formData.answers[
-                  question.QuestionId
-                ]?.includes(option.OptionId);
-                const shouldShowSpecify =
-                  isSelected && needsSpecifyField(option.OptionText);
-
-                return (
-                  <Grid item xs={12} key={option.OptionId}>
-                    <Box>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={(e) => {
-                              handleCheckboxChange(
-                                question.QuestionId,
-                                option.OptionId,
-                                e.target.checked
-                              );
-                              if (!e.target.checked) {
-                                handleSpecifyTextChange(
-                                  `${question.QuestionId}_${option.OptionId}`,
-                                  ""
-                                );
-                              }
-                            }}
-                          />
-                        }
-                        label={option.OptionText}
-                      />
-                      {shouldShowSpecify && (
-                        <MultilineSpecifyField
-                          multiline
-                          minRows={2}
-                          placeholder="Please specify..."
-                          variant="outlined"
-                          value={
-                            specifyTexts[
-                              `${question.QuestionId}_${option.OptionId}`
-                            ] || ""
-                          }
-                          onChange={(e) =>
-                            handleSpecifyTextChange(
-                              `${question.QuestionId}_${option.OptionId}`,
-                              e.target.value
-                            )
-                          }
-                        />
-                      )}
-                    </Box>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          );
-
-        case "single_choice":
-          return (
-            <FormControl component="fieldset" fullWidth>
-              <RadioGroup
-                value={formData.answers[question.QuestionId] || ""}
-                onChange={(e) => {
-                  handleAnswerChange(question.QuestionId, e.target.value);
-                  const selectedOption = question.Options.find(
-                    (opt) => opt.OptionId === Number(e.target.value)
-                  );
-                  if (
-                    !selectedOption ||
-                    !needsSpecifyField(selectedOption.OptionText)
-                  ) {
-                    handleSpecifyTextChange(question.QuestionId, "");
-                  }
-                }}
-              >
+            <Box
+              id={`question-${question.QuestionId}`}
+              sx={{
+                border: validationErrors[question.QuestionId]
+                  ? "1px solid #f44336"
+                  : "none",
+                borderRadius: "8px",
+                padding: validationErrors[question.QuestionId] ? "16px" : "0",
+                backgroundColor: validationErrors[question.QuestionId]
+                  ? "rgba(244, 67, 54, 0.04)"
+                  : "transparent",
+              }}
+            >
+              {validationErrors[question.QuestionId] && (
+                <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                  {validationErrors[question.QuestionId]}
+                </Typography>
+              )}
+              <Grid container spacing={1}>
                 {question.Options.map((option) => {
-                  const isSelected =
-                    Number(formData.answers[question.QuestionId]) ===
-                    option.OptionId;
+                  const isSelected = formData.answers[
+                    question.QuestionId
+                  ]?.includes(option.OptionId);
                   const shouldShowSpecify =
                     isSelected && needsSpecifyField(option.OptionText);
 
                   return (
-                    <Box key={option.OptionId} sx={{ mb: 0.5 }}>
-                      <FormControlLabel
-                        value={option.OptionId}
-                        control={<Radio size="small" />}
-                        label={option.OptionText}
-                      />
-                      {shouldShowSpecify && (
-                        <MultilineSpecifyField
-                          fullWidth
-                          size="small"
-                          placeholder="Please specify..."
-                          variant="outlined"
-                          value={specifyTexts[question.QuestionId] || ""}
-                          onChange={(e) =>
-                            handleSpecifyTextChange(
-                              question.QuestionId,
-                              e.target.value
-                            )
+                    <Grid item xs={12} key={option.OptionId}>
+                      <Box>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={(e) => {
+                                handleCheckboxChange(
+                                  question.QuestionId,
+                                  option.OptionId,
+                                  e.target.checked
+                                );
+                                if (!e.target.checked) {
+                                  handleSpecifyTextChange(
+                                    `${question.QuestionId}_${option.OptionId}`,
+                                    ""
+                                  );
+                                }
+                              }}
+                            />
                           }
+                          label={option.OptionText}
                         />
-                      )}
-                    </Box>
+                        {shouldShowSpecify && (
+                          <MultilineSpecifyField
+                            multiline
+                            minRows={2}
+                            placeholder="Please specify..."
+                            variant="outlined"
+                            value={
+                              specifyTexts[
+                                `${question.QuestionId}_${option.OptionId}`
+                              ] || ""
+                            }
+                            onChange={(e) =>
+                              handleSpecifyTextChange(
+                                `${question.QuestionId}_${option.OptionId}`,
+                                e.target.value
+                              )
+                            }
+                            error={
+                              !!validationErrors[
+                                `${question.QuestionId}_${option.OptionId}`
+                              ]
+                            }
+                            helperText={
+                              validationErrors[
+                                `${question.QuestionId}_${option.OptionId}`
+                              ]
+                            }
+                          />
+                        )}
+                      </Box>
+                    </Grid>
                   );
                 })}
-              </RadioGroup>
-            </FormControl>
+              </Grid>
+            </Box>
+          );
+
+        case "single_choice":
+          return (
+            <Box
+              id={`question-${question.QuestionId}`}
+              sx={{
+                border: validationErrors[question.QuestionId]
+                  ? "1px solid #f44336"
+                  : "none",
+                borderRadius: "8px",
+                padding: validationErrors[question.QuestionId] ? "16px" : "0",
+                backgroundColor: validationErrors[question.QuestionId]
+                  ? "rgba(244, 67, 54, 0.04)"
+                  : "transparent",
+              }}
+            >
+              {validationErrors[question.QuestionId] && (
+                <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                  {validationErrors[question.QuestionId]}
+                </Typography>
+              )}
+              <FormControl component="fieldset" fullWidth>
+                <RadioGroup
+                  value={formData.answers[question.QuestionId] || ""}
+                  onChange={(e) => {
+                    handleAnswerChange(question.QuestionId, e.target.value);
+                    const selectedOption = question.Options.find(
+                      (opt) => opt.OptionId === Number(e.target.value)
+                    );
+                    if (
+                      !selectedOption ||
+                      !needsSpecifyField(selectedOption.OptionText)
+                    ) {
+                      handleSpecifyTextChange(question.QuestionId, "");
+                    }
+                  }}
+                >
+                  {question.Options.map((option) => {
+                    const isSelected =
+                      Number(formData.answers[question.QuestionId]) ===
+                      option.OptionId;
+                    const shouldShowSpecify =
+                      isSelected && needsSpecifyField(option.OptionText);
+
+                    return (
+                      <Box key={option.OptionId} sx={{ mb: 0.5 }}>
+                        <FormControlLabel
+                          value={option.OptionId}
+                          control={<Radio size="small" />}
+                          label={option.OptionText}
+                        />
+                        {shouldShowSpecify && (
+                          <MultilineSpecifyField
+                            fullWidth
+                            size="small"
+                            placeholder="Please specify..."
+                            variant="outlined"
+                            value={specifyTexts[question.QuestionId] || ""}
+                            onChange={(e) =>
+                              handleSpecifyTextChange(
+                                question.QuestionId,
+                                e.target.value
+                              )
+                            }
+                            error={!!validationErrors[question.QuestionId]}
+                            helperText={validationErrors[question.QuestionId]}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </RadioGroup>
+              </FormControl>
+            </Box>
           );
         default:
           return null;
       }
     },
-    [formData.answers, specifyTexts, showCamera, capturedImages]
+    [
+      formData.answers,
+      specifyTexts,
+      showCamera,
+      capturedImages,
+      validationErrors,
+    ]
   );
 
   return (
     <Grid container spacing={3} sx={{ background: "#fafafa" }}>
-      <Grid xs={12}>
+      <Grid item xs={12}>
         <Stack sx={{ gap: 3 }}>
           <StyledMainCard
             title="Patient Onboarding Journey"
@@ -933,7 +1022,7 @@ const PatientSurvey = () => {
 
               <Stack spacing={2} sx={{ mt: 2 }}>
                 {sortedQuestions
-                  .filter((q) => q.DisplayOrder <= 7 && q.QuestionId !== 13) // Exclude QuestionId 13
+                  .filter((q) => q.DisplayOrder <= 7 && q.QuestionId !== 13)
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
                       <Typography
@@ -971,7 +1060,7 @@ const PatientSurvey = () => {
                     (q) =>
                       q.DisplayOrder > 7 &&
                       q.DisplayOrder <= 12 &&
-                      q.QuestionId !== 13 // Exclude QuestionId 13
+                      q.QuestionId !== 13
                   )
                   .map((question) => (
                     <React.Fragment key={question.QuestionText}>
@@ -1005,9 +1094,8 @@ const PatientSurvey = () => {
               </Typography>
 
               <Stack spacing={2} sx={{ mt: 2 }}>
-                {/* Only include QuestionId 13 in Step 4 */}
                 {sortedQuestions
-                  .filter((q) => q.QuestionId === 13) // Include QuestionId 13
+                  .filter((q) => q.QuestionId === 13)
                   .map((question) => (
                     <React.Fragment key={`image-${question.QuestionId}`}>
                       <Typography
@@ -1020,7 +1108,6 @@ const PatientSurvey = () => {
                     </React.Fragment>
                   ))}
 
-                {/* Consent checkboxes */}
                 {sortedQuestions
                   .filter(
                     (q) =>
@@ -1028,23 +1115,48 @@ const PatientSurvey = () => {
                       q.QuestionText.toLowerCase().includes("agree")
                   )
                   .map((question) => (
-                    <FormControlLabel
+                    <Box
                       key={`consent-${question.QuestionId}`}
-                      control={
-                        <StyledCheckbox
-                          checked={
-                            formData.consents[question.QuestionId] || false
-                          }
-                          onChange={(e) =>
-                            handleConsentChange(
-                              question.QuestionId,
-                              e.target.checked
-                            )
-                          }
-                        />
-                      }
-                      label={question.QuestionText}
-                    />
+                      id={`question-${question.QuestionId}`}
+                      sx={{
+                        border: validationErrors[question.QuestionId]
+                          ? "1px solid #f44336"
+                          : "none",
+                        borderRadius: "8px",
+                        padding: validationErrors[question.QuestionId]
+                          ? "16px"
+                          : "0",
+                        backgroundColor: validationErrors[question.QuestionId]
+                          ? "rgba(244, 67, 54, 0.04)"
+                          : "transparent",
+                      }}
+                    >
+                      {validationErrors[question.QuestionId] && (
+                        <Typography
+                          variant="body2"
+                          color="error"
+                          sx={{ mb: 1 }}
+                        >
+                          {validationErrors[question.QuestionId]}
+                        </Typography>
+                      )}
+                      <FormControlLabel
+                        control={
+                          <StyledCheckbox
+                            checked={
+                              formData.consents[question.QuestionId] || false
+                            }
+                            onChange={(e) =>
+                              handleConsentChange(
+                                question.QuestionId,
+                                e.target.checked
+                              )
+                            }
+                          />
+                        }
+                        label={question.QuestionText}
+                      />
+                    </Box>
                   ))}
               </Stack>
             </StyledMainCard>
@@ -1105,7 +1217,6 @@ const PatientSurvey = () => {
             </StyledMainCard>
           )}
 
-          {/* Navigation buttons */}
           <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
             <NavigationButton
               variant="outlined"
@@ -1129,17 +1240,14 @@ const PatientSurvey = () => {
                 onClick={handleNext}
                 sx={{
                   backgroundColor: "#6a1b9a",
-                  "&:hover": {
-                    backgroundColor: "#7b1fa2",
-                  },
+                  "&:hover": { backgroundColor: "#7b1fa2" },
                 }}
               >
                 Next Step
               </NavigationButton>
             ) : (
               <ColorButton
-                fullWidth
-                size="medium"
+                size="small"
                 onClick={handleSubmitConfirmation}
                 disabled={isSubmitting}
               >
@@ -1158,11 +1266,15 @@ const PatientSurvey = () => {
             )}
           </Stack>
 
-          {submitError && (
+          {submitError ? (
             <Alert severity="error" sx={{ mt: 2 }}>
               {submitError}
             </Alert>
-          )}
+          ) : submitSuccess ? (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              Application saved successfully!
+            </Alert>
+          ) : null}
 
           <StyledMainCard>
             <Typography variant="body1" gutterBottom sx={{ color: "#555" }}>
@@ -1220,7 +1332,6 @@ const PatientSurvey = () => {
         </Stack>
       </Grid>
 
-      {/* Confirmation Dialog */}
       <Dialog
         open={openConfirmation}
         onClose={handleCloseConfirmation}
@@ -1247,9 +1358,7 @@ const PatientSurvey = () => {
             sx={{
               backgroundColor: "#6a1b9a",
               color: "white",
-              "&:hover": {
-                backgroundColor: "#7b1fa2",
-              },
+              "&:hover": { backgroundColor: "#7b1fa2" },
             }}
           >
             Confirm Submission

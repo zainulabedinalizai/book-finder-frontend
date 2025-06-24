@@ -100,14 +100,13 @@ const PrescriptionListDoc = () => {
 
     // The API returns paths like "/Assets/PatientImages/..."
     // The correct base URL is "https://portal.medskls.com"
-    const baseUrl = "https://portal.medskls.com/API";
+    const baseUrl = "https://portal.medskls.com:441/API";
 
     // Combine them, ensuring no double slashes
     const fullUrl = `${baseUrl}${
       imagePath.startsWith("/") ? "" : "/"
     }${imagePath}`;
 
-    console.log("Constructed image URL:", fullUrl);
     return fullUrl;
   };
 
@@ -157,7 +156,6 @@ const PrescriptionListDoc = () => {
   const fetchPatientAnswers = async (applicationId) => {
     try {
       setAnswersLoading(true);
-      console.log("Fetching answers for application ID:", applicationId);
 
       const response = await submittedAnswersAPI.getByApplicationId(
         applicationId
@@ -985,10 +983,6 @@ const PrescriptionListDoc = () => {
                                             }}
                                             onError={(e) => {
                                               e.target.onerror = null;
-                                              console.error(
-                                                "Failed to load front image:",
-                                                frontImage
-                                              );
                                             }}
                                           />
                                         </CardContent>
@@ -1023,10 +1017,6 @@ const PrescriptionListDoc = () => {
                                             onError={(e) => {
                                               e.target.onerror = null;
                                               e.target.src = "";
-                                              console.error(
-                                                "Failed to load left image:",
-                                                leftImage
-                                              );
                                             }}
                                           />
                                         </CardContent>
@@ -1061,10 +1051,6 @@ const PrescriptionListDoc = () => {
                                             onError={(e) => {
                                               e.target.onerror = null;
                                               e.target.src = "";
-                                              console.error(
-                                                "Failed to load right image:",
-                                                rightImage
-                                              );
                                             }}
                                           />
                                         </CardContent>
