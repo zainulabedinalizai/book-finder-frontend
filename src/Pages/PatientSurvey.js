@@ -119,6 +119,7 @@ const PatientSurvey = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarType, setSnackbarType] = useState("");
   const totalSteps = 5;
 
   const [formData, setFormData] = useState({
@@ -348,7 +349,6 @@ const PatientSurvey = () => {
       }
     }
   };
-
   const handleNext = () => {
     if (validateCurrentStep()) {
       if (currentStep < totalSteps) {
@@ -356,6 +356,7 @@ const PatientSurvey = () => {
         setValidationErrors({});
       }
     } else {
+      setSnackbarType("error");
       setSnackbarMessage(
         "Please complete all required fields before proceeding"
       );
@@ -655,11 +656,14 @@ const PatientSurvey = () => {
       };
 
       const response = await patientAPI.savePatientApplication(submissionData);
-
       if (response.data && response.data.success) {
-        // Check response.data.success
         setSubmitSuccess(true);
         setSubmitError(null);
+        setSnackbarType("success");
+        setSnackbarMessage(
+          "Thank you for your submission! Our team will review your information and get back to you soon."
+        );
+        setOpenSnackbar(true);
       } else {
         throw new Error(
           response.data?.message || "Failed to submit application"
@@ -1365,6 +1369,26 @@ const PatientSurvey = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={5000}
+        onClose={() => setOpenSnackbar(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setOpenSnackbar(false)}
+          severity={snackbarType}
+          sx={{
+            width: "100%",
+            backgroundColor: snackbarType === "success" ? "#4caf50" : "#f44336",
+            color: "white",
+            "& .MuiAlert-icon": { color: "white" },
+          }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Grid>
   );
 };

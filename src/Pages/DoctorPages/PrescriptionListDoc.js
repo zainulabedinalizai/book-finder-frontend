@@ -52,6 +52,7 @@ import {
 import { useAuth } from "../../Context/AuthContext";
 import { patientAPI, submittedAnswersAPI } from "../../Api/api";
 import { UploadEmployeeFiles } from "../../Api/api";
+import { ImageModal } from "./ImageModal";
 
 const ROLES = {
   ADMIN: 2,
@@ -86,6 +87,47 @@ const PrescriptionListDoc = () => {
   const [answersDialogOpen, setAnswersDialogOpen] = useState(false);
   const [patientAnswers, setPatientAnswers] = useState([]);
   const [answersLoading, setAnswersLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [images, setImages] = useState([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (selectedImage) {
+        if (e.key === "ArrowRight") {
+          handleNext();
+        } else if (e.key === "ArrowLeft") {
+          handlePrev();
+        } else if (e.key === "Escape") {
+          setSelectedImage(null);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedImage, currentImageIndex, images]);
+
+  // Replace your current setSelectedImage calls with this function
+  const handleImageClick = (imageUrl, index) => {
+    setCurrentImageIndex(index);
+    setSelectedImage(imageUrl);
+  };
+
+  const handleNext = () => {
+    setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    setSelectedImage(images[currentImageIndex + 1]?.url || images[0]?.url);
+  };
+
+  const handlePrev = () => {
+    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    setSelectedImage(
+      images[currentImageIndex - 1]?.url || images[images.length - 1]?.url
+    );
+  };
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) {
@@ -180,13 +222,24 @@ const PrescriptionListDoc = () => {
     }
   };
 
-  const handleViewAnswers = (app) => {
+  const handleViewAnswers = async (app) => {
     console.log("Application data being viewed:", app);
-
     setPatientAnswers([]);
     setSelectedApp(app);
-    fetchPatientAnswers(app.application_id);
-    setAnswersDialogOpen(true);
+    setImagesLoading(true);
+
+    try {
+      await fetchPatientAnswers(app.application_id);
+      setAnswersDialogOpen(true);
+    } catch (error) {
+      console.error("Error loading patient data:", error);
+      setImagesLoading(false);
+      setSnackbar({
+        open: true,
+        message: "Failed to load patient images",
+        severity: "error",
+      });
+    }
   };
 
   const fetchStatusOptions = async () => {
@@ -935,6 +988,23 @@ const PrescriptionListDoc = () => {
                       rightImage,
                     });
 
+                    const imageArray = [
+                      { url: getImageUrl(frontImage), label: "Front View" },
+                      { url: getImageUrl(leftImage), label: "Left Side View" },
+                      {
+                        url: getImageUrl(rightImage),
+                        label: "Right Side View",
+                      },
+                    ].filter((img) => img.url);
+
+                    // Only set images if we have some
+                    if (
+                      imageArray.length > 0 &&
+                      JSON.stringify(imageArray) !== JSON.stringify(images)
+                    ) {
+                      setImages(imageArray);
+                    }
+
                     return (
                       <React.Fragment key={questionId}>
                         <ListItem alignItems="flex-start" sx={{ py: 2 }}>
@@ -960,6 +1030,22 @@ const PrescriptionListDoc = () => {
                                         elevation={0}
                                         sx={{
                                           border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the front image in the images array
+                                          const frontIndex = images.findIndex(
+                                            (img) => img.label === "Front View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(frontImage),
+                                            frontIndex
+                                          );
                                         }}
                                       >
                                         <CardContent sx={{ p: 1 }}>
@@ -967,6 +1053,7 @@ const PrescriptionListDoc = () => {
                                             variant="body2"
                                             color="text.primary"
                                             gutterBottom
+                                            sx={{ fontWeight: 600 }}
                                           >
                                             Front View
                                           </Typography>
@@ -974,27 +1061,47 @@ const PrescriptionListDoc = () => {
                                             src={getImageUrl(frontImage)}
                                             alt="Front View"
                                             style={{
-                                              maxWidth: "100%",
-                                              maxHeight: 200,
+                                              width: "100%",
+                                              height: "200px",
                                               borderRadius: 1,
-                                              objectFit: "contain",
+                                              objectFit: "cover",
                                               backgroundColor:
                                                 theme.palette.grey[100],
                                             }}
                                             onError={(e) => {
                                               e.target.onerror = null;
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
                                             }}
                                           />
                                         </CardContent>
                                       </Card>
                                     </Grid>
                                   )}
+
                                   {leftImage && (
                                     <Grid item xs={12} md={4}>
                                       <Card
                                         elevation={0}
                                         sx={{
                                           border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the left image in the images array
+                                          const leftIndex = images.findIndex(
+                                            (img) =>
+                                              img.label === "Left Side View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(leftImage),
+                                            leftIndex
+                                          );
                                         }}
                                       >
                                         <CardContent sx={{ p: 1 }}>
@@ -1002,6 +1109,7 @@ const PrescriptionListDoc = () => {
                                             variant="body2"
                                             color="text.primary"
                                             gutterBottom
+                                            sx={{ fontWeight: 600 }}
                                           >
                                             Left Side View
                                           </Typography>
@@ -1009,26 +1117,47 @@ const PrescriptionListDoc = () => {
                                             src={getImageUrl(leftImage)}
                                             alt="Left Side View"
                                             style={{
-                                              maxWidth: "100%",
-                                              maxHeight: 200,
+                                              width: "100%",
+                                              height: "200px",
                                               borderRadius: 1,
-                                              objectFit: "contain",
+                                              objectFit: "cover",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
                                             }}
                                             onError={(e) => {
                                               e.target.onerror = null;
-                                              e.target.src = "";
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
                                             }}
                                           />
                                         </CardContent>
                                       </Card>
                                     </Grid>
                                   )}
+
                                   {rightImage && (
                                     <Grid item xs={12} md={4}>
                                       <Card
                                         elevation={0}
                                         sx={{
                                           border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the right image in the images array
+                                          const rightIndex = images.findIndex(
+                                            (img) =>
+                                              img.label === "Right Side View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(rightImage),
+                                            rightIndex
+                                          );
                                         }}
                                       >
                                         <CardContent sx={{ p: 1 }}>
@@ -1036,6 +1165,7 @@ const PrescriptionListDoc = () => {
                                             variant="body2"
                                             color="text.primary"
                                             gutterBottom
+                                            sx={{ fontWeight: 600 }}
                                           >
                                             Right Side View
                                           </Typography>
@@ -1043,14 +1173,17 @@ const PrescriptionListDoc = () => {
                                             src={getImageUrl(rightImage)}
                                             alt="Right Side View"
                                             style={{
-                                              maxWidth: "100%",
-                                              maxHeight: 200,
+                                              width: "100%",
+                                              height: "200px",
                                               borderRadius: 1,
-                                              objectFit: "contain",
+                                              objectFit: "cover",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
                                             }}
                                             onError={(e) => {
                                               e.target.onerror = null;
-                                              e.target.src = "";
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
                                             }}
                                           />
                                         </CardContent>
@@ -1164,6 +1297,18 @@ const PrescriptionListDoc = () => {
           <Typography fontWeight={500}>{snackbar.message}</Typography>
         </Alert>
       </Snackbar>
+
+      <ImageModal
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        hasNext={currentImageIndex < images.length - 1}
+        hasPrev={currentImageIndex > 0}
+        currentIndex={currentImageIndex}
+        totalImages={images.length}
+        loading={imagesLoading}
+      />
     </Box>
   );
 };
