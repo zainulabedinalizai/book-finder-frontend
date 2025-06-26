@@ -26,6 +26,10 @@ import { alpha } from "@mui/material/styles";
 import { useAuth } from "../Context/AuthContext";
 import { patientAPI, questionAPI, UploadEmployeeFiles } from "../Api/api";
 import MainCard from "../Components/MainCard";
+import {
+  sendEmailNotification,
+  newPatientSubmissionTemplate,
+} from "../Services/emailService";
 
 // Styled Components
 const ColorButton = styled(Button)(({ theme }) => ({
@@ -580,6 +584,7 @@ const PatientSurvey = () => {
       if (!questions || questions.length === 0)
         throw new Error("Questions not loaded yet");
 
+      // 1. Prepare and submit the patient application (existing code)
       const responses = [];
 
       Object.entries(formData.answers).forEach(([questionId, answer]) => {
@@ -655,20 +660,44 @@ const PatientSurvey = () => {
         ),
       };
 
+      // 2. Submit the application (existing code)
       const response = await patientAPI.savePatientApplication(submissionData);
-      if (response.data && response.data.success) {
-        setSubmitSuccess(true);
-        setSubmitError(null);
-        setSnackbarType("success");
-        setSnackbarMessage(
-          "Thank you for your submission! Our team will review your information and get back to you soon."
-        );
-        setOpenSnackbar(true);
-      } else {
+      if (!response.data?.success) {
         throw new Error(
           response.data?.message || "Failed to submit application"
         );
       }
+
+      // 3. Only proceed with email notification if submission was successful
+      setSubmitSuccess(true);
+      setSubmitError(null);
+      setSnackbarType("success");
+
+      // 4. Use your reusable email service (new code)
+      const patientName = formData.personalInfo.fullName || "New Patient";
+      const template = newPatientSubmissionTemplate(patientName);
+
+      const emailResult = await sendEmailNotification({
+        recipientRoles: ["Physician", "Admin"],
+        subject: template.subject,
+        messageBody: template.messageBody, // <- renamed field
+        patientName, // Pass patient name for EmailJS template
+      });
+
+      // 5. Update success message based on email results
+      if (emailResult.success) {
+        setSnackbarMessage(
+          `Thank you for your submission! ${emailResult.sentCount} doctor(s) notified.`
+        );
+      } else {
+        // Fallback message if email sending fails
+        setSnackbarMessage(
+          "Thank you for your submission! Our team will review your information."
+        );
+        console.warn("Email notification issues:", emailResult.message);
+      }
+
+      setOpenSnackbar(true);
     } catch (err) {
       console.error("Submission error:", err);
       setSubmitError(err.message || "Failed to submit application");
