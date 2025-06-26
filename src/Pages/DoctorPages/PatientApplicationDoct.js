@@ -400,6 +400,12 @@ const PatientApplicationDoc = () => {
                               color: theme.palette.warning.main,
                               backgroundColor: theme.palette.common.white,
                             }),
+                            ...(app.status_id === 2 && {
+                              // Reviewed by Doctor
+                              borderColor: theme.palette.primary.main,
+                              color: theme.palette.primary.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
                             ...(app.status_id === 3 && {
                               // Approved by Doctor
                               borderColor: theme.palette.primary.main,
@@ -416,6 +422,12 @@ const PatientApplicationDoc = () => {
                               // Sent to Sales
                               borderColor: theme.palette.info.main,
                               color: theme.palette.info.main,
+                              backgroundColor: theme.palette.common.white,
+                            }),
+                            ...(app.status_id === 7 && {
+                              // Completed
+                              borderColor: theme.palette.success.main,
+                              color: theme.palette.success.main,
                               backgroundColor: theme.palette.common.white,
                             }),
                           }}
