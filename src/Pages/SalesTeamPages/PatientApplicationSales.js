@@ -336,14 +336,8 @@ const PatientApplicationSales = () => {
                               gap: 2,
                             }}
                           >
-                            <Avatar
-                              sx={{
-                                bgcolor: theme.palette.primary.main,
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              {app.application_title?.charAt(0) || "A"}
+                            <Avatar sx={{ bgcolor: "primary.main" }}>
+                              {app.FullName?.charAt(0) || "A"}
                             </Avatar>
                             <Box>
                               <Typography fontWeight={600}>
@@ -353,7 +347,8 @@ const PatientApplicationSales = () => {
                                 variant="body2"
                                 color="text.secondary"
                               >
-                                ID: {app.application_id}
+                                ID: {app.application_id} -{" "}
+                                {app.FullName || "N/A"}
                               </Typography>
                             </Box>
                           </Box>

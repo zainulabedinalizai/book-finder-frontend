@@ -51,6 +51,21 @@ const AppStatsPatient = () => {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const getStatusColor = (statusId) => {
+    switch (statusId) {
+      case 1:
+        return "warning"; // Pending
+      case 3:
+        return "primary"; // Approved by Doctor
+      case 4:
+        return "error"; // Rejected by Pharmacist
+      case 5:
+        return "info"; // Sent to Sales
+      default:
+        return "default";
+    }
+  };
+
   const fetchApplications = async () => {
     try {
       if (!user?.UserId) {
@@ -60,12 +75,18 @@ const AppStatsPatient = () => {
       setLoading(true);
       setError(null);
 
-      const response = await patientAPI.getPatientApplication({
+      const response = await patientAPI.getRoleWiseApplication({
+        RoleID: user.RoleId,
         UserID: user.UserId,
       });
 
       if (response.data.success) {
-        setApplications(response.data.data || []);
+        // Format the data to include both ID and FullName
+        const formattedData = response.data.data.map((app) => ({
+          ...app,
+          displayText: `ID: ${app.application_id} - ${app.FullName}`,
+        }));
+        setApplications(formattedData);
       } else {
         throw new Error(
           response.data.message || "Failed to fetch applications"
@@ -104,7 +125,7 @@ const AppStatsPatient = () => {
   const filteredApplications = applications.filter((app) => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      app.application_title?.toLowerCase().includes(searchLower) ||
+      app.displayText?.toLowerCase().includes(searchLower) ||
       app.SubmittedDate?.toLowerCase().includes(searchLower) ||
       app.status?.toLowerCase().includes(searchLower)
     );
@@ -118,40 +139,8 @@ const AppStatsPatient = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "pending":
-        return "warning";
-      case "approved":
-        return "success";
-      case "rejected":
-        return "error";
-      case "reviewedbydoctor":
-        return "primary";
-      case "forwardedtosales":
-        return "info";
-      case "completed":
-        return "success";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "approved":
-      case "completed":
-        return <CheckCircleIcon fontSize="small" />;
-      case "rejected":
-        return <CancelIcon fontSize="small" />;
-      default:
-        return null;
-    }
-  };
-
   const getStatusChipStyles = (status, theme) => {
     const statusLower = status?.toLowerCase();
-
     const baseStyles = {
       fontWeight: 500,
       borderRadius: 1,
@@ -163,7 +152,6 @@ const AppStatsPatient = () => {
       case "pending":
         return {
           ...baseStyles,
-          variant: "outlined",
           borderColor: theme.palette.warning.main,
           color: theme.palette.warning.main,
         };
@@ -171,28 +159,24 @@ const AppStatsPatient = () => {
       case "completed":
         return {
           ...baseStyles,
-          variant: "outlined",
           borderColor: theme.palette.success.main,
           color: theme.palette.success.main,
         };
       case "rejected":
         return {
           ...baseStyles,
-          variant: "outlined",
           borderColor: theme.palette.error.main,
           color: theme.palette.error.main,
         };
       case "reviewedbydoctor":
         return {
           ...baseStyles,
-          variant: "outlined",
           borderColor: theme.palette.primary.main,
           color: theme.palette.primary.main,
         };
       case "forwardedtosales":
         return {
           ...baseStyles,
-          variant: "outlined",
           borderColor: theme.palette.info.main,
           color: theme.palette.info.main,
         };
@@ -286,11 +270,7 @@ const AppStatsPatient = () => {
         {!user?.UserId ? (
           <Alert
             severity="warning"
-            sx={{
-              m: 2,
-              borderRadius: 2,
-              boxShadow: 1,
-            }}
+            sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}
           >
             Please log in to view your applications
           </Alert>
@@ -301,198 +281,98 @@ const AppStatsPatient = () => {
               justifyContent: "center",
               alignItems: "center",
               minHeight: "200px",
-              backgroundColor: "background.paper",
-              borderRadius: 2,
-              p: 4,
             }}
           >
             <CircularProgress size={60} />
           </Box>
         ) : error ? (
-          <Alert
-            severity="error"
-            sx={{
-              m: 2,
-              borderRadius: 2,
-              boxShadow: 1,
-            }}
-          >
+          <Alert severity="error" sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}>
             {error}
           </Alert>
         ) : applications.length === 0 ? (
-          <Alert
-            severity="info"
-            sx={{
-              m: 2,
-              borderRadius: 2,
-              boxShadow: 1,
-            }}
-          >
+          <Alert severity="info" sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}>
             No applications found
           </Alert>
-        ) : isSmallScreen ? (
-          // Mobile view - card list
-          <Box sx={{ p: 2 }}>
-            {filteredApplications
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((app, index) => (
-                <Paper
-                  key={index}
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    borderRadius: 2,
-                    boxShadow: 1,
-                  }}
-                >
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
-                    <Avatar
-                      sx={{
-                        bgcolor: "primary.main",
-                        width: 32,
-                        height: 32,
-                      }}
-                    >
-                      {app.application_title?.charAt(0) || "A"}
-                    </Avatar>
-                    <Typography variant="subtitle2" noWrap fontWeight={500}>
-                      {app.application_title}
-                    </Typography>
-                  </Stack>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      {app.SubmittedDate}
-                    </Typography>
-                    <Chip
-                      variant="outlined"
-                      label={app.status}
-                      sx={getStatusChipStyles(app.status, theme)}
-                      icon={getStatusIcon(app.status)}
-                      size="small"
-                    />
-                  </Stack>
-                </Paper>
-              ))}
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredApplications.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              size="small"
-              sx={{
-                "& .MuiTablePagination-toolbar": {
-                  justifyContent: "center",
-                },
-              }}
-            />
-          </Box>
         ) : (
-          // Desktop view - table
           <TableContainer>
             <Table sx={{ minWidth: 750 }}>
-              <TableHead
-                sx={{
-                  backgroundColor: "primary.light",
-                  "& .MuiTableCell-root": {
-                    color: "common.white",
-                    fontWeight: 600,
-                    fontSize: "0.95rem",
-                  },
-                }}
-              >
+              <TableHead sx={{ backgroundColor: "primary.light" }}>
                 <TableRow>
-                  <TableCell>Applicant Title</TableCell>
-                  <TableCell>Submitted Date</TableCell>
-                  <TableCell align="center">Status</TableCell>
+                  <TableCell sx={{ color: "common.white", fontWeight: 600 }}>
+                    Application
+                  </TableCell>
+                  <TableCell sx={{ color: "common.white", fontWeight: 600 }}>
+                    Submitted Date
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ color: "common.white", fontWeight: 600 }}
+                  >
+                    Status
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {filteredApplications
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((app, index) => (
-                    <TableRow
-                      key={index}
-                      hover
-                      sx={{ "&:last-child td": { borderBottom: 0 } }}
-                    >
+                  .map((app) => (
+                    <TableRow key={app.application_id} hover>
                       <TableCell>
                         <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1.5,
-                          }}
+                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
                         >
-                          <Avatar
-                            sx={{
-                              bgcolor: "primary.main",
-                              width: 32,
-                              height: 32,
-                            }}
-                          >
-                            {app.application_title?.charAt(0) || "A"}
+                          <Avatar sx={{ bgcolor: "primary.main" }}>
+                            {app.FullName?.charAt(0) || "A"}
                           </Avatar>
-                          <Typography fontWeight={500}>
-                            {app.application_title}
-                          </Typography>
+                          <Box>
+                            <Typography fontWeight={600}>
+                              {app.application_title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              ID: {app.application_id} - {app.FullName || "N/A"}
+                            </Typography>
+                          </Box>
                         </Box>
                       </TableCell>
                       <TableCell>
                         <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 1,
-                          }}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           <DateRange color="action" fontSize="small" />
-                          <Typography variant="body2">
-                            {app.SubmittedDate}
-                          </Typography>
+                          <Typography>{app.SubmittedDate}</Typography>
                         </Box>
                       </TableCell>
                       <TableCell align="center">
                         <Chip
                           label={app.status}
+                          color={getStatusColor(app.status_id)}
                           variant="outlined"
                           sx={{
                             fontWeight: 500,
                             borderRadius: 1,
-                            ...(app.status === "Pending" && {
+                            // Explicit styling for each status
+                            ...(app.status_id === 1 && {
+                              // Pending
                               borderColor: theme.palette.warning.main,
                               color: theme.palette.warning.main,
                               backgroundColor: theme.palette.common.white,
                             }),
-                            ...(app.status === "ReviewedByDoctor" && {
+                            ...(app.status_id === 3 && {
+                              // Approved by Doctor
                               borderColor: theme.palette.primary.main,
                               color: theme.palette.primary.main,
                               backgroundColor: theme.palette.common.white,
                             }),
-                            ...(app.status === "ForwardedToSales" && {
-                              borderColor: theme.palette.info.main,
-                              color: theme.palette.info.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status === "RejectedBySales" && {
+                            ...(app.status_id === 4 && {
+                              // Rejected by Pharmacist
                               borderColor: theme.palette.error.main,
                               color: theme.palette.error.main,
                               backgroundColor: theme.palette.common.white,
                             }),
-                            ...(app.status === "Completed" && {
-                              borderColor: theme.palette.success.main,
-                              color: theme.palette.success.main,
+                            ...(app.status_id === 5 && {
+                              // Sent to Sales
+                              borderColor: theme.palette.info.main,
+                              color: theme.palette.info.main,
                               backgroundColor: theme.palette.common.white,
                             }),
                           }}
@@ -515,11 +395,6 @@ const AppStatsPatient = () => {
               page={page}
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
-              sx={{
-                "& .MuiTablePagination-toolbar": {
-                  justifyContent: "flex-end",
-                },
-              }}
             />
           </TableContainer>
         )}
@@ -534,15 +409,7 @@ const AppStatsPatient = () => {
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{
-            width: "100%",
-            borderRadius: 2,
-            boxShadow: 3,
-          }}
-          iconMapping={{
-            success: <CheckCircleIcon fontSize="inherit" />,
-            error: <CancelIcon fontSize="inherit" />,
-          }}
+          sx={{ width: "100%", borderRadius: 2, boxShadow: 3 }}
         >
           {snackbar.message}
         </Alert>
