@@ -190,7 +190,7 @@ const App = () => {
               <Route
                 path="/PersonalProfileSaTeam"
                 element={
-                  <PrivateRoute allowedRoles={[27]}>
+                  <PrivateRoute allowedRoles={[23]}>
                     <PersonalProfileSaTeam />
                   </PrivateRoute>
                 }
@@ -198,7 +198,7 @@ const App = () => {
               <Route
                 path="/PatientApplicationSales"
                 element={
-                  <PrivateRoute allowedRoles={[27]}>
+                  <PrivateRoute allowedRoles={[23]}>
                     <PatientApplicationSales />
                   </PrivateRoute>
                 }
@@ -206,7 +206,7 @@ const App = () => {
               <Route
                 path="/AttachInvoiceSales"
                 element={
-                  <PrivateRoute allowedRoles={[27]}>
+                  <PrivateRoute allowedRoles={[23]}>
                     <AddInvoiceSales />
                   </PrivateRoute>
                 }
@@ -214,7 +214,7 @@ const App = () => {
               <Route
                 path="/SendInvoiceToPatient"
                 element={
-                  <PrivateRoute allowedRoles={[27]}>
+                  <PrivateRoute allowedRoles={[23]}>
                     <SendInvoiceToPatient />
                   </PrivateRoute>
                 }

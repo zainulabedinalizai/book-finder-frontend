@@ -128,7 +128,7 @@ const Login = () => {
               display: "flex",
               flexDirection: "column",
               justifyContent: "center",
-              p: isMobile ? 2 : 4,
+              p: 2,
               color: isMobile ? theme.palette.primary.main : "white",
               position: "relative",
               zIndex: 1,
