@@ -456,25 +456,19 @@ const AddInvoicePharma = () => {
                               gap: 2,
                             }}
                           >
-                            <Avatar
-                              sx={{
-                                bgcolor: theme.palette.primary.main,
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              {app.application_title?.charAt(0) || "P"}
+                            <Avatar sx={{ bgcolor: "primary.main" }}>
+                              {app.FullName?.charAt(0) || "A"}
                             </Avatar>
                             <Box>
                               <Typography fontWeight={600}>
-                                {app.application_title ||
-                                  "Untitled Application"}
+                                {app.application_title}
                               </Typography>
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
                               >
-                                ID: {app.application_id}
+                                ID: {app.application_id} -{" "}
+                                {app.FullName || "N/A"}
                               </Typography>
                             </Box>
                           </Box>
@@ -656,14 +650,14 @@ const AddInvoicePharma = () => {
           {actionType === "approve" ? "Approve Invoice" : "Reject Application"}
         </DialogTitle>
         <DialogContent sx={{ py: 3 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              <strong>Application Details:</strong>
-            </Typography>
+          <Box sx={{ m: 2 }}>
             <Grid container spacing={2}>
               <Grid item xs={6}>
-                <Typography variant="body1">
-                  <strong>ID:</strong> {selectedApp?.application_id}
+                <Typography>
+                  <strong>
+                    ID: {selectedApp?.application_id} -{" "}
+                    {selectedApp?.FullName || "N/A"}
+                  </strong>
                 </Typography>
               </Grid>
               <Grid item xs={6}>

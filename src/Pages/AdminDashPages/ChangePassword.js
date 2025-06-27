@@ -344,28 +344,25 @@ const ChangePassword = () => {
                         borderBottom: `1px solid ${theme.palette.divider}`,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box display="flex" alignItems="center" gap={2}>
                         <Avatar
                           sx={{
-                            width: 36,
-                            height: 36,
-                            mr: 2,
-                            bgcolor: "primary.main",
-                            color: "primary.contrastText",
+                            bgcolor: theme.palette.primary.main,
+                            width: 40,
+                            height: 40,
                           }}
                         >
-                          <PersonIcon fontSize="small" />
+                          {user.Username?.charAt(0) || "U"}
                         </Avatar>
-
-                        <Box>
-                          <Typography fontWeight={500}>
+                        <Box display="flex" flexDirection="column">
+                          <Typography
+                            variant="body1"
+                            fontWeight={500}
+                            fontSize="1rem"
+                          >
                             {user.FullName}
                           </Typography>
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block" }}
-                          >
+                          <Typography variant="caption" color="text.secondary">
                             ID: {user.UserId}
                           </Typography>
                         </Box>

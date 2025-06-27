@@ -651,21 +651,31 @@ const AddUser = () => {
                               borderBottom: `1px solid ${theme.palette.divider}`,
                             }}
                           >
-                            <Box>
-                              <Typography
-                                variant="body1"
-                                fontWeight={500}
-                                fontSize="1rem"
+                            <Box display="flex" alignItems="center" gap={2}>
+                              <Avatar
+                                sx={{
+                                  bgcolor: theme.palette.primary.main,
+                                  width: 40,
+                                  height: 40,
+                                }}
                               >
-                                {user.Username}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block" }}
-                              >
-                                ID: {user.UserId}
-                              </Typography>
+                                {user.Username?.charAt(0) || "U"}
+                              </Avatar>
+                              <Box display="flex" flexDirection="column">
+                                <Typography
+                                  variant="body1"
+                                  fontWeight={500}
+                                  fontSize="1rem"
+                                >
+                                  {user.Username}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  ID: {user.UserId}
+                                </Typography>
+                              </Box>
                             </Box>
                           </TableCell>
 

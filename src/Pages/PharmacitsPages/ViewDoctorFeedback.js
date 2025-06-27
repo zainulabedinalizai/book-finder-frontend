@@ -12,11 +12,7 @@ import {
 } from "@mui/material";
 import { Visibility } from "@mui/icons-material";
 
-const ViewDoctorFeedback = ({
-  open,
-  onClose,
-  application,
-}) => {
+const ViewDoctorFeedback = ({ open, onClose, application }) => {
   const theme = useTheme();
 
   return (
@@ -46,14 +42,14 @@ const ViewDoctorFeedback = ({
         Doctor's Feedback
       </DialogTitle>
       <DialogContent sx={{ py: 3 }}>
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            <strong>Application Details:</strong>
-          </Typography>
+        <Box sx={{ m: 2 }}>
           <Grid container spacing={2}>
             <Grid item xs={6}>
-              <Typography variant="body1">
-                <strong>ID:</strong> {application?.application_id}
+              <Typography>
+                <strong>
+                  ID: {application?.application_id} -{" "}
+                  {application?.FullName || "N/A"}
+                </strong>
               </Typography>
             </Grid>
             <Grid item xs={6}>
