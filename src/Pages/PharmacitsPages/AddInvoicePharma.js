@@ -24,6 +24,11 @@ import {
   DialogContent,
   DialogActions,
   TextareaAutosize,
+  DialogContentText,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
   Grid,
   Card,
   CardContent,
@@ -40,11 +45,13 @@ import {
   HelpOutline,
   Visibility,
   DateRange,
+  Assignment,
 } from "@mui/icons-material";
 import { useAuth } from "../../Context/AuthContext";
-import { patientAPI } from "../../Api/api";
+import { patientAPI, submittedAnswersAPI } from "../../Api/api";
 import { UploadEmployeeFiles } from "../../Api/api";
 import ViewDoctorFeedback from "./ViewDoctorFeedback";
+import { ImageModal } from "../DoctorPages/ImageModal";
 
 const ROLES = {
   ADMIN: 2,
@@ -77,6 +84,13 @@ const AddInvoicePharma = () => {
   const [statusOptions, setStatusOptions] = useState([]);
   const [actionType, setActionType] = useState("approve");
   const [viewFeedbackDialogOpen, setViewFeedbackDialogOpen] = useState(false);
+  const [answersDialogOpen, setAnswersDialogOpen] = useState(false);
+  const [patientAnswers, setPatientAnswers] = useState([]);
+  const [answersLoading, setAnswersLoading] = useState(false);
+  const [images, setImages] = useState([]);
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const PHARMACIST_STATUS = {
     APPROVE: 5,
@@ -120,6 +134,113 @@ const AddInvoicePharma = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (selectedImage) {
+        if (e.key === "ArrowRight") {
+          handleNext();
+        } else if (e.key === "ArrowLeft") {
+          handlePrev();
+        } else if (e.key === "Escape") {
+          setSelectedImage(null);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedImage, currentImageIndex, images]);
+
+  // Replace your current setSelectedImage calls with this function
+  const handleImageClick = (imageUrl, index) => {
+    setCurrentImageIndex(index);
+    setSelectedImage(imageUrl);
+  };
+
+  const handleNext = () => {
+    setCurrentImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    setSelectedImage(images[currentImageIndex + 1]?.url || images[0]?.url);
+  };
+
+  const handlePrev = () => {
+    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    setSelectedImage(
+      images[currentImageIndex - 1]?.url || images[images.length - 1]?.url
+    );
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      console.error("No image path provided");
+      return "";
+    }
+
+    // Handle cases where imagePath might already be a full URL
+    if (imagePath.startsWith("http")) {
+      return imagePath;
+    }
+
+    // The API returns paths like "/Assets/PatientImages/..."
+    // The correct base URL is "https://portal.medskls.com"
+    const baseUrl = "https://portal.medskls.com:441/API";
+
+    // Combine them, ensuring no double slashes
+    const fullUrl = `${baseUrl}${
+      imagePath.startsWith("/") ? "" : "/"
+    }${imagePath}`;
+
+    return fullUrl;
+  };
+
+  const fetchPatientAnswers = async (applicationId) => {
+    try {
+      setAnswersLoading(true);
+
+      const response = await submittedAnswersAPI.getByApplicationId(
+        applicationId
+      );
+
+      if (response.data.success) {
+        setPatientAnswers(response.data.data);
+      } else {
+        throw new Error(
+          response.data.message || "Failed to fetch patient answers"
+        );
+      }
+    } catch (err) {
+      console.error("Error fetching patient answers:", err);
+      setSnackbar({
+        open: true,
+        message: err.message || "Failed to fetch patient answers",
+        severity: "error",
+      });
+    } finally {
+      setAnswersLoading(false);
+    }
+  };
+
+  const handleViewAnswers = async (app) => {
+    console.log("Application data being viewed:", app);
+    setPatientAnswers([]);
+    setSelectedApp(app);
+    setImagesLoading(true);
+
+    try {
+      await fetchPatientAnswers(app.application_id);
+      setAnswersDialogOpen(true);
+    } catch (error) {
+      console.error("Error loading patient data:", error);
+      setImagesLoading(false);
+      setSnackbar({
+        open: true,
+        message: "Failed to load patient images",
+        severity: "error",
+      });
     }
   };
 
@@ -277,6 +398,18 @@ const AddInvoicePharma = () => {
   const getStatusColor = (statusId) => {
     return STATUS_MAPPINGS[statusId]?.color || "default";
   };
+
+  const groupedAnswers = patientAnswers.reduce((acc, answer) => {
+    if (!acc[answer.QuestionId]) {
+      acc[answer.QuestionId] = {
+        questionText: answer.QuestionText,
+        questionType: answer.QuestionType,
+        responses: [],
+      };
+    }
+    acc[answer.QuestionId].responses.push(answer);
+    return acc;
+  }, {});
 
   useEffect(() => {
     if (user?.UserId && user?.RoleId) {
@@ -537,6 +670,21 @@ const AddInvoicePharma = () => {
                             spacing={1}
                             justifyContent="center"
                           >
+                            <Tooltip title="View patient answers">
+                              <IconButton
+                                onClick={() => handleViewAnswers(app)}
+                                sx={{
+                                  color: theme.palette.info.main,
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
+                                    backgroundColor: theme.palette.info.main,
+                                    color: theme.palette.common.white,
+                                  },
+                                }}
+                              >
+                                <Assignment fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="View doctor feedback">
                               <IconButton
                                 onClick={() => {
@@ -811,6 +959,376 @@ const AddInvoicePharma = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Patient Answers Dialog */}
+      <Dialog
+        open={answersDialogOpen}
+        onClose={() => {
+          setAnswersDialogOpen(false);
+          setPatientAnswers([]);
+        }}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.common.white,
+            fontWeight: 600,
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Assignment />
+          Patient Questionnaire Answers
+        </DialogTitle>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography my={2}>
+              <strong>
+                ID: {selectedApp?.application_id} -{" "}
+                {selectedApp?.FullName || "N/A"}
+              </strong>
+            </Typography>
+            <Typography variant="subtitle1">
+              <strong>Title:</strong> {selectedApp?.application_title}
+            </Typography>
+          </Box>
+
+          {answersLoading ? (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+              }}
+            >
+              <CircularProgress size={60} />
+            </Box>
+          ) : patientAnswers.length === 0 ? (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              No answers found for this application
+            </Alert>
+          ) : (
+            <List
+              sx={{
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: 2,
+                p: 0,
+              }}
+            >
+              {Object.entries(groupedAnswers).map(
+                ([questionId, questionData]) => {
+                  if (questionId === "13") {
+                    const frontImage = questionData.responses.find(
+                      (r) => r.OptionId === 39
+                    )?.front_imagepath;
+                    const leftImage = questionData.responses.find(
+                      (r) => r.OptionId === 40
+                    )?.left_imagepath;
+                    const rightImage = questionData.responses.find(
+                      (r) => r.OptionId === 41
+                    )?.right_imagepath;
+
+                    console.log("Raw image paths from API:", {
+                      // Debug log
+                      frontImage,
+                      leftImage,
+                      rightImage,
+                    });
+
+                    const imageArray = [
+                      { url: getImageUrl(frontImage), label: "Front View" },
+                      { url: getImageUrl(leftImage), label: "Left Side View" },
+                      {
+                        url: getImageUrl(rightImage),
+                        label: "Right Side View",
+                      },
+                    ].filter((img) => img.url);
+
+                    // Only set images if we have some
+                    if (
+                      imageArray.length > 0 &&
+                      JSON.stringify(imageArray) !== JSON.stringify(images)
+                    ) {
+                      setImages(imageArray);
+                    }
+
+                    return (
+                      <React.Fragment key={questionId}>
+                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+                          <ListItemText
+                            primary={
+                              <Typography variant="subtitle1" fontWeight={600}>
+                                {questionData.questionText}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box sx={{ mt: 2 }}>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  gutterBottom
+                                >
+                                  Patient submitted facial photos:
+                                </Typography>
+                                <Grid container spacing={2}>
+                                  {frontImage && (
+                                    <Grid item xs={12} md={4}>
+                                      <Card
+                                        elevation={0}
+                                        sx={{
+                                          border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the front image in the images array
+                                          const frontIndex = images.findIndex(
+                                            (img) => img.label === "Front View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(frontImage),
+                                            frontIndex
+                                          );
+                                        }}
+                                      >
+                                        <CardContent sx={{ p: 1 }}>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.primary"
+                                            gutterBottom
+                                            sx={{ fontWeight: 600 }}
+                                          >
+                                            Front View
+                                          </Typography>
+                                          <img
+                                            src={getImageUrl(frontImage)}
+                                            alt="Front View"
+                                            style={{
+                                              width: "100%",
+                                              height: "200px",
+                                              borderRadius: 1,
+                                              objectFit: "cover",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
+                                            }}
+                                          />
+                                        </CardContent>
+                                      </Card>
+                                    </Grid>
+                                  )}
+
+                                  {leftImage && (
+                                    <Grid item xs={12} md={4}>
+                                      <Card
+                                        elevation={0}
+                                        sx={{
+                                          border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the left image in the images array
+                                          const leftIndex = images.findIndex(
+                                            (img) =>
+                                              img.label === "Left Side View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(leftImage),
+                                            leftIndex
+                                          );
+                                        }}
+                                      >
+                                        <CardContent sx={{ p: 1 }}>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.primary"
+                                            gutterBottom
+                                            sx={{ fontWeight: 600 }}
+                                          >
+                                            Left Side View
+                                          </Typography>
+                                          <img
+                                            src={getImageUrl(leftImage)}
+                                            alt="Left Side View"
+                                            style={{
+                                              width: "100%",
+                                              height: "200px",
+                                              borderRadius: 1,
+                                              objectFit: "cover",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
+                                            }}
+                                          />
+                                        </CardContent>
+                                      </Card>
+                                    </Grid>
+                                  )}
+
+                                  {rightImage && (
+                                    <Grid item xs={12} md={4}>
+                                      <Card
+                                        elevation={0}
+                                        sx={{
+                                          border: `1px solid ${theme.palette.divider}`,
+                                          cursor: "pointer",
+                                          transition: "transform 0.2s",
+                                          "&:hover": {
+                                            transform: "scale(1.02)",
+                                            boxShadow: 2,
+                                          },
+                                        }}
+                                        onClick={() => {
+                                          // Find the index of the right image in the images array
+                                          const rightIndex = images.findIndex(
+                                            (img) =>
+                                              img.label === "Right Side View"
+                                          );
+                                          handleImageClick(
+                                            getImageUrl(rightImage),
+                                            rightIndex
+                                          );
+                                        }}
+                                      >
+                                        <CardContent sx={{ p: 1 }}>
+                                          <Typography
+                                            variant="body2"
+                                            color="text.primary"
+                                            gutterBottom
+                                            sx={{ fontWeight: 600 }}
+                                          >
+                                            Right Side View
+                                          </Typography>
+                                          <img
+                                            src={getImageUrl(rightImage)}
+                                            alt="Right Side View"
+                                            style={{
+                                              width: "100%",
+                                              height: "200px",
+                                              borderRadius: 1,
+                                              objectFit: "cover",
+                                              backgroundColor:
+                                                theme.palette.grey[100],
+                                            }}
+                                            onError={(e) => {
+                                              e.target.onerror = null;
+                                              e.target.src =
+                                                "/placeholder-image.jpg"; // Fallback image
+                                            }}
+                                          />
+                                        </CardContent>
+                                      </Card>
+                                    </Grid>
+                                  )}
+                                </Grid>
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        <Divider component="li" />
+                      </React.Fragment>
+                    );
+                  }
+
+                  // Regular question handling
+                  return (
+                    <React.Fragment key={questionId}>
+                      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+                        <ListItemText
+                          primary={
+                            <Typography variant="subtitle1" fontWeight={600}>
+                              {questionData.questionText}
+                            </Typography>
+                          }
+                          secondary={
+                            <>
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                color="text.primary"
+                              >
+                                {questionData.questionType === "multiple_choice"
+                                  ? "Selected options:"
+                                  : "Selected option:"}
+                              </Typography>
+                              <Box
+                                component="ul"
+                                sx={{
+                                  pl: 2,
+                                  mt: 0.5,
+                                  mb: 0,
+                                  "& li": {
+                                    py: 0.5,
+                                  },
+                                }}
+                              >
+                                {questionData.responses.map((response, idx) => (
+                                  <li key={idx}>
+                                    <Typography variant="body2">
+                                      {response.OptionText}
+                                      {response.TextResponse &&
+                                        !response.TextResponse.startsWith(
+                                          "{"
+                                        ) &&
+                                        ` - ${response.TextResponse}`}
+                                    </Typography>
+                                  </li>
+                                ))}
+                              </Box>
+                            </>
+                          }
+                        />
+                      </ListItem>
+                      <Divider component="li" />
+                    </React.Fragment>
+                  );
+                }
+              )}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setAnswersDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: "none",
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <ViewDoctorFeedback
         open={viewFeedbackDialogOpen}
         onClose={() => setViewFeedbackDialogOpen(false)}
@@ -842,6 +1360,17 @@ const AddInvoicePharma = () => {
           <Typography fontWeight={500}>{snackbar.message}</Typography>
         </Alert>
       </Snackbar>
+      <ImageModal
+        imageUrl={selectedImage}
+        onClose={() => setSelectedImage(null)}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        hasNext={currentImageIndex < images.length - 1}
+        hasPrev={currentImageIndex > 0}
+        currentIndex={currentImageIndex}
+        totalImages={images.length}
+        loading={imagesLoading}
+      />
     </Box>
   );
 };
