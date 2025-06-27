@@ -42,6 +42,7 @@ import {
   Close,
   HelpOutline,
   DateRange,
+  Visibility,
 } from "@mui/icons-material";
 import { useAuth } from "../../Context/AuthContext";
 import { patientAPI } from "../../Api/api";
@@ -77,6 +78,7 @@ const AttachInvoiceSale = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [statusOptions, setStatusOptions] = useState([]);
   const [actionType, setActionType] = useState("approve");
+  const [viewFeedbackOpen, setViewFeedbackOpen] = useState(false);
 
   const SALES_STATUS = {
     APPROVE: 7,
@@ -557,6 +559,24 @@ const AttachInvoiceSale = () => {
                             spacing={1}
                             justifyContent="center"
                           >
+                            <Tooltip title="View feedbacks">
+                              <IconButton
+                                onClick={() => {
+                                  setSelectedApp(app);
+                                  setViewFeedbackOpen(true);
+                                }}
+                                sx={{
+                                  color: theme.palette.info.main,
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
+                                    backgroundColor: theme.palette.info.main,
+                                    color: theme.palette.common.white,
+                                  },
+                                }}
+                              >
+                                <Visibility fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Complete application">
                               <IconButton
                                 onClick={() => openActionDialog(app, "approve")}
@@ -808,6 +828,199 @@ const AttachInvoiceSale = () => {
             ) : (
               "Reject"
             )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View All Feedbacks Dialog */}
+      <Dialog
+        open={viewFeedbackOpen}
+        onClose={() => setViewFeedbackOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: theme.palette.info.main,
+            color: theme.palette.common.white,
+            fontWeight: 600,
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Visibility fontSize="large" />
+          Application Feedbacks
+        </DialogTitle>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ m: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography>
+                  <strong>
+                    ID: {selectedApp?.application_id} -{" "}
+                    {selectedApp?.FullName || "N/A"}
+                  </strong>
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="body1">
+                  <strong>Title:</strong> {selectedApp?.application_title}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Box>
+
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            {/* Doctor's Feedback */}
+            <Grid item xs={12} md={6}>
+              <Box
+                sx={{
+                  p: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  height: "100%",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Doctor's Feedback:</strong>
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={selectedApp?.doctor_feedback || "No feedback provided"}
+                  multiline
+                  rows={4}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: theme.palette.background.default,
+                    },
+                  }}
+                />
+              </Box>
+            </Grid>
+
+            {/* Pharmacist's Feedback */}
+            <Grid item xs={12} md={6}>
+              <Box
+                sx={{
+                  p: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  height: "100%",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Pharmacist's Feedback:</strong>
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={
+                    selectedApp?.pharmacist_feedback || "No feedback provided"
+                  }
+                  multiline
+                  rows={4}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: theme.palette.background.default,
+                    },
+                  }}
+                />
+              </Box>
+            </Grid>
+
+            {/* Sales Feedback */}
+            <Grid item xs={12} md={6}>
+              <Box
+                sx={{
+                  p: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  height: "100%",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Sales Feedback:</strong>
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={selectedApp?.sales_feedback || "No feedback provided"}
+                  multiline
+                  rows={4}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: theme.palette.background.default,
+                    },
+                  }}
+                />
+              </Box>
+            </Grid>
+
+            {/* Final Invoice */}
+            <Grid item xs={12} md={6}>
+              <Box
+                sx={{
+                  p: 2,
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  height: "100%",
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  <strong>Final Invoice:</strong>
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={selectedApp?.final_invoice || "No invoice provided"}
+                  multiline
+                  rows={4}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      backgroundColor: theme.palette.background.default,
+                    },
+                  }}
+                />
+              </Box>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setViewFeedbackOpen(false)}
+            variant="contained"
+            color="info"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: "none",
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>
