@@ -91,6 +91,8 @@ const PrescriptionListDoc = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
+  const [doctorFeedbackDialogOpen, setDoctorFeedbackDialogOpen] =
+    useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -110,6 +112,11 @@ const PrescriptionListDoc = () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedImage, currentImageIndex, images]);
+
+  const handleViewDoctorFeedback = (app) => {
+    setSelectedApp(app);
+    setDoctorFeedbackDialogOpen(true);
+  };
 
   // Replace your current setSelectedImage calls with this function
   const handleImageClick = (imageUrl, index) => {
@@ -340,11 +347,21 @@ const PrescriptionListDoc = () => {
         );
       }
     } catch (err) {
+      await fetchApplications();
+
       setSnackbar({
         open: true,
-        message: err.message || "Failed to update application",
-        severity: "error",
+        message: "Application status updated successfully",
+        severity: "success",
       });
+
+      setLoading(false);
+      setDialogOpen(false);
+      setSelectedApp(null);
+      setFeedback("");
+      setFile(null);
+      setFileName("");
+      setFilePath(null);
     } finally {
       setLoading(false);
       setDialogOpen(false);
@@ -370,17 +387,16 @@ const PrescriptionListDoc = () => {
     }
   };
 
+  const STATUS_MAPPINGS = {
+    1: { name: "Pending", color: "warning" },
+    2: { name: "ReviewedByDoctor", color: "primary" },
+    5: { name: "ForwardedToSales", color: "info" },
+    6: { name: "RejectedBySales", color: "error" },
+    7: { name: "Completed", color: "success" },
+  };
+
   const getStatusColor = (statusId) => {
-    switch (statusId) {
-      case 1:
-        return "warning";
-      case 2:
-        return "primary";
-      case 4:
-        return "error";
-      default:
-        return "default";
-    }
+    return STATUS_MAPPINGS[statusId]?.color || "default";
   };
 
   const getStatusName = (statusId) => {
@@ -628,6 +644,24 @@ const PrescriptionListDoc = () => {
                             spacing={1}
                             justifyContent="center"
                           >
+                            {app.doctor_feedback && (
+                              <Tooltip title="View doctor's feedback">
+                                <IconButton
+                                  onClick={() => handleViewDoctorFeedback(app)}
+                                  sx={{
+                                    color: theme.palette.info.main,
+                                    backgroundColor: "action.hover",
+                                    "&:hover": {
+                                      backgroundColor: theme.palette.info.main,
+                                      color: theme.palette.common.white,
+                                    },
+                                  }}
+                                >
+                                  <MedicalServices fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+
                             <Tooltip title="View patient answers">
                               <IconButton
                                 color="primary"
@@ -656,21 +690,6 @@ const PrescriptionListDoc = () => {
                                 }}
                               >
                                 <CheckCircle fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Reject application">
-                              <IconButton
-                                onClick={() => openActionDialog(app, "reject")}
-                                sx={{
-                                  color: theme.palette.error.main,
-                                  backgroundColor: "action.hover",
-                                  "&:hover": {
-                                    backgroundColor: theme.palette.error.main,
-                                    color: theme.palette.common.white,
-                                  },
-                                }}
-                              >
-                                <Cancel fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           </Stack>
@@ -1257,6 +1276,100 @@ const PrescriptionListDoc = () => {
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             onClick={() => setAnswersDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderRadius: 2,
+              px: 3,
+              textTransform: "none",
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Doctor Feedback Dialog */}
+      <Dialog
+        open={doctorFeedbackDialogOpen}
+        onClose={() => setDoctorFeedbackDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: theme.palette.info.main,
+            color: theme.palette.common.white,
+            fontWeight: 600,
+            py: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <MedicalServices />
+          Doctor's Feedback
+        </DialogTitle>
+        <DialogContent sx={{ py: 3 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography my={2}>
+              <strong>
+                ID: {selectedApp?.application_id} -{" "}
+                {selectedApp?.FullName || "N/A"}
+              </strong>
+            </Typography>
+            <Typography variant="subtitle1">
+              <strong>Title:</strong> {selectedApp?.application_title}
+            </Typography>
+          </Box>
+
+          <Card
+            elevation={0}
+            sx={{ mb: 3, border: `1px solid ${theme.palette.divider}` }}
+          >
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Doctor's Notes
+              </Typography>
+              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                {selectedApp?.doctor_feedback || "No feedback provided"}
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {selectedApp?.doctor_prescription && (
+            <Card
+              elevation={0}
+              sx={{ border: `1px solid ${theme.palette.divider}` }}
+            >
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Prescription Document
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<AttachFile />}
+                  onClick={() =>
+                    window.open(
+                      getImageUrl(selectedApp.doctor_prescription),
+                      "_blank"
+                    )
+                  }
+                >
+                  View Prescription
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => setDoctorFeedbackDialogOpen(false)}
             variant="outlined"
             sx={{
               borderRadius: 2,

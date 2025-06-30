@@ -181,6 +181,11 @@ export const questionAPI = {
   },
 };
 
+// Dashboard API Endpoints
+export const dashboardAPI = {
+  getDashboardStatistics: () => API.post("/GetDashboardStatistics"),
+};
+
 // Patient API Endpoints
 export const patientAPI = {
   savePatientApplication: async (submissionData) => {
@@ -237,9 +242,7 @@ export const patientAPI = {
     formData.append("StatusID", param.StatusID);
     formData.append("RoleID", param.RoleID);
     formData.append("Description", param.Description || "");
-    if (param.ImagePath) {
-      formData.append("FilePath", param.ImagePath);
-    }
+    formData.append("ImagePath", param.ImagePath);
 
     return API.post("/UpdateUserApplication", formData, {
       headers: {

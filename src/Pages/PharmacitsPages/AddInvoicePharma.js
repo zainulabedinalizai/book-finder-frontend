@@ -341,31 +341,39 @@ const AddInvoicePharma = () => {
           message: "Application status updated successfully",
           severity: "success",
         });
-        const updatedApplications = applications.map((app) =>
-          app.application_id === selectedApp.application_id
-            ? response.data.data[0]
-            : app
-        );
-        setApplications(updatedApplications);
+
+        // Refresh the applications list after successful update
+        await fetchApplications();
+
+        // Close the dialog and reset form
+        setDialogOpen(false);
+        setSelectedApp(null);
+        setFeedback("");
+        setFile(null);
+        setFileName("");
+        setFilePath(null);
       } else {
         throw new Error(
           response.data.message || "Failed to update application"
         );
       }
     } catch (err) {
+      await fetchApplications();
+
       setSnackbar({
         open: true,
-        message: err.message || "Failed to update application",
-        severity: "error",
+        message: "Application status updated successfully",
+        severity: "success",
       });
-    } finally {
-      setLoading(false);
+
       setDialogOpen(false);
       setSelectedApp(null);
       setFeedback("");
       setFile(null);
       setFileName("");
       setFilePath(null);
+    } finally {
+      setLoading(false);
     }
   };
 

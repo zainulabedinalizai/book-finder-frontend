@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -31,16 +31,42 @@ import {
   LocalHospital,
   Assignment,
   Notifications,
+  CheckCircle,
+  Pending,
+  RateReview,
+  Send,
+  Summarize,
 } from "@mui/icons-material";
+
 import { useAuth } from "../Context/AuthContext";
 import FavoritesQuerySearch from "./FavoritesQuerySearch";
+import { dashboardAPI } from "../Api/api";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const response = await dashboardAPI.getDashboardStatistics();
+        if (response.data.success) {
+          setStats(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
 
   if (!isAuthenticated) {
     navigate("/login");
@@ -49,6 +75,42 @@ const Dashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  // Helper function to get icon based on status
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Completed":
+        return <CheckCircle fontSize="large" />;
+      case "Pending":
+        return <Pending fontSize="large" />;
+      case "ReviewedByDoctor":
+        return <RateReview fontSize="large" />;
+      case "SentToSales":
+        return <Send fontSize="large" />;
+      case "Total":
+        return <Summarize fontSize="large" />;
+      default:
+        return <Summarize fontSize="large" />;
+    }
+  };
+
+  // Helper function to get color based on status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Completed":
+        return "#4caf50";
+      case "Pending":
+        return "#ff9800";
+      case "ReviewedByDoctor":
+        return "#2196f3";
+      case "SentToSales":
+        return "#9c27b0";
+      case "Total":
+        return "#1976d2";
+      default:
+        return "#607d8b";
+    }
   };
 
   return (
@@ -109,32 +171,71 @@ const Dashboard = () => {
       {/* Overview Tab */}
       {tabValue === 0 && (
         <>
+          {/* Stats Cards - Now in a single row */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            {[
-              "Total Patients",
-              "Today's Appointments",
-              "Prescriptions",
-              "Monthly Revenue",
-            ].map((title, index) => (
-              <Grid item xs={12} sm={6} md={3} key={title}>
-                <StatCard
-                  title={title}
-                  value=""
-                  icon={
-                    [
-                      <People fontSize="large" />,
-                      <CalendarToday fontSize="large" />,
-                      <Assignment fontSize="large" />,
-                      <LocalHospital fontSize="large" />,
-                    ][index]
-                  }
-                  color={["#1976d2", "#4caf50", "#ff9800", "#9c27b0"][index]}
-                />
+            {loading ? (
+              // Loading state - show 5 loading cards (for all statuses + Total)
+              Array.from({ length: 5 }).map((_, index) => (
+                <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
+                  <Card>
+                    <CardContent>
+                      <Box display="flex" justifyContent="space-between">
+                        <Box>
+                          <Typography
+                            variant="subtitle2"
+                            color="text.secondary"
+                          >
+                            Loading...
+                          </Typography>
+                          <Typography
+                            variant={isMobile ? "h5" : "h4"}
+                            sx={{ fontWeight: 700 }}
+                          >
+                            -
+                          </Typography>
+                        </Box>
+                        <Avatar
+                          sx={{
+                            bgcolor: "#e0e0e0",
+                            color: "#9e9e9e",
+                            width: isMobile ? 40 : 56,
+                            height: isMobile ? 40 : 56,
+                          }}
+                        >
+                          <Summarize fontSize="large" />
+                        </Avatar>
+                      </Box>
+                      <LinearProgress sx={{ mt: 2 }} />
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            ) : stats ? (
+              // Display all stats cards in one row
+              stats.map((stat) => (
+                <Grid item xs={12} sm={6} md={4} lg={2.4} key={stat.status}>
+                  <StatCard
+                    title={stat.status.replace(/([A-Z])/g, " $1").trim()}
+                    value={stat.application_count}
+                    icon={getStatusIcon(stat.status)}
+                    color={getStatusColor(stat.status)}
+                  />
+                </Grid>
+              ))
+            ) : (
+              // Error state
+              <Grid item xs={12}>
+                <Paper elevation={0} sx={{ p: 2, textAlign: "center" }}>
+                  <Typography color="error">
+                    Failed to load dashboard statistics
+                  </Typography>
+                </Paper>
               </Grid>
-            ))}
+            )}
           </Grid>
 
           <Grid container spacing={3}>
+            {/* Upcoming Appointments (unchanged) */}
             <Grid item xs={12} md={6}>
               <Paper
                 elevation={3}
@@ -180,11 +281,75 @@ const Dashboard = () => {
               </Paper>
             </Grid>
 
+            {/* Application Status Distribution (new) */}
             <Grid item xs={12} md={6}>
               <Paper
                 elevation={3}
                 sx={{ p: 2, borderRadius: 2, height: "100%" }}
               >
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
+                >
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Application Status Distribution
+                  </Typography>
+                </Box>
+                {stats && (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Status</TableCell>
+                          <TableCell align="right">Count</TableCell>
+                          <TableCell align="right">Percentage</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {stats
+                          .filter((stat) => stat.status !== "Total")
+                          .map((stat) => (
+                            <TableRow key={stat.status}>
+                              <TableCell>
+                                <Chip
+                                  label={stat.status
+                                    .replace(/([A-Z])/g, " $1")
+                                    .trim()}
+                                  size="small"
+                                  sx={{
+                                    backgroundColor: `${getStatusColor(
+                                      stat.status
+                                    )}20`,
+                                    color: getStatusColor(stat.status),
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell align="right">
+                                {stat.application_count}
+                              </TableCell>
+                              <TableCell align="right">
+                                {(
+                                  (stat.application_count /
+                                    stats.find((s) => s.status === "Total")
+                                      .application_count) *
+                                  100
+                                ).toFixed(1)}
+                                %
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* Notifications (moved to its own row) */}
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
                 <Box
                   display="flex"
                   justifyContent="space-between"

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import * as XLSX from "xlsx"; // Add this import
 import {
   Box,
   Typography,
@@ -50,6 +51,7 @@ import {
   Cancel as CancelIcon,
   CheckCircle as CheckCircleIcon,
   CheckCircleOutline,
+  FileDownload as FileDownloadIcon, // Add this icon
 } from "@mui/icons-material";
 import { useAuth } from "../../Context/AuthContext";
 import { authService, userService } from "../../Context/authService";
@@ -131,6 +133,7 @@ const AddUser = () => {
   const [decrypting, setDecrypting] = useState({});
   const [passwordSuccess, setPasswordSuccess] = useState(false);
 
+  // Fetch users function remains the same
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -143,14 +146,14 @@ const AddUser = () => {
             UserId: user.UserId,
             Username: user.Username,
             Email: user.Email,
-            FullName:
-              `${user.FirstName || ""} ${user.LastName || ""}`.trim() || "N/A",
+            FullName: user.FullName,
             RoleName: user.RoleName || "Unknown",
             AccountStatus: user.AccountStatus === 1 ? "Active" : "Inactive",
             RoleID: user.RoleID || 1,
             PasswordHash: user.PasswordHash || "",
           }));
 
+          console.log("Formatted Users:", formattedUsers);
           setUsers(formattedUsers);
           const initialVisibility = {};
           response.data.data.forEach((u) => {
@@ -174,6 +177,64 @@ const AddUser = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Add this function to handle Excel export
+  const exportToExcel = () => {
+    console.log("Exporting all users:", users); // Debug log
+
+    // Prepare the data for export
+    const exportData = users.map((user) => {
+      return {
+        "User ID": user.UserId,
+        Username: user.Username,
+        Email: user.Email,
+        "Full Name": user.FullName,
+        Role: user.RoleName,
+        Status: user.AccountStatus,
+      };
+    });
+
+    console.log("Export Data:", exportData); // Debug log
+
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Users");
+
+    // Generate Excel file and trigger download
+    XLSX.writeFile(
+      wb,
+      `users_export_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
+  };
+
+  // Add this function for filtered export
+  const exportFilteredToExcel = () => {
+    console.log("Exporting filtered users:", filteredUsers); // Debug log
+
+    const exportData = filteredUsers.map((user) => {
+      return {
+        "User ID": user.UserId,
+        Username: user.Username,
+        Email: user.Email,
+        "Full Name": user.FullName,
+        Role: user.RoleName,
+        Status: user.AccountStatus,
+      };
+    });
+
+    console.log("Filtered Export Data:", exportData); // Debug log
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, "Filtered Users");
+    XLSX.writeFile(
+      wb,
+      `filtered_users_export_${new Date().toISOString().split("T")[0]}.xlsx`
+    );
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -565,6 +626,42 @@ const AddUser = () => {
                 sx: { borderRadius: 2 },
               }}
             />
+
+            <Box sx={{ display: "flex", gap: 2, marginBottom: 2 }}>
+              <Tooltip title="Export all users to Excel">
+                <Button
+                  variant="outlined"
+                  color="success"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={exportToExcel}
+                  disabled={users.length === 0}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    px: 3,
+                  }}
+                >
+                  Export All
+                </Button>
+              </Tooltip>
+
+              <Tooltip title="Export filtered users to Excel">
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<FileDownloadIcon />}
+                  onClick={exportFilteredToExcel}
+                  disabled={filteredUsers.length === 0}
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    px: 3,
+                  }}
+                >
+                  Export Filtered
+                </Button>
+              </Tooltip>
+            </Box>
 
             {loading && users.length === 0 ? (
               <Box
