@@ -1,286 +1,450 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Box, Typography, Container, Card, CardContent,
-  Button, Divider, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow,
-  Paper, TextField, Select, MenuItem, InputLabel,
-  FormControl, IconButton, Dialog, DialogTitle,
-  DialogContent, DialogActions,
-  Grid
-} from '@mui/material';
-import { Edit, Send, Save, Cancel, Add, Delete, Receipt } from '@mui/icons-material';
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  CircularProgress,
+  Alert,
+  Avatar,
+  Chip,
+  TablePagination,
+  useTheme,
+  Snackbar,
+  Tooltip,
+  IconButton,
+} from "@mui/material";
+import {
+  Search,
+  Refresh,
+  Description as DescriptionIcon,
+  DateRange,
+  PictureAsPdf,
+} from "@mui/icons-material";
+import { patientAPI } from "../../Api/api";
+import { useAuth } from "../../Context/AuthContext";
+
+const STATUS_MAPPINGS = {
+  1: { name: "Pending", color: "warning" },
+  2: { name: "ReviewedByDoctor", color: "primary" },
+  5: { name: "ForwardedToSales", color: "info" },
+  6: { name: "ObjectionBySales", color: "error" },
+  7: { name: "Completed", color: "success" },
+};
+
+const getStatusName = (statusId) => {
+  return STATUS_MAPPINGS[statusId]?.name || `Status ${statusId}`;
+};
+
+const getStatusColor = (statusId) => {
+  return STATUS_MAPPINGS[statusId]?.color || "default";
+};
 
 const SendInvoiceToPatient = () => {
+  const { user } = useAuth();
+  const theme = useTheme();
   const [invoices, setInvoices] = useState([]);
-  const [editMode, setEditMode] = useState(null);
-  const [editedInvoice, setEditedInvoice] = useState({});
-  const [newInvoice, setNewInvoice] = useState({
-    description: '',
-    amount: '',
-    patientName: ''
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
-  const [openDialog, setOpenDialog] = useState(false);
 
-  const handleEdit = (invoice) => {
-    setEditMode(invoice.id);
-    setEditedInvoice({ ...invoice });
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const handleSave = (id) => {
-    setInvoices(invoices.map(invoice => 
-      invoice.id === id ? { ...editedInvoice } : invoice
-    ));
-    setEditMode(null);
-  };
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  const handleCancel = () => {
-    setEditMode(null);
-  };
+      const response = await patientAPI.getRoleWiseApplication({
+        UserID: user.UserId,
+        RoleID: user.RoleId,
+      });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedInvoice(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleNewInvoiceChange = (e) => {
-    const { name, value } = e.target;
-    setNewInvoice(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSendInvoice = (id) => {
-    setInvoices(invoices.map(invoice => 
-      invoice.id === id ? { ...invoice, status: 'Sent' } : invoice
-    ));
-  };
-
-  const handleAddInvoice = () => {
-    const newId = `INV-${new Date().getFullYear()}-${invoices.length + 1}`;
-    const today = new Date().toISOString().split('T')[0];
-    
-    setInvoices([
-      ...invoices,
-      {
-        id: newId,
-        date: today,
-        patientName: newInvoice.patientName,
-        description: newInvoice.description,
-        amount: parseFloat(newInvoice.amount),
-        status: 'Draft'
+      if (response.data.success) {
+        // Filter for completed applications with payment_receipt
+        const paidInvoices = response.data.data.filter(
+          (invoice) => invoice.status_id === 7 && invoice.payment_receipt
+        );
+        setInvoices(paidInvoices);
+      } else {
+        throw new Error(response.data.message || "Failed to fetch invoices");
       }
-    ]);
-    
-    setNewInvoice({ description: '', amount: '', patientName: '' });
-    setOpenDialog(false);
+    } catch (err) {
+      console.error("Error fetching invoices:", err);
+      setError(err.message || "Failed to fetch invoices");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    setInvoices(invoices.filter(invoice => invoice.id !== id));
+  useEffect(() => {
+    if (user?.UserId && user?.RoleId) {
+      fetchInvoices();
+    }
+  }, [user?.UserId, user?.RoleId]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "";
+    if (imagePath.startsWith("http")) return imagePath;
+    const baseUrl = "https://portal.medskls.com:441/API";
+    return `${baseUrl}${imagePath.startsWith("/") ? "" : "/"}${imagePath}`;
+  };
+
+  const handleDownloadReceipt = (invoice) => {
+    try {
+      if (!invoice?.payment_receipt) {
+        throw new Error("No payment receipt available");
+      }
+
+      const receiptUrl = getImageUrl(invoice.payment_receipt);
+      const link = document.createElement("a");
+      link.href = receiptUrl;
+      link.setAttribute("download", "");
+      link.target = "_blank";
+
+      // Set filename
+      const fileName =
+        invoice.payment_receipt.split("/").pop() ||
+        `receipt_${invoice.application_id}.${
+          invoice.payment_receipt.split(".").pop() || "pdf"
+        }`;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setSnackbar({
+        open: true,
+        message: "Payment receipt download started",
+        severity: "success",
+      });
+    } catch (err) {
+      console.error("Error downloading receipt:", err);
+      setSnackbar({
+        open: true,
+        message: err.message || "Failed to download receipt",
+        severity: "error",
+      });
+    }
+  };
+
+  const filteredInvoices = invoices.filter((invoice) => {
+    const searchLower = searchTerm.toLowerCase();
+    const statusName = getStatusName(invoice.status_id).toLowerCase();
+    return (
+      invoice.application_title?.toLowerCase().includes(searchLower) ||
+      invoice.SubmittedDate?.toLowerCase().includes(searchLower) ||
+      invoice.FullName?.toLowerCase().includes(searchLower) ||
+      statusName.includes(searchLower)
+    );
+  });
+
+  const emptyRows =
+    rowsPerPage -
+    Math.min(rowsPerPage, filteredInvoices.length - page * rowsPerPage);
 
   return (
-    <Container maxWidth="lg">
-      <Card>
+    <Container maxWidth="lg" sx={{ p: 3 }}>
+      {/* Header Section */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+          p: 2,
+          backgroundColor: "background.paper",
+          borderRadius: 2,
+          boxShadow: 1,
+        }}
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+              color: "primary.main",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <DescriptionIcon fontSize="large" />
+            Patient Invoices
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            View and manage completed patient invoices
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Refresh />}
+          onClick={fetchInvoices}
+          disabled={loading}
+          sx={{
+            borderRadius: 2,
+            px: 3,
+            py: 1,
+            textTransform: "none",
+            fontWeight: 600,
+          }}
+        >
+          Refresh
+        </Button>
+      </Box>
+
+      <Card elevation={3} sx={{ mb: 4 }}>
         <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Box display="flex" alignItems="center">
-              <Receipt fontSize="large" color="primary" sx={{ mr: 2 }} />
-              <Typography variant="h4">Manage Patient Invoices</Typography>
-            </Box>
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "background.default",
+            }}
+          >
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search invoices..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <Search sx={{ color: "action.active", mr: 1 }} />
+                ),
+                size: "small",
+              }}
+              sx={{
+                maxWidth: 400,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  backgroundColor: "background.paper",
+                },
+              }}
+            />
           </Box>
 
-          <Typography variant="body1" paragraph>
-            Create, edit, and send medical invoices to patients. Update fees and charges as needed.
-          </Typography>
-
-          <Divider sx={{ my: 3 }} />
-
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                  <TableCell><strong>Invoice #</strong></TableCell>
-                  <TableCell><strong>Date</strong></TableCell>
-                  <TableCell><strong>Patient</strong></TableCell>
-                  <TableCell><strong>Description</strong></TableCell>
-                  <TableCell><strong>Amount ($)</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
-                  <TableCell><strong>Actions</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>{invoice.id}</TableCell>
-                    <TableCell>{invoice.date}</TableCell>
-                    <TableCell>
-                      {editMode === invoice.id ? (
-                        <TextField
-                          name="patientName"
-                          value={editedInvoice.patientName}
-                          onChange={handleInputChange}
-                          size="small"
-                        />
-                      ) : (
-                        invoice.patientName
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editMode === invoice.id ? (
-                        <TextField
-                          name="description"
-                          value={editedInvoice.description}
-                          onChange={handleInputChange}
-                          size="small"
-                        />
-                      ) : (
-                        invoice.description
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editMode === invoice.id ? (
-                        <TextField
-                          name="amount"
-                          type="number"
-                          value={editedInvoice.amount}
-                          onChange={handleInputChange}
-                          size="small"
-                          inputProps={{ step: "0.01" }}
-                        />
-                      ) : (
-                        invoice.amount.toFixed(2)
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editMode === invoice.id ? (
-                        <FormControl size="small" sx={{ minWidth: 120 }}>
-                          <InputLabel>Status</InputLabel>
-                          <Select
-                            name="status"
-                            value={editedInvoice.status}
-                            onChange={handleInputChange}
-                            label="Status"
-                          >
-                            <MenuItem value="Draft">Draft</MenuItem>
-                            <MenuItem value="Sent">Sent</MenuItem>
-                            <MenuItem value="Pending">Pending</MenuItem>
-                            <MenuItem value="Paid">Paid</MenuItem>
-                          </Select>
-                        </FormControl>
-                      ) : (
-                        <Box 
-                          component="span" 
-                          sx={{
-                            p: '4px 8px',
-                            borderRadius: '4px',
-                            backgroundColor: 
-                              invoice.status === 'Paid' ? '#e6f7ee' :
-                              invoice.status === 'Sent' ? '#e3f2fd' :
-                              invoice.status === 'Pending' ? '#fff3e0' : '#f5f5f5',
-                            color: 
-                              invoice.status === 'Paid' ? '#00a65a' :
-                              invoice.status === 'Sent' ? '#1976d2' :
-                              invoice.status === 'Pending' ? '#ff9800' : '#757575'
-                          }}
-                        >
-                          {invoice.status}
-                        </Box>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editMode === invoice.id ? (
-                        <>
-                          <IconButton 
-                            color="primary" 
-                            onClick={() => handleSave(invoice.id)}
-                          >
-                            <Save />
-                          </IconButton>
-                          <IconButton 
-                            color="error" 
-                            onClick={handleCancel}
-                          >
-                            <Cancel />
-                          </IconButton>
-                        </>
-                      ) : (
-                        <>
-                          <IconButton 
-                            color="primary" 
-                            onClick={() => handleEdit(invoice)}
-                          >
-                            <Edit />
-                          </IconButton>
-                          <IconButton 
-                            color="success" 
-                            onClick={() => handleSendInvoice(invoice.id)}
-                            disabled={invoice.status === 'Sent' || invoice.status === 'Paid'}
-                          >
-                            <Send />
-                          </IconButton>
-                          <IconButton 
-                            color="error" 
-                            onClick={() => handleDelete(invoice.id)}
-                          >
-                            <Delete />
-                          </IconButton>
-                        </>
-                      )}
-                    </TableCell>
+          {loading ? (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 200,
+              }}
+            >
+              <CircularProgress size={60} />
+            </Box>
+          ) : error ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          ) : invoices.length === 0 ? (
+            <Box
+              sx={{
+                textAlign: "center",
+                p: 4,
+                backgroundColor: theme.palette.background.default,
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="h6" color="text.secondary">
+                No paid invoices found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Only invoices with payment receipts will appear here
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead
+                  sx={{
+                    backgroundColor: theme.palette.primary.light,
+                    "& .MuiTableCell-root": {
+                      color: theme.palette.common.white,
+                      fontWeight: 600,
+                    },
+                  }}
+                >
+                  <TableRow>
+                    <TableCell>Application</TableCell>
+                    <TableCell>Submitted</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell align="center">Actions</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* New Invoice Dialog */}
-          <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-            <DialogTitle>Create New Invoice</DialogTitle>
-            <DialogContent>
-              <Grid container spacing={2} sx={{ mt: 1 }}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Patient Name"
-                    name="patientName"
-                    value={newInvoice.patientName}
-                    onChange={handleNewInvoiceChange}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    name="description"
-                    value={newInvoice.description}
-                    onChange={handleNewInvoiceChange}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Amount"
-                    name="amount"
-                    type="number"
-                    value={newInvoice.amount}
-                    onChange={handleNewInvoiceChange}
-                    inputProps={{ step: "0.01" }}
-                  />
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-              <Button 
-                variant="contained" 
-                onClick={handleAddInvoice}
-                disabled={!newInvoice.patientName || !newInvoice.description || !newInvoice.amount}
-              >
-                Create Invoice
-              </Button>
-            </DialogActions>
-          </Dialog>
+                </TableHead>
+                <TableBody>
+                  {filteredInvoices
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((invoice) => (
+                      <TableRow
+                        key={invoice.application_id}
+                        hover
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
+                      >
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <Avatar sx={{ bgcolor: "primary.main" }}>
+                              {invoice.FullName?.charAt(0) || "A"}
+                            </Avatar>
+                            <Box>
+                              <Typography fontWeight={600}>
+                                {invoice.application_title ||
+                                  "Untitled Application"}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                ID: {invoice.application_id} -{" "}
+                                {invoice.FullName || "N/A"}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <DateRange color="action" fontSize="small" />
+                            <Typography variant="body2">
+                              {invoice.SubmittedDate}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getStatusName(invoice.status_id)}
+                            color={getStatusColor(invoice.status_id)}
+                            variant="outlined"
+                            sx={{
+                              fontWeight: 500,
+                              borderRadius: 1,
+                              ...(invoice.status_id === 1 && {
+                                borderColor: theme.palette.warning.main,
+                                color: theme.palette.warning.main,
+                                backgroundColor: theme.palette.common.white,
+                              }),
+                              ...(invoice.status_id === 2 && {
+                                borderColor: theme.palette.primary.main,
+                                color: theme.palette.primary.main,
+                                backgroundColor: theme.palette.common.white,
+                              }),
+                              ...(invoice.status_id === 5 && {
+                                borderColor: theme.palette.info.main,
+                                color: theme.palette.info.main,
+                                backgroundColor: theme.palette.common.white,
+                              }),
+                              ...(invoice.status_id === 6 && {
+                                borderColor: theme.palette.error.main,
+                                color: theme.palette.error.main,
+                                backgroundColor: theme.palette.common.white,
+                              }),
+                              ...(invoice.status_id === 7 && {
+                                borderColor: theme.palette.success.main,
+                                color: theme.palette.success.main,
+                                backgroundColor: theme.palette.common.white,
+                              }),
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Tooltip title="Download Payment Receipt">
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleDownloadReceipt(invoice)}
+                            >
+                              <PictureAsPdf />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  {emptyRows > 0 && (
+                    <TableRow style={{ height: 73 * emptyRows }}>
+                      <TableCell colSpan={4} />
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                rowsPerPageOptions={[5, 10, 25]}
+                component="div"
+                count={filteredInvoices.length}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                sx={{
+                  borderTop: `1px solid ${theme.palette.divider}`,
+                }}
+              />
+            </TableContainer>
+          )}
         </CardContent>
       </Card>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

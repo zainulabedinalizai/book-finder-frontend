@@ -395,7 +395,7 @@ const AddInvoicePharma = () => {
     1: { name: "Pending", color: "warning" },
     2: { name: "ReviewedByDoctor", color: "primary" },
     5: { name: "ForwardedToSales", color: "info" },
-    6: { name: "RejectedByPharmacist", color: "error" },
+    6: { name: "ObjectionBySales", color: "error" },
     7: { name: "Completed", color: "success" },
   };
 

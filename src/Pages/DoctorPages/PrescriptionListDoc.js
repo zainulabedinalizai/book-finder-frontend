@@ -644,6 +644,22 @@ const PrescriptionListDoc = () => {
                             spacing={1}
                             justifyContent="center"
                           >
+                            <Tooltip title="View patient answers">
+                              <IconButton
+                                color="primary"
+                                onClick={() => handleViewAnswers(app)}
+                                sx={{
+                                  backgroundColor: "action.hover",
+                                  "&:hover": {
+                                    backgroundColor: "primary.light",
+                                    color: "common.white",
+                                  },
+                                }}
+                              >
+                                <Assignment fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+
                             {app.doctor_feedback && (
                               <Tooltip title="View doctor's feedback">
                                 <IconButton
@@ -657,26 +673,11 @@ const PrescriptionListDoc = () => {
                                     },
                                   }}
                                 >
-                                  <MedicalServices fontSize="small" />
+                                  <Visibility fontSize="small" />
                                 </IconButton>
                               </Tooltip>
                             )}
 
-                            <Tooltip title="View patient answers">
-                              <IconButton
-                                color="primary"
-                                onClick={() => handleViewAnswers(app)}
-                                sx={{
-                                  backgroundColor: "action.hover",
-                                  "&:hover": {
-                                    backgroundColor: "primary.light",
-                                    color: "common.white",
-                                  },
-                                }}
-                              >
-                                <Visibility fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
                             <Tooltip title="Approve application">
                               <IconButton
                                 onClick={() => openActionDialog(app, "approve")}

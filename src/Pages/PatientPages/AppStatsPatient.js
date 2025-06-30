@@ -55,12 +55,18 @@ const AppStatsPatient = () => {
     switch (statusId) {
       case 1:
         return "warning"; // Pending
+      case 2:
+        return "primary"; // Reviewed by Doctor
       case 3:
         return "primary"; // Approved by Doctor
       case 4:
         return "error"; // Rejected by Pharmacist
       case 5:
         return "info"; // Sent to Sales
+      case 6:
+        return "error"; //Rejected By Sales
+      case 7:
+        return "success"; // Completed
       default:
         return "default";
     }

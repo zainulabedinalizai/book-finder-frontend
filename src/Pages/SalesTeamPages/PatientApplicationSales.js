@@ -167,6 +167,8 @@ const PatientApplicationSales = () => {
         return "error"; // Rejected by Pharmacist
       case 5:
         return "info"; // Sent to Sales
+      case 6:
+        return "error"; //Rejected By Sales
       case 7:
         return "success"; // Completed
       default:

@@ -92,7 +92,7 @@ const AttachInvoiceSale = () => {
     1: { name: "Pending", color: "warning" },
     2: { name: "ReviewedByDoctor", color: "primary" },
     5: { name: "ForwardedToSales", color: "info" },
-    6: { name: "RejectedBySales", color: "error" },
+    6: { name: "ObjectionBySales", color: "error" },
     7: { name: "Completed", color: "success" },
   };
 
@@ -325,15 +325,17 @@ const AttachInvoiceSale = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const filteredApplications = applications.filter((app) => {
-    const searchLower = searchTerm.toLowerCase();
-    const statusName = getStatusName(app.status_id).toLowerCase();
-    return (
-      app.application_title?.toLowerCase().includes(searchLower) ||
-      app.SubmittedDate?.toLowerCase().includes(searchLower) ||
-      statusName.includes(searchLower)
-    );
-  });
+  const filteredApplications = applications
+    .filter((app) => app.status_id === 5) // Only show status_id 5
+    .filter((app) => {
+      const searchLower = searchTerm.toLowerCase();
+      const statusName = getStatusName(app.status_id).toLowerCase();
+      return (
+        app.application_title?.toLowerCase().includes(searchLower) ||
+        app.SubmittedDate?.toLowerCase().includes(searchLower) ||
+        statusName.includes(searchLower)
+      );
+    });
 
   const emptyRows =
     rowsPerPage -
@@ -451,10 +453,10 @@ const AttachInvoiceSale = () => {
                 sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
               />
               <Typography variant="h6" color="text.secondary">
-                No applications requiring processing
+                No applications forwarded to sales
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                All sales applications have been processed
+                All applications are either pending or processed
               </Typography>
             </Box>
           ) : (
@@ -861,7 +863,7 @@ const AttachInvoiceSale = () => {
         PaperProps={{
           sx: {
             borderRadius: 3,
-            boxShadow: theme.shadows[10],
+            overflow: "hidden",
           },
         }}
       >
@@ -880,284 +882,152 @@ const AttachInvoiceSale = () => {
           Application Feedbacks
         </DialogTitle>
         <DialogContent sx={{ py: 3 }}>
-          <Box sx={{ m: 2, mb: 3 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  ID: {selectedApp?.application_id} -{" "}
-                  {selectedApp?.FullName || "N/A"}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Title: {selectedApp?.application_title}
-                </Typography>
-              </Grid>
-            </Grid>
+          <Box sx={{ mb: 3 }}>
+            <Typography my={2}>
+              <strong>
+                ID: {selectedApp?.application_id} -{" "}
+                {selectedApp?.FullName || "N/A"}
+              </strong>
+            </Typography>
+            <Typography variant="subtitle1">
+              <strong>Title:</strong> {selectedApp?.application_title}
+            </Typography>
           </Box>
 
-          {/* Doctor's Feedback Row */}
+          {/* Doctor's Feedback Section */}
           <Box sx={{ mb: 4 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, mb: 1, color: theme.palette.info.dark }}
-            >
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
               Doctor's Feedback
             </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={8}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: 2,
-                    boxShadow: "none",
-                    backgroundColor: theme.palette.background.paper,
-                  }}
-                >
-                  <CardContent>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={
-                        selectedApp?.doctor_feedback || "No feedback provided"
-                      }
-                      multiline
-                      rows={4}
-                      InputProps={{
-                        readOnly: true,
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: theme.palette.background.default,
-                        },
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                {selectedApp?.doctor_prescription ? (
-                  <Card
-                    sx={{
-                      height: "100%",
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 2,
-                      transition: "transform 0.2s",
-                      "&:hover": {
-                        transform: "scale(1.02)",
-                        boxShadow: 2,
-                      },
-                    }}
+            <Card
+              elevation={0}
+              sx={{
+                mb: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                p: 2,
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                gutterBottom
+                sx={{ fontWeight: 500 }}
+              >
+                Doctor's Notes
+              </Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                value={selectedApp?.doctor_feedback || "No feedback provided"}
+                multiline
+                rows={4}
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: theme.palette.background.default,
+                  },
+                }}
+              />
+              {selectedApp?.doctor_prescription && (
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Button
+                    startIcon={<AttachFile />}
                     onClick={() =>
                       window.open(
                         getImageUrl(selectedApp.doctor_prescription),
                         "_blank"
                       )
                     }
-                  >
-                    <CardContent sx={{ p: 2, textAlign: "center" }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ mb: 1, fontWeight: 600 }}
-                      >
-                        Prescription
-                      </Typography>
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: 150,
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          backgroundColor: theme.palette.grey[100],
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <img
-                          src={getImageUrl(selectedApp.doctor_prescription)}
-                          alt="Prescription thumbnail"
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "100%",
-                            objectFit: "contain",
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "/placeholder-image.jpg";
-                          }}
-                        />
-                      </Box>
-                      <Button
-                        size="small"
-                        startIcon={<AttachFile />}
-                        sx={{ mt: 1 }}
-                      >
-                        View Full
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Box
                     sx={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: `1px dashed ${theme.palette.divider}`,
-                      borderRadius: 2,
-                      p: 3,
-                      backgroundColor: theme.palette.action.hover,
-                    }}
-                  >
-                    <Typography variant="body2" color="text.secondary">
-                      No prescription uploaded
-                    </Typography>
-                  </Box>
-                )}
-              </Grid>
-            </Grid>
-          </Box>
-
-          {/* Pharmacist's Feedback Row */}
-          <Box sx={{ mb: 2 }}>
-            <Typography
-              variant="subtitle1"
-              sx={{ fontWeight: 600, mb: 1, color: theme.palette.success.dark }}
-            >
-              Pharmacist's Feedback
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={8}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: 2,
-                    boxShadow: "none",
-                    backgroundColor: theme.palette.background.paper,
-                  }}
-                >
-                  <CardContent>
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={
-                        selectedApp?.pharmacist_feedback ||
-                        "No feedback provided"
-                      }
-                      multiline
-                      rows={4}
-                      InputProps={{
-                        readOnly: true,
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: theme.palette.background.default,
-                        },
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                {selectedApp?.pharmacist_invoice ? (
-                  <Card
-                    sx={{
-                      height: "100%",
-                      border: `1px solid ${theme.palette.divider}`,
-                      borderRadius: 2,
-                      transition: "transform 0.2s",
+                      textTransform: "none",
+                      color: theme.palette.info.main,
                       "&:hover": {
-                        transform: "scale(1.02)",
-                        boxShadow: 2,
+                        backgroundColor: "transparent",
+                        textDecoration: "underline",
                       },
                     }}
+                  >
+                    View Prescription
+                  </Button>
+                </Box>
+              )}
+            </Card>
+          </Box>
+
+          {/* Pharmacist's Feedback Section */}
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              Pharmacist's Feedback
+            </Typography>
+            <Card
+              elevation={0}
+              sx={{
+                mb: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                p: 2,
+              }}
+            >
+              <Typography
+                variant="subtitle1"
+                gutterBottom
+                sx={{ fontWeight: 500 }}
+              >
+                Pharmacist's Notes
+              </Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                value={
+                  selectedApp?.pharmacist_feedback || "No feedback provided"
+                }
+                multiline
+                rows={4}
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: theme.palette.background.default,
+                  },
+                }}
+              />
+              {selectedApp?.pharmacist_invoice && (
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Button
+                    startIcon={<AttachFile />}
                     onClick={() =>
                       window.open(
                         getImageUrl(selectedApp.pharmacist_invoice),
                         "_blank"
                       )
                     }
-                  >
-                    <CardContent sx={{ p: 2, textAlign: "center" }}>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ mb: 1, fontWeight: 600 }}
-                      >
-                        Pharmacy Invoice
-                      </Typography>
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: 150,
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          backgroundColor: theme.palette.grey[100],
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <img
-                          src={getImageUrl(selectedApp.pharmacist_invoice)}
-                          alt="Invoice thumbnail"
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "100%",
-                            objectFit: "contain",
-                          }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "/placeholder-image.jpg";
-                          }}
-                        />
-                      </Box>
-                      <Button
-                        size="small"
-                        startIcon={<AttachFile />}
-                        sx={{ mt: 1 }}
-                      >
-                        View Full
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Box
                     sx={{
-                      height: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: `1px dashed ${theme.palette.divider}`,
-                      borderRadius: 2,
-                      p: 3,
-                      backgroundColor: theme.palette.action.hover,
+                      textTransform: "none",
+                      color: theme.palette.info.main,
+                      "&:hover": {
+                        backgroundColor: "transparent",
+                        textDecoration: "underline",
+                      },
                     }}
                   >
-                    <Typography variant="body2" color="text.secondary">
-                      No invoice uploaded
-                    </Typography>
-                  </Box>
-                )}
-              </Grid>
-            </Grid>
+                    View Invoice
+                  </Button>
+                </Box>
+              )}
+            </Card>
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
             onClick={() => setViewFeedbackOpen(false)}
-            variant="contained"
-            color="info"
+            variant="outlined"
             sx={{
               borderRadius: 2,
               px: 3,
               textTransform: "none",
-              boxShadow: "none",
-              "&:hover": {
-                boxShadow: theme.shadows[2],
-              },
             }}
           >
             Close
