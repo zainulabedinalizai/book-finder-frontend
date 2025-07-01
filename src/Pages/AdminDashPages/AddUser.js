@@ -628,23 +628,6 @@ const AddUser = () => {
             />
 
             <Box sx={{ display: "flex", gap: 2, marginBottom: 2 }}>
-              <Tooltip title="Export all users to Excel">
-                <Button
-                  variant="outlined"
-                  color="success"
-                  startIcon={<FileDownloadIcon />}
-                  onClick={exportToExcel}
-                  disabled={users.length === 0}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    px: 3,
-                  }}
-                >
-                  Export All
-                </Button>
-              </Tooltip>
-
               <Tooltip title="Export filtered users to Excel">
                 <Button
                   variant="contained"
@@ -658,7 +641,7 @@ const AddUser = () => {
                     px: 3,
                   }}
                 >
-                  Export Filtered
+                  Download Excel
                 </Button>
               </Tooltip>
             </Box>

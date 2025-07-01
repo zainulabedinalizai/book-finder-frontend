@@ -637,60 +637,22 @@ const PatientInvoice = () => {
       </Dialog>
 
       {/* Receipt Upload Dialog */}
-      {/* Receipt Upload Dialog */}
       <Dialog
         open={receiptUploadOpen}
         onClose={handleCloseReceiptUpload}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
       >
         <DialogTitle sx={{ bgcolor: "primary.main", color: "white" }}>
           <Box display="flex" alignItems="center">
             <Receipt sx={{ mr: 1 }} />
-            Upload Payment Receipt
+            {selectedInvoice?.payment_receipt
+              ? "Payment Receipt"
+              : "Upload Payment Receipt"}
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 3 }}>
-          <Box
-            sx={{
-              border: "2px dashed",
-              borderColor: "primary.main",
-              borderRadius: 2,
-              p: 4,
-              textAlign: "center",
-              mt: 3,
-              mb: 3,
-              backgroundColor: "action.hover",
-            }}
-          >
-            <CloudUpload sx={{ fontSize: 48, color: "primary.main", mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              Drag and drop receipt file here
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Supported formats: PDF, JPG, PNG (Max 5MB)
-            </Typography>
-            <Button
-              variant="contained"
-              component="label"
-              startIcon={<CloudUpload />}
-              sx={{ mt: 2 }}
-            >
-              Select File
-              <input
-                type="file"
-                hidden
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={async (e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    await handleFileUpload(file, selectedInvoice);
-                  }
-                }}
-              />
-            </Button>
-          </Box>
-
+          {/* Always show invoice details at the top */}
           {selectedInvoice && (
             <Box
               sx={{
@@ -699,6 +661,7 @@ const PatientInvoice = () => {
                 borderRadius: 1,
                 borderLeft: "4px solid",
                 borderColor: "primary.main",
+                mb: 3,
               }}
             >
               <Typography variant="subtitle2" gutterBottom>
@@ -711,8 +674,177 @@ const PatientInvoice = () => {
                 <strong>Title:</strong> {selectedInvoice.application_title}
               </Typography>
               <Typography>
-                <strong>Date:</strong> {selectedInvoice.SubmittedDate}
+                <strong>Upload Date:</strong> {selectedInvoice.SubmittedDate}
               </Typography>
+            </Box>
+          )}
+
+          {selectedInvoice?.payment_receipt ? (
+            <Box
+              sx={{
+                position: "relative",
+                width: "100%",
+                height: 250,
+                maxWidth: "500px",
+                margin: "0 auto",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "action.hover",
+                "&:hover .receipt-actions": {
+                  opacity: 1,
+                },
+              }}
+            >
+              {selectedInvoice.payment_receipt.endsWith(".pdf") ? (
+                <Box
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    p: 2,
+                  }}
+                >
+                  <PictureAsPdf sx={{ fontSize: 48, color: "error.main" }} />
+                  <Typography variant="h6" sx={{ mt: 2 }}>
+                    PDF Receipt
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedInvoice.payment_receipt.split("/").pop()}
+                  </Typography>
+                </Box>
+              ) : (
+                <img
+                  src={getImageUrl(selectedInvoice.payment_receipt)}
+                  alt="Payment Receipt"
+                  onError={(e) => {
+                    console.error("Error loading image:", e);
+                    e.target.style.display = "none";
+                  }}
+                  style={{
+                    width: "auto",
+                    height: "auto",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "contain",
+                  }}
+                />
+              )}
+
+              <Box
+                className="receipt-actions"
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(0,0,0,0.5)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: 0,
+                  transition: "opacity 0.3s ease",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  color="primary"
+                  startIcon={<Download />}
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = getImageUrl(selectedInvoice.payment_receipt);
+                    link.target = "_blank";
+                    link.download =
+                      selectedInvoice.payment_receipt.split("/").pop() ||
+                      "receipt";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Download Receipt
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<CloudUpload />}
+                  onClick={() => {
+                    setSelectedInvoice((prev) => ({
+                      ...prev,
+                      payment_receipt: null,
+                    }));
+                  }}
+                  sx={{
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    ml: 2,
+                    backgroundColor: "background.paper",
+                  }}
+                >
+                  Replace Receipt
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                border: "2px dashed",
+                borderColor: "primary.main",
+                borderRadius: 2,
+                p: 4,
+                textAlign: "center",
+                mt: 2,
+                mb: 2,
+                backgroundColor: "action.hover",
+              }}
+            >
+              <CloudUpload
+                sx={{ fontSize: 48, color: "primary.main", mb: 2 }}
+              />
+              <Typography variant="h6" gutterBottom>
+                Drag and drop receipt file here
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Supported formats: PDF, JPG, PNG (Max 5MB)
+              </Typography>
+              <Button
+                variant="contained"
+                component="label"
+                startIcon={<CloudUpload />}
+                sx={{ mt: 2 }}
+              >
+                Select File
+                <input
+                  type="file"
+                  hidden
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      await handleFileUpload(file, selectedInvoice);
+                    }
+                  }}
+                />
+              </Button>
             </Box>
           )}
         </DialogContent>
