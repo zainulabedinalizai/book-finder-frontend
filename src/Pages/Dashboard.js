@@ -23,38 +23,45 @@ import {
   Chip,
   useMediaQuery,
   useTheme,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Badge,
 } from "@mui/material";
 import {
   MedicalServices,
-  People,
-  CalendarToday,
-  LocalHospital,
-  Assignment,
-  Notifications,
+  Notifications as NotificationsIcon,
   CheckCircle,
   Pending,
   RateReview,
   Send,
   Summarize,
+  Circle,
 } from "@mui/icons-material";
-
 import { useAuth } from "../Context/AuthContext";
-import FavoritesQuerySearch from "./FavoritesQuerySearch";
-import { dashboardAPI } from "../Api/api";
+import { dashboardAPI, notificationsAPI } from "../Api/api"; // Import notificationsAPI
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [stats, setStats] = useState(null);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const response = await dashboardAPI.getDashboardStatistics();
+        // Include RoleID and UserID in the request if available
+        const params = {};
+        if (user?.RoleId) params.RoleID = user.RoleId;
+        if (user?.UserId) params.UserID = user.UserId;
+
+        const response = await dashboardAPI.getDashboardStatistics(params);
         if (response.data.success) {
           setStats(response.data.data);
         }
@@ -65,8 +72,44 @@ const Dashboard = () => {
       }
     };
 
-    fetchDashboardStats();
-  }, []);
+    const fetchNotifications = async () => {
+      try {
+        if (user?.RoleId) {
+          const response = await notificationsAPI.getNotificationsByRole(
+            user.RoleId
+          );
+          if (response.data.success) {
+            setNotifications(response.data.data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchDashboardStats();
+      fetchNotifications();
+    }
+  }, [isAuthenticated, user]);
+
+  const formatNotificationTime = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString || "Just now";
+      }
+      // Manually format in 24-hour format
+      const hours = date.getHours().toString().padStart(2, "0");
+      const minutes = date.getMinutes().toString().padStart(2, "0");
+      return `${hours}:${minutes}`;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Just now";
+    }
+  };
 
   if (!isAuthenticated) {
     navigate("/login");
@@ -235,7 +278,7 @@ const Dashboard = () => {
           </Grid>
 
           <Grid container spacing={3}>
-            {/* Upcoming Appointments (unchanged) */}
+            {/* Notifications Card */}
             <Grid item xs={12} md={6}>
               <Paper
                 elevation={3}
@@ -248,36 +291,103 @@ const Dashboard = () => {
                   mb={2}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Upcoming Appointments
+                    Notifications
                   </Typography>
-                  <Button size="small" onClick={() => setTabValue(2)}>
-                    View All
-                  </Button>
+                  <IconButton size="small">
+                    <Badge
+                      badgeContent={notifications.length}
+                      color="primary"
+                      max={99}
+                    >
+                      <NotificationsIcon />
+                    </Badge>
+                  </IconButton>
                 </Box>
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Patient</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Type</TableCell>
-                        <TableCell>Status</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell
-                          colSpan={4}
-                          sx={{ textAlign: "center", py: 4 }}
-                        >
-                          <Typography variant="body2" color="text.secondary">
-                            No upcoming appointments
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                {notificationsLoading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: 150,
+                    }}
+                  >
+                    <LinearProgress sx={{ width: "100%" }} />
+                  </Box>
+                ) : notifications.length > 0 ? (
+                  <List
+                    sx={{
+                      maxHeight: 300,
+                      overflow: "auto",
+                      py: 0,
+                    }}
+                  >
+                    {notifications.map((notification, index) => (
+                      <ListItem
+                        key={index}
+                        sx={{
+                          borderBottom:
+                            index !== notifications.length - 1
+                              ? `1px solid ${theme.palette.divider}`
+                              : "none",
+                          py: 1.5,
+                          "&:hover": {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <Circle
+                            sx={{
+                              fontSize: "0.5rem",
+                              color: notification.IsRead
+                                ? theme.palette.text.disabled
+                                : theme.palette.primary.main,
+                            }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: notification.IsRead
+                                  ? "normal"
+                                  : "bold",
+                                color: notification.IsRead
+                                  ? theme.palette.text.secondary
+                                  : theme.palette.text.primary,
+                              }}
+                            >
+                              {notification.Message}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {formatNotificationTime(notification.CreatedAt)}{" "}
+                            </Typography>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: 150,
+                    }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      No new notifications
+                    </Typography>
+                  </Box>
+                )}
               </Paper>
             </Grid>
 
@@ -344,39 +454,6 @@ const Dashboard = () => {
                     </Table>
                   </TableContainer>
                 )}
-              </Paper>
-            </Grid>
-
-            {/* Notifications (moved to its own row) */}
-            <Grid item xs={12}>
-              <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={2}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Notifications
-                  </Typography>
-                  <IconButton size="small">
-                    <Notifications />
-                  </IconButton>
-                </Box>
-                <Box
-                  sx={{
-                    maxHeight: 300,
-                    overflow: "auto",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    minHeight: 150,
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    No new notifications
-                  </Typography>
-                </Box>
               </Paper>
             </Grid>
           </Grid>

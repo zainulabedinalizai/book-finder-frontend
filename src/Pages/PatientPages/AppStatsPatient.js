@@ -196,44 +196,75 @@ const AppStatsPatient = () => {
       <Box
         sx={{
           display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: { xs: "flex-start", sm: "center" },
           mb: 4,
           p: 2,
           backgroundColor: "background.paper",
           borderRadius: 2,
           boxShadow: 1,
+          gap: { xs: 2, sm: 0 },
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "primary.main",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: 1, width: "100%" }}
         >
-          <DescriptionIcon fontSize="large" />
-          My Patient Applications
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Refresh />}
-          onClick={fetchApplications}
-          disabled={loading}
-          sx={{
-            borderRadius: 2,
-            px: 3,
-            py: 1,
-            textTransform: "none",
-            fontWeight: 600,
-          }}
-        >
-          Refresh
-        </Button>
+          <Typography
+            variant={isSmallScreen ? "h6" : "h4"}
+            sx={{
+              fontWeight: 700,
+              color: "primary.main",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flexGrow: 1,
+            }}
+          >
+            <DescriptionIcon
+              fontSize={isSmallScreen ? "medium" : "large"}
+              sx={{ mr: 1 }}
+            />
+            My Patient Applications
+          </Typography>
+
+          {/* Desktop - Full Button */}
+          <Box sx={{ display: { xs: "none", sm: "block" } }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Refresh />}
+              onClick={fetchApplications}
+              disabled={loading}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: "none",
+                fontWeight: 600,
+              }}
+            >
+              Refresh
+            </Button>
+          </Box>
+
+          {/* Mobile - Icon Only */}
+          <IconButton
+            sx={{
+              display: { xs: "flex", sm: "none" },
+              color: "common.white",
+              backgroundColor: "primary.light",
+              "&:hover": {
+                backgroundColor: "primary.main",
+                color: "common.white",
+              },
+            }}
+            onClick={fetchApplications}
+            disabled={loading}
+          >
+            <Refresh />
+          </IconButton>
+        </Box>
       </Box>
 
       <Paper
@@ -242,11 +273,15 @@ const AppStatsPatient = () => {
           borderRadius: 2,
           overflow: "hidden",
           mb: 3,
+          mx: { xs: 0, sm: 0 },
+          width: { xs: "100vw", sm: "auto" }, // Use viewport width on mobile
+          maxWidth: "100%",
+          overflowX: "auto",
         }}
       >
         <Box
           sx={{
-            p: 2,
+            p: { xs: 1, sm: 2 }, // Reduce padding on mobile
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -264,7 +299,7 @@ const AppStatsPatient = () => {
               size: "small",
             }}
             sx={{
-              maxWidth: 400,
+              maxWidth: { xs: "100%", sm: 400 }, // Full width on mobile
               "& .MuiOutlinedInput-root": {
                 borderRadius: 2,
                 backgroundColor: "background.paper",
@@ -272,150 +307,180 @@ const AppStatsPatient = () => {
             }}
           />
         </Box>
-
-        {!user?.UserId ? (
-          <Alert
-            severity="warning"
-            sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}
-          >
-            Please log in to view your applications
-          </Alert>
-        ) : loading ? (
-          <Box
+        {/* Table container adjustments */}
+        <TableContainer
+          sx={{
+            px: { xs: 0.5, sm: 2 }, // Reduce padding on mobile
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
+          <Table
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "200px",
+              minWidth: 750,
+              // Optional: make table horizontally scrollable on mobile
+              overflowX: { xs: "auto", sm: "visible" },
             }}
           >
-            <CircularProgress size={60} />
-          </Box>
-        ) : error ? (
-          <Alert severity="error" sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}>
-            {error}
-          </Alert>
-        ) : applications.length === 0 ? (
-          <Alert severity="info" sx={{ m: 2, borderRadius: 2, boxShadow: 1 }}>
-            No applications found
-          </Alert>
-        ) : (
-          <TableContainer>
-            <Table sx={{ minWidth: 750 }}>
-              <TableHead sx={{ backgroundColor: "primary.light" }}>
-                <TableRow>
-                  <TableCell sx={{ color: "common.white", fontWeight: 600 }}>
-                    Application
-                  </TableCell>
-                  <TableCell sx={{ color: "common.white", fontWeight: 600 }}>
-                    Submitted Date
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{ color: "common.white", fontWeight: 600 }}
-                  >
-                    Status
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredApplications
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((app) => (
-                    <TableRow key={app.application_id} hover>
-                      <TableCell>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
-                          <Avatar sx={{ bgcolor: "primary.main" }}>
-                            {app.FullName?.charAt(0) || "A"}
-                          </Avatar>
-                          <Box>
-                            <Typography fontWeight={600}>
-                              {app.application_title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              ID: {app.application_id} - {app.FullName || "N/A"}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <DateRange color="action" fontSize="small" />
-                          <Typography>{app.SubmittedDate}</Typography>
-                        </Box>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={app.status}
-                          color={getStatusColor(app.status_id)}
-                          variant="outlined"
+            {/* Table head - adjust font size for mobile */}
+            <TableHead sx={{ backgroundColor: "primary.light" }}>
+              <TableRow>
+                <TableCell
+                  sx={{
+                    color: "common.white",
+                    fontWeight: 600,
+                    fontSize: { xs: "0.8rem", sm: "inherit" }, // Smaller font on mobile
+                  }}
+                >
+                  Application
+                </TableCell>
+                <TableCell
+                  sx={{
+                    color: "common.white",
+                    fontWeight: 600,
+                    fontSize: { xs: "0.8rem", sm: "inherit" },
+                  }}
+                >
+                  Submitted Date
+                </TableCell>
+                <TableCell
+                  align="center"
+                  sx={{
+                    color: "common.white",
+                    fontWeight: 600,
+                    fontSize: { xs: "0.8rem", sm: "inherit" },
+                  }}
+                >
+                  Status
+                </TableCell>
+              </TableRow>
+            </TableHead>
+
+            {/* Table body - adjust cell padding for mobile */}
+            <TableBody>
+              {filteredApplications
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((app) => (
+                  <TableRow key={app.application_id} hover>
+                    <TableCell sx={{ p: { xs: 1, sm: "16px" } }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Avatar
                           sx={{
-                            fontWeight: 500,
-                            borderRadius: 1,
-                            // Explicit styling for each status
-                            ...(app.status_id === 1 && {
-                              // Pending
-                              borderColor: theme.palette.warning.main,
-                              color: theme.palette.warning.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status_id === 2 && {
-                              // Reviewed by Doctor
-                              borderColor: theme.palette.primary.main,
-                              color: theme.palette.primary.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status_id === 3 && {
-                              // Approved by Doctor
-                              borderColor: theme.palette.primary.main,
-                              color: theme.palette.primary.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status_id === 4 && {
-                              // Rejected by Pharmacist
-                              borderColor: theme.palette.error.main,
-                              color: theme.palette.error.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status_id === 5 && {
-                              // Sent to Sales
-                              borderColor: theme.palette.info.main,
-                              color: theme.palette.info.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
-                            ...(app.status_id === 7 && {
-                              // Completed
-                              borderColor: theme.palette.success.main,
-                              color: theme.palette.success.main,
-                              backgroundColor: theme.palette.common.white,
-                            }),
+                            bgcolor: "primary.main",
+                            width: { xs: 32, sm: 40 },
+                            height: { xs: 32, sm: 40 },
+                            fontSize: { xs: "0.8rem", sm: "1rem" },
                           }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={3} />
+                        >
+                          {app.FullName?.charAt(0) || "A"}
+                        </Avatar>
+                        <Box>
+                          <Typography
+                            fontWeight={600}
+                            fontSize={{ xs: "0.8rem", sm: "inherit" }}
+                          >
+                            {app.application_title}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            fontSize={{ xs: "0.7rem", sm: "0.875rem" }}
+                          >
+                            ID: {app.application_id} - {app.FullName || "N/A"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ p: { xs: 1, sm: "16px" } }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <DateRange color="action" fontSize="small" />
+                        <Typography fontSize={{ xs: "0.8rem", sm: "inherit" }}>
+                          {app.SubmittedDate}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center" sx={{ p: { xs: 1, sm: "16px" } }}>
+                      <Chip
+                        label={app.status}
+                        color={getStatusColor(app.status_id)}
+                        variant="outlined"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: 1,
+                          fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                          height: { xs: 24, sm: 32 },
+                          // Explicit styling for each status
+                          ...(app.status_id === 1 && {
+                            // Pending
+                            borderColor: theme.palette.warning.main,
+                            color: theme.palette.warning.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                          ...(app.status_id === 2 && {
+                            // Reviewed by Doctor
+                            borderColor: theme.palette.primary.main,
+                            color: theme.palette.primary.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                          ...(app.status_id === 3 && {
+                            // Approved by Doctor
+                            borderColor: theme.palette.primary.main,
+                            color: theme.palette.primary.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                          ...(app.status_id === 4 && {
+                            // Rejected by Pharmacist
+                            borderColor: theme.palette.error.main,
+                            color: theme.palette.error.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                          ...(app.status_id === 5 && {
+                            // Sent to Sales
+                            borderColor: theme.palette.info.main,
+                            color: theme.palette.info.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                          ...(app.status_id === 7 && {
+                            // Completed
+                            borderColor: theme.palette.success.main,
+                            color: theme.palette.success.main,
+                            backgroundColor: theme.palette.common.white,
+                          }),
+                        }}
+                      />
+                    </TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
-              component="div"
-              count={filteredApplications.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </TableContainer>
-        )}
+                ))}
+              {emptyRows > 0 && (
+                <TableRow style={{ height: 53 * emptyRows }}>
+                  <TableCell colSpan={3} />
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredApplications.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            sx={{
+              "& .MuiTablePagination-toolbar": {
+                paddingLeft: { xs: 1, sm: 2 },
+                paddingRight: { xs: 1, sm: 2 },
+                flexWrap: { xs: "wrap", sm: "nowrap" },
+              },
+              "& .MuiTablePagination-spacer": {
+                display: { xs: "none", sm: "block" },
+              },
+            }}
+          />
+        </TableContainer>
       </Paper>
 
       <Snackbar

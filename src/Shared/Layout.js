@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import {
   AppBar,
@@ -123,6 +123,13 @@ const Layout = ({ children }) => {
 
   const [notificationCount] = useState(3);
   const hideDrawer = ["/login", "/register"].includes(location.pathname);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setOpenMenus({});
+      setMobileOpen(false);
+    }
+  }, [isAuthenticated]);
 
   const handleDrawerToggle = () => {
     if (isMobile) {
@@ -717,7 +724,6 @@ const Layout = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
           width: {
             xs: "100%",
             md: hideDrawer
@@ -741,7 +747,12 @@ const Layout = ({ children }) => {
         {/* Only add vertical spacing if AppBar is shown */}
         {!hideDrawer && <Toolbar />}
 
-        <Box sx={{ maxWidth: 1700, mx: "auto", my: 2, px: 2 }}>
+        <Box
+          sx={{
+            maxWidth: 1700,
+            my: 2,
+          }}
+        >
           <Outlet />
           {children}
         </Box>

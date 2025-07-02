@@ -183,7 +183,31 @@ export const questionAPI = {
 
 // Dashboard API Endpoints
 export const dashboardAPI = {
-  getDashboardStatistics: () => API.post("/GetDashboardStatistics"),
+  getDashboardStatistics: (params) => {
+    const formData = new URLSearchParams();
+    if (params?.RoleID) formData.append("RoleID", params.RoleID);
+    if (params?.UserID) formData.append("UserID", params.UserID);
+
+    return API.post("/GetDashboardStatistics", formData.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  },
+};
+
+// Notifications API Endpoints
+export const notificationsAPI = {
+  getNotificationsByRole: (roleId) => {
+    const formData = new URLSearchParams();
+    formData.append("RoleID", roleId);
+
+    return API.post("/GetNotificationsByRole", formData.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  },
 };
 
 // Patient API Endpoints
