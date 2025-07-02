@@ -213,6 +213,18 @@ export const patientAPI = {
     }
   },
 
+  getDateWisePatientApplication: (params) => {
+    const formData = new URLSearchParams();
+    formData.append("DateFrom", params.DateFrom);
+    formData.append("DateTo", params.DateTo);
+
+    return API.post("/GetDateWisePatientApplication", formData.toString(), {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  },
+
   getPatientApplication: (param) => {
     const formData = new URLSearchParams();
     formData.append("UserID", param.UserID);

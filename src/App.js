@@ -40,6 +40,7 @@ import AddInvoiceSales from "./Pages/SalesTeamPages/AttachInvoiceSales";
 import SendInvoiceToPatient from "./Pages/SalesTeamPages/SendInvoiceToPatient";
 
 import PrivateRoute from "./Components/PrivateRoute";
+import ApplicationReport from "./Pages/AdminDashPages/ApplicationReport";
 
 const App = () => {
   return (
@@ -75,6 +76,7 @@ const App = () => {
                   </PrivateRoute>
                 }
               />
+
               <Route
                 path="/PersonalProfile"
                 element={
@@ -104,6 +106,15 @@ const App = () => {
                 element={
                   <PrivateRoute allowedRoles={[2]}>
                     <UserLogin />
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/ApplicationReport"
+                element={
+                  <PrivateRoute allowedRoles={[2]}>
+                    <ApplicationReport />
                   </PrivateRoute>
                 }
               />

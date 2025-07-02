@@ -831,11 +831,7 @@ const AttachInvoiceSale = () => {
             onClick={handleStatusUpdate}
             color={actionType === "approve" ? "success" : "error"}
             variant="contained"
-            disabled={
-              loading ||
-              (actionType === "reject" && !feedback) ||
-              (actionType === "approve" && !filePath)
-            }
+            disabled={loading || !feedback}
             sx={{
               borderRadius: 2,
               px: 3,

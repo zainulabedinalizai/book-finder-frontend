@@ -580,8 +580,7 @@ const AddUser = () => {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              p: 3,
-              backgroundColor: "grey.100",
+              p: 2,
             }}
           >
             <Typography
@@ -591,18 +590,39 @@ const AddUser = () => {
             >
               User List
             </Typography>
-            <Box>
-              <Tooltip title="Refresh">
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Tooltip title="Export Users to Excel">
                 <IconButton
-                  onClick={fetchUsers}
+                  onClick={exportFilteredToExcel}
+                  disabled={users.length === 0}
                   sx={{
-                    backgroundColor: "action.hover",
-                    "&:hover": { backgroundColor: "action.selected" },
+                    backgroundColor: "success.main",
+                    color: "common.white",
+                    "&:hover": {
+                      backgroundColor: "success.dark",
+                    },
+                    borderRadius: 1.5,
                   }}
                 >
-                  <Refresh />
+                  <FileDownloadIcon />
                 </IconButton>
               </Tooltip>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Refresh />}
+                onClick={fetchUsers}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Refresh
+              </Button>
             </Box>
           </Box>
 
@@ -626,25 +646,6 @@ const AddUser = () => {
                 sx: { borderRadius: 2 },
               }}
             />
-
-            <Box sx={{ display: "flex", gap: 2, marginBottom: 2 }}>
-              <Tooltip title="Export filtered users to Excel">
-                <Button
-                  variant="contained"
-                  color="success"
-                  startIcon={<FileDownloadIcon />}
-                  onClick={exportFilteredToExcel}
-                  disabled={filteredUsers.length === 0}
-                  sx={{
-                    borderRadius: 2,
-                    textTransform: "none",
-                    px: 3,
-                  }}
-                >
-                  Download Excel
-                </Button>
-              </Tooltip>
-            </Box>
 
             {loading && users.length === 0 ? (
               <Box

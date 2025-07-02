@@ -43,6 +43,7 @@ import EmailIcon from "@mui/icons-material/Email";
 import DescriptionIcon from "@mui/icons-material/Description";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import DownloadIcon from "@mui/icons-material/Download";
+import { Assessment } from "@mui/icons-material";
 
 const drawerWidth = 240;
 const collapsedWidth = 72;
@@ -149,6 +150,11 @@ const Layout = ({ children }) => {
     { text: "User Login", icon: <LoginIcon />, path: "/UserLogin" },
     { text: "User Role", icon: <LockIcon />, path: "/UserRoles" },
     { text: "Change Password", icon: <LockIcon />, path: "/ChangePassword" },
+    {
+      text: "Applications Report",
+      icon: <Assessment />,
+      path: "/ApplicationReport",
+    },
   ];
 
   const patientMenuItems = [
@@ -177,11 +183,6 @@ const Layout = ({ children }) => {
       path: "/PersonalProfileDoc",
     },
     {
-      text: "Patient Applications",
-      icon: <DescriptionIcon />,
-      path: "/PatientApplicationDoc",
-    },
-    {
       text: "Prescription List",
       icon: <MedicalServicesIcon />,
       path: "/PrescriptionListDoc",
@@ -193,11 +194,6 @@ const Layout = ({ children }) => {
       text: "Personal Profile",
       icon: <PersonIcon />,
       path: "/PersonalProfilePharma",
-    },
-    {
-      text: "Patient Applications",
-      icon: <DescriptionIcon />,
-      path: "/PatientApplicationPharma",
     },
     {
       text: "Add Invoice",
@@ -213,17 +209,12 @@ const Layout = ({ children }) => {
       path: "/PersonalProfileSaTeam",
     },
     {
-      text: "Patient Applications",
-      icon: <DescriptionIcon />,
-      path: "/PatientApplicationSales",
-    },
-    {
       text: "Attach Final Invoice",
       icon: <DescriptionIcon />,
       path: "/AttachInvoiceSales",
     },
     {
-      text: "Send Invoice to Patient",
+      text: "Patient Receipts",
       icon: <EmailIcon />,
       path: "/SendInvoiceToPatient",
     },
@@ -615,6 +606,7 @@ const Layout = ({ children }) => {
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
+                    setOpenMenus({});
                     logout(); // Clear auth state
                     navigate("/login"); // Redirect to login
                   }}
@@ -679,9 +671,16 @@ const Layout = ({ children }) => {
             </IconButton>
           )}
           <Box sx={{ flexGrow: 1 }}>
-            <GradientText variant="h6" noWrap component="div">
-              Medskls
-            </GradientText>
+            <Box
+              component="img"
+              src="/images/WEBLOGO.png"
+              alt="Medskls Logo"
+              sx={{
+                height: 40,
+                maxWidth: "100%",
+                objectFit: "contain",
+              }}
+            />
           </Box>
         </Toolbar>
       </AppBar>

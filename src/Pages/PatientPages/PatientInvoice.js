@@ -29,6 +29,7 @@ import {
   Avatar,
   IconButton,
   Tooltip,
+  Grid,
 } from "@mui/material";
 import {
   Download,
@@ -40,6 +41,7 @@ import {
   Description as DescriptionIcon,
   DateRange,
   CloudUpload,
+  Close,
 } from "@mui/icons-material";
 import { patientAPI, UploadEmployeeFiles } from "../../Api/api";
 import { useAuth } from "../../Context/AuthContext";
@@ -625,14 +627,108 @@ const PatientInvoice = () => {
       </Card>
 
       {/* Payment Dialog */}
+      {/* Payment Dialog (in PatientInvoice component) */}
       <Dialog
         open={paymentDialogOpen}
         onClose={handleClosePaymentDialog}
         maxWidth="md"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
+          },
+        }}
       >
-        <DialogContent>
-          {<PaymentPatient onClose={handleClosePaymentDialog} />}
+        <DialogTitle
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            display: "flex",
+            alignItems: "center",
+            py: 2,
+            px: 3,
+            position: "relative",
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              right: 16,
+              top: 16,
+              color: "white",
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={handleClosePaymentDialog}
+              sx={{ color: "inherit" }}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+          </Box>
+          <Payment
+            sx={{
+              mr: 2,
+              fontSize: 28,
+              color: "white",
+            }}
+          />
+          <Box>
+            <Typography variant="h5" fontWeight={600}>
+              Complete Payment
+            </Typography>
+            {selectedInvoice && (
+              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                Invoice #{selectedInvoice.application_id}
+              </Typography>
+            )}
+          </Box>
+        </DialogTitle>
+
+        <DialogContent
+          sx={{
+            p: 0,
+            bgcolor: "background.paper",
+          }}
+        >
+          {/* Invoice Summary Section */}
+          {selectedInvoice && (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "background.default",
+                borderBottom: "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                Invoice Summary
+              </Typography>
+
+              <Grid container spacing={1}>
+                <Grid item xs={12} sm={6}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Patient
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {`${selectedInvoice?.FullName} - ID: ${selectedInvoice.application_id}`}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Payment Component */}
+          <Box sx={{ p: 3 }}>
+            <PaymentPatient
+              invoice={selectedInvoice}
+              onClose={handleClosePaymentDialog}
+            />
+          </Box>
         </DialogContent>
       </Dialog>
 

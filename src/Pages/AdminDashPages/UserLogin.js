@@ -292,16 +292,22 @@ const UserLogin = () => {
               User Accounts
             </Typography>
             <Box>
-              <Tooltip title="Refresh">
-                <ActionButton onClick={fetchUsers}>
-                  <Refresh />
-                </ActionButton>
-              </Tooltip>
-              <Tooltip title="Filters">
-                <ActionButton>
-                  <FilterList />
-                </ActionButton>
-              </Tooltip>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Refresh />}
+                onClick={fetchUsers}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  px: 3,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                }}
+              >
+                Refresh
+              </Button>
             </Box>
           </Box>
 

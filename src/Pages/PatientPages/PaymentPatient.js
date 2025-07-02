@@ -1,29 +1,49 @@
-import React, { useState } from 'react';
+// PaymentPatient.js
+import React, { useState } from "react";
 import {
-  Box, Typography, Container, Card, CardContent,
-  Button, Divider, TextField, Stack,
-  Alert, Snackbar, Radio, RadioGroup,
-  FormControlLabel, FormControl, FormLabel,
-  IconButton
-} from '@mui/material';
-import { Payment, CreditCard, AccountBalance, Close } from '@mui/icons-material';
-import { useTheme, useMediaQuery } from '@mui/material';
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  TextField,
+  Stack,
+  Alert,
+  Snackbar,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
+  IconButton,
+  Grid,
+  Paper,
+} from "@mui/material";
+import {
+  Payment,
+  CreditCard,
+  AccountBalance,
+  Close,
+  CheckCircle,
+  Receipt,
+} from "@mui/icons-material";
+import { useTheme } from "@mui/material";
 
 const PaymentPatient = ({ invoice, onClose }) => {
   const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
-  const [paymentMethod, setPaymentMethod] = useState('credit');
+  const [paymentMethod, setPaymentMethod] = useState("credit");
   const [cardDetails, setCardDetails] = useState({
-    number: '',
-    name: '',
-    expiry: '',
-    cvv: ''
+    number: "",
+    name: "",
+    expiry: "",
+    cvv: "",
   });
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success'
+    message: "",
+    severity: "success",
   });
 
   const handlePaymentMethodChange = (event) => {
@@ -32,169 +52,250 @@ const PaymentPatient = ({ invoice, onClose }) => {
 
   const handleCardChange = (e) => {
     const { name, value } = e.target;
-    setCardDetails(prev => ({
+    setCardDetails((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
+    // Simulate payment processing
     setTimeout(() => {
       setLoading(false);
       setSnackbar({
         open: true,
-        message: 'Payment processed successfully!',
-        severity: 'success'
+        message: "Payment processed successfully!",
+        severity: "success",
       });
-      setTimeout(() => onClose(), 2000);
     }, 1500);
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   return (
-    <Container maxWidth="sm" sx={{ p: 1 }}>
-      <Card elevation={3} sx={{ borderRadius: 2 }}>
+    <Box>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
         <CardContent sx={{ p: 2 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} mb={1}>
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Payment fontSize="small" color="primary" />
-              <Typography variant="h6">Payment Details</Typography>
-            </Stack>
-            <IconButton size="small" onClick={onClose}>
-              <Close fontSize="small" />
-            </IconButton>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+            <Payment color="primary" />
+            <Typography variant="h6" color="primary">
+              Payment Method
+            </Typography>
           </Stack>
 
-          {invoice && (
-            <>
-              <Typography variant="body2" paragraph sx={{ mb: 1 }}>
-                Payment for: <strong>{invoice.application_title}</strong>
-              </Typography>
-              <Typography variant="body2" paragraph sx={{ mb: 1 }}>
-                Date: {invoice.SubmittedDate}
-              </Typography>
-              <Divider sx={{ my: 1 }} />
-            </>
-          )}
-
           <Box component="form" onSubmit={handleSubmit}>
-            <FormControl component="fieldset" sx={{ mb: 1 }}>
-              <FormLabel component="legend" sx={{ fontSize: '0.875rem', mb: 0.5 }}>Payment Method</FormLabel>
+            <FormControl component="fieldset" fullWidth sx={{ mb: 2 }}>
               <RadioGroup
-                row
                 aria-label="payment-method"
                 name="payment-method"
                 value={paymentMethod}
                 onChange={handlePaymentMethodChange}
-                sx={{ gap: 1 }}
               >
-                <FormControlLabel
-                  value="credit"
-                  control={<Radio size="small" />}
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <CreditCard fontSize="small" />
-                      <Typography variant="body2">Credit Card</Typography>
-                    </Stack>
-                  }
-                  sx={{ m: 0 }}
-                />
-                <FormControlLabel
-                  value="bank"
-                  control={<Radio size="small" />}
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <AccountBalance fontSize="small" />
-                      <Typography variant="body2">Bank Transfer</Typography>
-                    </Stack>
-                  }
-                  sx={{ m: 0 }}
-                />
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    mb: 1,
+                    border: "1px solid",
+                    borderColor:
+                      paymentMethod === "credit" ? "primary.main" : "divider",
+                    borderRadius: 1,
+                  }}
+                >
+                  <FormControlLabel
+                    value="credit"
+                    control={<Radio color="primary" />}
+                    label={
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <CreditCard color="primary" />
+                        <Typography variant="body1">
+                          Credit/Debit Card
+                        </Typography>
+                      </Stack>
+                    }
+                    sx={{ m: 0 }}
+                  />
+
+                  {paymentMethod === "credit" && (
+                    <Box sx={{ mt: 2, pl: 4 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Card Number"
+                            name="number"
+                            value={cardDetails.number}
+                            onChange={handleCardChange}
+                            placeholder="1234 5678 9012 3456"
+                            required
+                            InputProps={{
+                              endAdornment: (
+                                <Box
+                                  sx={{
+                                    width: 24,
+                                    height: 24,
+                                    bgcolor: "grey.200",
+                                    borderRadius: "4px",
+                                  }}
+                                />
+                              ),
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Cardholder Name"
+                            name="name"
+                            value={cardDetails.name}
+                            onChange={handleCardChange}
+                            placeholder="John Doe"
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="Expiry Date"
+                            name="expiry"
+                            value={cardDetails.expiry}
+                            onChange={handleCardChange}
+                            placeholder="MM/YY"
+                            required
+                          />
+                        </Grid>
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            size="small"
+                            label="CVV"
+                            name="cvv"
+                            value={cardDetails.cvv}
+                            onChange={handleCardChange}
+                            placeholder="123"
+                            required
+                            type="password"
+                          />
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  )}
+                </Paper>
+
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 1.5,
+                    border: "1px solid",
+                    borderColor:
+                      paymentMethod === "bank" ? "primary.main" : "divider",
+                    borderRadius: 1,
+                  }}
+                >
+                  <FormControlLabel
+                    value="bank"
+                    control={<Radio color="primary" />}
+                    label={
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <AccountBalance color="primary" />
+                        <Typography variant="body1">Bank Transfer</Typography>
+                      </Stack>
+                    }
+                    sx={{ m: 0 }}
+                  />
+
+                  {paymentMethod === "bank" && (
+                    <Box
+                      sx={{
+                        mt: 2,
+                        pl: 4,
+                        p: 2,
+                        bgcolor: "grey.50",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Typography variant="body2" color="text.secondary" mb={1}>
+                        Please transfer the payment to the following account:
+                      </Typography>
+                      <Stack spacing={1}>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Bank Name
+                          </Typography>
+                          <Typography variant="body2">
+                            Healthcare Bank
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Account Name
+                          </Typography>
+                          <Typography variant="body2">
+                            Medical Services Inc.
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Account Number
+                          </Typography>
+                          <Typography variant="body2">
+                            1234 5678 9012 3456
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            Reference
+                          </Typography>
+                          <Typography variant="body2">
+                            {invoice?.application_id ||
+                              "MED-" + Math.floor(Math.random() * 10000)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  )}
+                </Paper>
               </RadioGroup>
             </FormControl>
 
-            {paymentMethod === 'credit' && (
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Card Number"
-                  name="number"
-                  value={cardDetails.number}
-                  onChange={handleCardChange}
-                  placeholder="1234 5678 9012 3456"
-                  required
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Cardholder Name"
-                  name="name"
-                  value={cardDetails.name}
-                  onChange={handleCardChange}
-                  placeholder="John Doe"
-                  required
-                />
-                <Stack direction="row" spacing={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Expiry"
-                    name="expiry"
-                    value={cardDetails.expiry}
-                    onChange={handleCardChange}
-                    placeholder="MM/YY"
-                    required
-                  />
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="CVV"
-                    name="cvv"
-                    value={cardDetails.cvv}
-                    onChange={handleCardChange}
-                    placeholder="123"
-                    required
-                  />
-                </Stack>
-              </Stack>
-            )}
-
-            {paymentMethod === 'bank' && (
-              <Box sx={{ p: 1, backgroundColor: theme.palette.grey[100], borderRadius: 1, mt: 1 }}>
-                <Typography variant="body2" paragraph sx={{ mb: 0.5 }}>
-                  Transfer payment to:
-                </Typography>
-                <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
-                  <strong>Bank:</strong> Healthcare Bank<br />
-                  <strong>Account:</strong> Medical Services Inc.<br />
-                  <strong>Number:</strong> 1234 5678 9012 3456<br />
-                  <strong>SWIFT:</strong> HLTBANK123<br />
-                  <strong>Ref:</strong> {invoice?.application_title || 'Medical Payment'}
-                </Typography>
-              </Box>
-            )}
-
-            <Box sx={{ mt: 2 }}>
+            {/* <Box sx={{ mt: 3 }}>
               <Button
                 fullWidth
                 variant="contained"
                 color="primary"
-                size="small"
+                size="large"
                 type="submit"
                 disabled={loading}
-                startIcon={<Payment fontSize="small" />}
-                sx={{ py: 0.8 }}
+                startIcon={loading ? null : <CheckCircle />}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                }}
               >
-                {loading ? 'Processing...' : 'Pay Now'}
+                {loading ? (
+                  <>Processing Payment...</>
+                ) : (
+                  <>Confirm Payment of ${invoice?.final_amount || "0.00"}</>
+                )}
               </Button>
-            </Box>
+            </Box> */}
           </Box>
         </CardContent>
       </Card>
@@ -203,17 +304,24 @@ const PaymentPatient = ({ invoice, onClose }) => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: '100%', fontSize: '0.875rem' }}
+          icon={<Receipt fontSize="inherit" />}
+          sx={{
+            width: "100%",
+            alignItems: "center",
+            boxShadow: 3,
+          }}
         >
-          {snackbar.message}
+          <Typography variant="body1" fontWeight={500}>
+            {snackbar.message}
+          </Typography>
         </Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 
