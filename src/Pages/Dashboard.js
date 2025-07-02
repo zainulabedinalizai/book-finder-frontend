@@ -40,7 +40,7 @@ import {
   Circle,
 } from "@mui/icons-material";
 import { useAuth } from "../Context/AuthContext";
-import { dashboardAPI, notificationsAPI } from "../Api/api"; // Import notificationsAPI
+import { dashboardAPI, notificationsAPI } from "../Api/api";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -56,7 +56,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        // Include RoleID and UserID in the request if available
         const params = {};
         if (user?.RoleId) params.RoleID = user.RoleId;
         if (user?.UserId) params.UserID = user.UserId;
@@ -101,13 +100,56 @@ const Dashboard = () => {
       if (isNaN(date.getTime())) {
         return dateString || "Just now";
       }
-      // Manually format in 24-hour format
       const hours = date.getHours().toString().padStart(2, "0");
       const minutes = date.getMinutes().toString().padStart(2, "0");
       return `${hours}:${minutes}`;
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Just now";
+    }
+  };
+
+  const handleStatCardClick = (status) => {
+    if (!user?.RoleId) return;
+
+    switch (user.RoleId) {
+      case 1: // Patient
+        navigate("/AppStatsPatient");
+        break;
+      case 19: // Doctor
+        navigate("/PrescriptionListDoc");
+        break;
+      case 24: // Pharmacist
+        navigate("/AddInvoicePharma");
+        break;
+      case 23: // Sales
+        navigate("/AttachInvoiceSales");
+        break;
+      // RoleId 2 doesn't navigate anywhere
+      default:
+        break;
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!user?.RoleId) return;
+
+    switch (user.RoleId) {
+      case 1: // Patient
+        navigate("/AppStatsPatient");
+        break;
+      case 19: // Doctor
+        navigate("/PrescriptionListDoc");
+        break;
+      case 24: // Pharmacist
+        navigate("/AddInvoicePharma");
+        break;
+      case 23: // Sales
+        navigate("/AttachInvoiceSales");
+        break;
+      // RoleId 2 doesn't navigate anywhere
+      default:
+        break;
     }
   };
 
@@ -120,7 +162,6 @@ const Dashboard = () => {
     setTabValue(newValue);
   };
 
-  // Helper function to get icon based on status
   const getStatusIcon = (status) => {
     switch (status) {
       case "Completed":
@@ -138,7 +179,6 @@ const Dashboard = () => {
     }
   };
 
-  // Helper function to get color based on status
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed":
@@ -208,16 +248,14 @@ const Dashboard = () => {
           icon={<MedicalServices />}
           iconPosition="start"
         />
-        {/* <Tab label={isMobile ? null : "Appointments"} icon={<CalendarToday />} iconPosition="start" /> */}
       </Tabs>
 
       {/* Overview Tab */}
       {tabValue === 0 && (
         <>
-          {/* Stats Cards - Now in a single row */}
+          {/* Stats Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             {loading ? (
-              // Loading state - show 5 loading cards (for all statuses + Total)
               Array.from({ length: 5 }).map((_, index) => (
                 <Grid item xs={12} sm={6} md={4} lg={2.4} key={index}>
                   <Card>
@@ -254,7 +292,6 @@ const Dashboard = () => {
                 </Grid>
               ))
             ) : stats ? (
-              // Display all stats cards in one row
               stats.map((stat) => (
                 <Grid item xs={12} sm={6} md={4} lg={2.4} key={stat.status}>
                   <StatCard
@@ -262,11 +299,14 @@ const Dashboard = () => {
                     value={stat.application_count}
                     icon={getStatusIcon(stat.status)}
                     color={getStatusColor(stat.status)}
+                    onClick={() =>
+                      user?.RoleId !== 2 && handleStatCardClick(stat.status)
+                    }
+                    clickable={user?.RoleId !== 2}
                   />
                 </Grid>
               ))
             ) : (
-              // Error state
               <Grid item xs={12}>
                 <Paper elevation={0} sx={{ p: 2, textAlign: "center" }}>
                   <Typography color="error">
@@ -333,8 +373,13 @@ const Dashboard = () => {
                           py: 1.5,
                           "&:hover": {
                             backgroundColor: theme.palette.action.hover,
+                            cursor: user?.RoleId !== 2 ? "pointer" : "default",
                           },
                         }}
+                        onClick={() =>
+                          user?.RoleId !== 2 &&
+                          handleNotificationClick(notification)
+                        }
                       >
                         <ListItemIcon sx={{ minWidth: 36 }}>
                           <Circle
@@ -391,7 +436,7 @@ const Dashboard = () => {
               </Paper>
             </Grid>
 
-            {/* Application Status Distribution (new) */}
+            {/* Application Status Distribution */}
             <Grid item xs={12} md={6}>
               <Paper
                 elevation={3}
@@ -421,7 +466,18 @@ const Dashboard = () => {
                         {stats
                           .filter((stat) => stat.status !== "Total")
                           .map((stat) => (
-                            <TableRow key={stat.status}>
+                            <TableRow
+                              key={stat.status}
+                              hover={user?.RoleId !== 2}
+                              onClick={() =>
+                                user?.RoleId !== 2 &&
+                                handleStatCardClick(stat.status)
+                              }
+                              sx={{
+                                cursor:
+                                  user?.RoleId !== 2 ? "pointer" : "default",
+                              }}
+                            >
                               <TableCell>
                                 <Chip
                                   label={stat.status
@@ -457,56 +513,13 @@ const Dashboard = () => {
               </Paper>
             </Grid>
           </Grid>
-
-          <Box sx={{ mt: 4, display: "flex", flexWrap: "wrap", gap: 2 }}>
-            {/* <Button 
-              variant="contained" 
-              startIcon={<Assignment />}
-              onClick={() => navigate('/PatientSurvey')}
-              fullWidth={isMobile}
-            >
-              Patient Form
-            </Button> */}
-          </Box>
         </>
-      )}
-
-      {/* Appointments Tab */}
-      {tabValue === 1 && (
-        <Paper elevation={3} sx={{ p: isMobile ? 1 : 3, borderRadius: 2 }}>
-          <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-            All Appointments
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Patient</TableCell>
-                  <TableCell>Date & Time</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell colSpan={5} sx={{ textAlign: "center", py: 6 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      No appointments scheduled
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
       )}
     </Container>
   );
 };
 
-// StatCard component for dashboard metrics
-const StatCard = ({ title, value, icon, color }) => {
+const StatCard = ({ title, value, icon, color, onClick, clickable }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -516,10 +529,15 @@ const StatCard = ({ title, value, icon, color }) => {
         height: "100%",
         borderLeft: `4px solid ${color}`,
         transition: "transform 0.3s",
-        "&:hover": {
-          transform: "translateY(-5px)",
-        },
+        "&:hover": clickable
+          ? {
+              transform: "translateY(-5px)",
+              cursor: "pointer",
+              boxShadow: theme.shadows[4],
+            }
+          : {},
       }}
+      onClick={onClick}
     >
       <CardContent>
         <Box display="flex" justifyContent="space-between">
